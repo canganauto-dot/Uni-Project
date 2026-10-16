@@ -1,0 +1,43 @@
+# Professor OS Development Rules
+
+## Project
+Professor OS is an offline-first Java desktop workspace for university professors.
+Use Java 25, JavaFX, Maven, SQLite and JDBC. Apache POI and PDFBox or OpenPDF are planned for Excel and PDF features; do not add them before they are needed.
+
+## Architecture
+- Keep UI, business logic, services, repositories, database access and domain models separate.
+- Dependency direction: UI → services → repositories → database; domain models remain independent of JavaFX and JDBC.
+- Never put SQL or substantial business logic in JavaFX controllers.
+- Views build UI; controllers coordinate interactions. Demo data belongs in `demo`, never in persistence.
+- Prefer small cohesive classes, descriptive names and extending existing conventions. Avoid giant controllers, duplicated logic, unused code and unnecessary abstractions.
+
+## Dependencies and quality
+- Add dependencies only for a clear reason; first check the JDK and existing dependencies. Prefer established libraries and pin versions.
+- Validate external/user input. Do not create fake functionality or present demo data as persisted data.
+- Never silently swallow exceptions. Log diagnostic details or propagate errors; show concise, actionable messages to users.
+- Use standard Java logging until there is a concrete reason to change it.
+- Keep the application runnable after meaningful changes.
+
+## Database
+- Use SQLite and enable foreign keys on every connection.
+- Use parameterized SQL for variable values; never concatenate user input into queries.
+- Use try-with-resources for JDBC connections, statements and result sets.
+- Preserve user data. Never casually delete or recreate a production database.
+- Introduce migrations/schema versioning with the first persistent domain tables.
+- Keep database paths configurable; tests use temporary directories.
+
+## Testing
+- After meaningful changes, run `./mvnw clean verify` (Windows: `.\mvnw.cmd clean verify`) and relevant tests; fix failures before declaring completion.
+- Add meaningful tests for important business behavior when practical.
+- For UI changes, also run the desktop smoke check (`-Pui-smoke verify`) when a graphical desktop is available and inspect the window/snapshot.
+- Report environment limitations honestly; never claim checks that were not run.
+- On the initial Windows machine, see README for the verified `cmd /d /c` plus `-DforkCount=0` workaround for an existing shell AutoRun setting. Keep default test isolation for unaffected environments.
+
+## Documentation
+- Update `PROJECT_NOTES.md` for significant architecture, schema, algorithm, dependency, feature or technical decisions, not trivial edits.
+- Keep README setup instructions and implemented/planned status accurate.
+
+## AI behavior
+Before major architectural changes: inspect the code, understand conventions, preserve working behavior, favor extensions over rewrites and explain major tradeoffs.
+Never rewrite large portions simply because another design is possible. Keep changes within the requested scope and understandable for an academic defense.
+Do not introduce Docker, Spring Boot, React, Node.js, cloud databases or microservices without an explicit project decision.

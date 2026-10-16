@@ -1,0 +1,46 @@
+# Maven / Java / JavaFX packaging output
+/target/
+**/target/
+/out/
+/build/
+/dist/
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+.java_pid*
+
+# Local application data and generated exports (keep source resources trackable)
+/data/
+/exports/
+/generated/
+*-journal
+*-wal
+*-shm
+
+# IDE and editor machine state
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.settings/
+.classpath
+.project
+.factorypath
+/bin/
+
+# Windows / macOS file manager metadata
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Local secrets and overrides
+.env
+.env.local
+
+# Generated PDF/Excel output belongs in exports/, generated/ or target/.
+# Do not globally ignore *.pdf, *.xlsx, *.sql or databases: reference documents,
+# import fixtures, migrations and required resources must remain trackable.

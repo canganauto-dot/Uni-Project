@@ -1,0 +1,75 @@
+/* Theme tokens live here so later themes can replace colors without controller changes. */
+.root {
+    -fx-font-family: "Segoe UI", "Noto Sans", sans-serif;
+    -fx-font-size: 13px;
+    -fx-background-color: -app-background;
+    -app-background: #f4f6fa;
+    -app-surface: #ffffff;
+    -app-text: #202d43;
+    -app-muted: #6f7c91;
+    -app-accent: #4b60bc;
+    -app-accent-soft: #edf0fc;
+    -app-border: #e3e8f0;
+    -app-sidebar: #17243b;
+    -app-sidebar-text: #c3cddd;
+    -fx-focus-color: -app-accent;
+    -fx-faint-focus-color: transparent;
+}
+.label { -fx-text-fill: -app-text; }
+.sidebar { -fx-background-color: -app-sidebar; -fx-padding: 28 18 24 18; }
+.brand { -fx-padding: 0 0 10 0; }
+.brand-mark {
+    -fx-background-color: #dce3ff; -fx-text-fill: #263964;
+    -fx-font-size: 23px; -fx-font-weight: bold; -fx-padding: 6 13;
+    -fx-background-radius: 10;
+}
+.brand-title { -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold; }
+.brand-caption { -fx-text-fill: #94a6c2; -fx-font-size: 8px; }
+.sidebar-caption { -fx-text-fill: #91a4c0; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 0 12; }
+.sidebar-detail { -fx-text-fill: -app-sidebar-text; -fx-font-size: 11px; -fx-padding: 0 12; }
+.nav-button {
+    -fx-background-color: transparent; -fx-text-fill: -app-sidebar-text;
+    -fx-alignment: center-left; -fx-padding: 11 16; -fx-font-size: 13px;
+    -fx-background-radius: 7; -fx-cursor: hand;
+}
+.nav-button:hover { -fx-background-color: #22334f; -fx-text-fill: white; }
+.nav-button:selected { -fx-background-color: #344d7a; -fx-text-fill: white; -fx-font-weight: bold; }
+.nav-button:focused { -fx-border-color: #9eb5df; -fx-border-radius: 7; }
+.topbar { -fx-background-color: -app-surface; -fx-padding: 20 30; -fx-border-color: transparent transparent -app-border transparent; }
+.topbar-title { -fx-font-size: 15px; -fx-font-weight: bold; }
+.breadcrumb { -fx-font-size: 11px; -fx-text-fill: -app-muted; }
+.course-placeholder { -fx-text-fill: -app-muted; -fx-font-size: 12px; }
+.search-field { -fx-background-color: -app-background; -fx-background-radius: 7; -fx-padding: 10 13; }
+.search-field:disabled { -fx-opacity: 0.8; }
+.content-scroll, .content-scroll > .viewport { -fx-background-color: -app-background; }
+.content-scroll { -fx-padding: 0; -fx-background-insets: 0; }
+.page { -fx-padding: 30; }
+.eyebrow { -fx-font-size: 10px; -fx-font-weight: bold; -fx-text-fill: -app-accent; }
+.page-title { -fx-font-size: 28px; -fx-font-weight: bold; }
+.muted { -fx-text-fill: -app-muted; -fx-font-size: 13px; }
+.small-muted { -fx-text-fill: -app-muted; -fx-font-size: 11px; }
+.demo-notice {
+    -fx-background-color: -app-accent-soft; -fx-text-fill: #43568b;
+    -fx-font-size: 11px; -fx-padding: 12 15; -fx-background-radius: 7;
+}
+.metric-card, .panel {
+    -fx-background-color: -app-surface; -fx-background-radius: 10;
+    -fx-border-color: -app-border; -fx-border-radius: 10; -fx-padding: 20;
+}
+.metric-label { -fx-font-size: 12px; -fx-text-fill: -app-muted; }
+.metric-value { -fx-font-size: 32px; -fx-font-weight: bold; }
+.section-title { -fx-font-size: 15px; -fx-font-weight: bold; }
+.entry-row { -fx-padding: 7 0; }
+.entry-title { -fx-font-size: 12px; -fx-font-weight: bold; }
+.entry-marker {
+    -fx-background-color: -app-background; -fx-text-fill: -app-accent;
+    -fx-padding: 10 7; -fx-alignment: center; -fx-background-radius: 6;
+    -fx-font-size: 11px; -fx-font-weight: bold;
+}
+.progress-value { -fx-text-fill: -app-accent; -fx-font-size: 11px; -fx-font-weight: bold; }
+.progress-bar { -fx-pref-height: 6; -fx-min-height: 6; }
+.progress-bar > .track { -fx-background-color: #e9edf5; -fx-background-radius: 4; -fx-background-insets: 0; }
+.progress-bar > .bar { -fx-background-color: #6f81c9; -fx-background-radius: 4; -fx-background-insets: 0; -fx-padding: 3; }
+.scroll-bar:vertical { -fx-background-color: transparent; -fx-pref-width: 10; }
+.scroll-bar:vertical .track { -fx-background-color: transparent; }
+.scroll-bar:vertical .thumb { -fx-background-color: #c9d2e1; -fx-background-radius: 5; }
