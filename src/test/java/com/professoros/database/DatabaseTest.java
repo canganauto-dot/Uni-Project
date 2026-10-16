@@ -14,7 +14,7 @@ class DatabaseTest {
     Path temporaryDirectory;
 
     @Test
-    void initializesNestedDirectoryWithoutCreatingDomainTables() throws Exception {
+    void initializesNestedDirectoryWithCoursesAndMigrationHistory() throws Exception {
         Path file = temporaryDirectory.resolve("nested/professor-os.db");
         Database database = new Database(file);
         database.initialize();
@@ -24,7 +24,7 @@ class DatabaseTest {
             statement.setString(1, "table");
             try (var rows = statement.executeQuery()) {
                 assertTrue(rows.next());
-                assertEquals(0, rows.getInt(1));
+                assertEquals(2, rows.getInt(1));
             }
         }
     }

@@ -24,6 +24,7 @@ public final class Database {
             if (!connection.isValid(2)) {
                 throw new SQLException("Database connection validation failed: " + file);
             }
+            new MigrationRunner().migrate(connection);
         }
         LOGGER.info(() -> "Database initialized at " + file);
     }

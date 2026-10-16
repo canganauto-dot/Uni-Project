@@ -10,6 +10,7 @@ import javafx.stage.Stage;
 import javafx.util.Duration;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -23,6 +24,9 @@ import static org.junit.jupiter.api.Assertions.*;
 /** Opt-in, headful smoke check. Run with -Pui-smoke on a graphical desktop. */
 @Tag("ui")
 class ApplicationSmokeTest {
+    @TempDir
+    Path temporaryDirectory;
+
     @Test
     void startsApplicationNavigatesEverySectionAndRendersDashboard() throws Exception {
         assertEquals(Path.of("target", "ui-smoke-data", "professor-os.db").toAbsolutePath().normalize(),
@@ -31,6 +35,7 @@ class ApplicationSmokeTest {
         application.init();
         CompletableFuture<Void> completed = new CompletableFuture<>();
         Platform.startup(() -> {
+            Platform.setImplicitExit(false);
             Stage stage = new Stage();
             try {
                 application.start(stage);
@@ -47,7 +52,9 @@ class ApplicationSmokeTest {
                     root.applyCss();
                     root.layout();
                     assertTrue(button.isSelected());
-                    if (!"Dashboard".equals(section)) {
+                    if ("Courses".equals(section)) {
+                        assertNotNull(root.lookup("#courses-page"));
+                    } else if (!"Dashboard".equals(section)) {
                         assertEquals(section, ((Label) root.lookup("#placeholder-title")).getText());
                     }
                 }
@@ -83,12 +90,14 @@ class ApplicationSmokeTest {
         });
         try {
             completed.get(30, TimeUnit.SECONDS);
+            new CourseWorkflowCheck(temporaryDirectory.resolve("courses.db")).verify();
         } finally {
+            application.stop();
             Platform.exit();
         }
     }
 
-    private static void saveSnapshot(WritableImage image, String name) throws Exception {
+    static void saveSnapshot(WritableImage image, String name) throws Exception {
         BufferedImage output = new BufferedImage((int) image.getWidth(), (int) image.getHeight(),
                 BufferedImage.TYPE_INT_ARGB);
         for (int y = 0; y < output.getHeight(); y++) {

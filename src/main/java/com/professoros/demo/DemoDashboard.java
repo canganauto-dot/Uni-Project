@@ -10,7 +10,6 @@ public final class DemoDashboard {
 
     public List<Metric> metrics() {
         return List.of(
-                new Metric("Courses", "4", "In this sample semester"),
                 new Metric("Students", "126", "Across sample courses"),
                 new Metric("Upcoming Exams", "2", "Sample assessments"),
                 new Metric("Pending Grading", "18", "Sample submissions"));

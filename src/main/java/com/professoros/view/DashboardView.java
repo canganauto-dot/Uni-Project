@@ -13,8 +13,10 @@ import javafx.scene.layout.VBox;
 
 import java.util.List;
 
-/** Dashboard composition only; real services will supply data when features are implemented. */
+/** Dashboard composition with a persisted course count and explicitly separate demo sections. */
 public final class DashboardView extends VBox {
+    private final Label courseCount = label("…", "metric-value");
+    private final Label courseCountDetail = label("Loading saved courses…", "small-muted");
     public DashboardView(DemoDashboard data) {
         super(20);
         setId("dashboard");
@@ -23,14 +25,18 @@ public final class DashboardView extends VBox {
         Label title = label("A clear view of your semester.", "page-title");
         Label subtitle = label("Courses, commitments and progress — together in one place.", "muted");
         VBox heading = new VBox(7, eyebrow, title, subtitle);
-        Label demoNotice = label("DEMO PREVIEW   ·   All figures and activities below are sample data, not database records.", "demo-notice");
+        Label demoNotice = label("Courses shows your saved records. Student, exam, grading and activity sections are DEMO data.", "demo-notice");
         demoNotice.setWrapText(true);
         demoNotice.setMaxWidth(Double.MAX_VALUE);
 
         GridPane metrics = grid(4);
-        int column = 0;
+        courseCount.setId("dashboard-course-count");
+        VBox realCard = new VBox(9, label("Courses · saved", "metric-label"), courseCount, courseCountDetail);
+        realCard.getStyleClass().add("metric-card");
+        metrics.add(realCard, 0, 0);
+        int column = 1;
         for (var metric : data.metrics()) {
-            VBox card = new VBox(9, label(metric.label(), "metric-label"),
+            VBox card = new VBox(9, label(metric.label() + " · demo", "metric-label"),
                     label(metric.value(), "metric-value"), label(metric.detail(), "small-muted"));
             card.getStyleClass().add("metric-card");
             metrics.add(card, column++, 0);
@@ -43,6 +49,11 @@ public final class DashboardView extends VBox {
         panels.add(progressPanel(data), 0, 1);
         panels.add(entryPanel("Recent Activity", "Illustrative activity only", data.activity()), 1, 1);
         getChildren().addAll(heading, demoNotice, metrics, panels);
+    }
+
+    public void setCourseCount(Integer value) {
+        courseCount.setText(value == null ? "—" : value.toString());
+        courseCountDetail.setText(value == null ? "Saved courses unavailable" : "Persisted on this device");
     }
 
     private static GridPane grid(int columns) {
