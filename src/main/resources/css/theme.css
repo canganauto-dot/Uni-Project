@@ -128,3 +128,4 @@
 #lecture-timeline .list-cell { -fx-background-color: -app-surface; -fx-padding: 4; }
 #lecture-timeline .list-cell:filled:selected { -fx-background-color: -app-accent-soft; }
 #lecture-timeline .list-cell:filled:selected .lecture-timeline-entry { -fx-background-color: -app-accent-soft; }
+.question-details-body { -fx-padding: 14; }

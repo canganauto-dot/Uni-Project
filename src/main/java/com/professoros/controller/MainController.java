@@ -19,6 +19,7 @@ public final class MainController implements AutoCloseable {
     private final OfferingController offeringController;
     private final EnrollmentController enrollmentController;
     private final LectureController lectureController;
+    private final QuestionController questionController;
     private final SessionContext session = new SessionContext();
     private List<OfferingSummary> offeringChoices = List.of();
 
@@ -34,6 +35,7 @@ public final class MainController implements AutoCloseable {
         termController = new TermController(academic.terms(), terms, offeringController::refreshChoices);
         enrollmentController = new EnrollmentController(academic);
         lectureController = new LectureController(academic.lectures());
+        questionController = new QuestionController(academic.questions(), service);
         courses.onDetails(() -> offeringController.courseDetails(courses.selectedCourse()));
         courses.onCreateOffering(() -> offeringController.createForCourse(courses.selectedCourse()));
         courses.onOfferings(() -> view.showPage("Courses", offeringController.createView(null)));
@@ -49,6 +51,7 @@ public final class MainController implements AutoCloseable {
             case "Students" -> { view.showPage(section, students); studentController.refresh(null); }
             case "Settings" -> { view.showPage(section, terms); termController.refresh(); }
             case "Lectures", "Timeline" -> showLectures(section);
+            case "Exam Bank" -> view.showPage(section, questionController.show());
             default -> view.showPlaceholder(section);
         }
         offeringController.refreshChoices();
@@ -85,5 +88,6 @@ public final class MainController implements AutoCloseable {
         courseController.close(); studentController.close(); termController.close();
         offeringController.close(); enrollmentController.close();
         lectureController.close();
+        questionController.close();
     }
 }

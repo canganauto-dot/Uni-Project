@@ -44,7 +44,23 @@ final class JdbcOperations {
         return one(sql, row -> row.getBoolean(1), values).orElse(false);
     }
 
-    private static void bind(PreparedStatement statement, Object[] values) throws SQLException {
+    @FunctionalInterface interface Transaction<T> { T run(Connection connection) throws SQLException; }
+
+    <T> T transaction(Transaction<T> work) {
+        try (var connection = database.openConnection()) {
+            connection.setAutoCommit(false);
+            try {
+                T result = work.run(connection);
+                connection.commit();
+                return result;
+            } catch (SQLException | RuntimeException failure) {
+                try { connection.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
+                throw failure;
+            }
+        } catch (SQLException failure) { throw translate(failure); }
+    }
+
+    static void bind(PreparedStatement statement, Object[] values) throws SQLException {
         for (int index = 0; index < values.length; index++) {
             Object value = values[index];
             if (value instanceof Enum<?> || value instanceof java.time.temporal.TemporalAccessor) {
@@ -64,7 +80,8 @@ final class JdbcOperations {
                     && failure.getMessage().contains("FOREIGN KEY"))) {
                 return new DomainValidationException("This change is blocked by linked academic records. Refresh and review its relationships.");
             }
-            if (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_TRIGGER) {
+            if (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_TRIGGER
+                    && failure.getMessage().contains("Offering with")) {
                 return new DomainValidationException("An offering with academic history cannot be moved to another course or term.");
             }
         }

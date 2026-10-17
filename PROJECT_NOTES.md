@@ -38,7 +38,7 @@ Local development database files live in ignored `data/`. Future generated PDFs/
 
 ## Database Design
 
-**Courses, academic terms, offerings, students, enrollments and lectures are implemented.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
+**Courses, academic terms, offerings, students, enrollments, lectures and the question bank are implemented.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
 
 - Every connection enables and verifies `PRAGMA foreign_keys = ON` and sets a five-second busy timeout.
 - All variable SQL values use prepared statements.
@@ -150,6 +150,42 @@ Optional text is trimmed and normalized to empty; null characters are rejected. 
 
 Planned dates outside the term and corrections to lectures in completed/archived offerings are allowed: historical correction is useful, and no term-bound restriction was requested. The timeline is an offering-specific chronological list, not a calendar or forecasting module. No automatic status transitions are performed.
 
+### Phase 5 question bank
+
+Migration `V007__question_bank.sql` adds `questions` and `question_choices`. V001–V006 remain unchanged. A question belongs to the reusable catalog Course, not a CourseOffering, so it can be reused across semesters and sections without duplication.
+
+```text
+Course 1 ── * Question 1 ── * AnswerChoice
+                   |
+              future ExamQuestion ── Exam ── CourseOffering
+```
+
+| Question column | Storage and rules |
+| --- | --- |
+| id / course_id | Integer primary key / required Course foreign key, ON DELETE RESTRICT |
+| question_type | MCQ, TRUE_FALSE, SHORT_ANSWER, ESSAY, CODING |
+| question_text | Required trimmed Unicode text, maximum 20000 characters |
+| topic | Optional trimmed text label, maximum 200 characters |
+| difficulty | EASY, MEDIUM, HARD |
+| marks_hundredths | Integer 1–100000; Java BigDecimal marks 0.01–1000, at most two decimal places |
+| answer / explanation | Optional text up to 20000 characters each; True/False requires TRUE or FALSE |
+| image_path | Optional absolute local path, at most 2000 characters |
+| correct_choice_position | Required only for MCQ; deferred composite foreign key to a choice of this question |
+| usage_count / last_used_date | Nonnegative integer default 0 / nullable ISO LocalDate, initially null |
+| created_at / updated_at | ISO UTC instants; preserved creation time and monotonic update time |
+
+Choices have composite key `(question_id, position)`, positions 1–10, required text up to 2000 characters and ON DELETE CASCADE to their owning question. Only these owned choice rows cascade; courses with bank questions cannot be deleted. A question has one authoritative correct-choice position, so a correct answer cannot point into another question. The composite foreign key is deferred until commit to allow atomic insertion and replacement of the question/choices. CHECK constraints enforce enum values, marks and answer shape; triggers disallow choices on non-MCQ questions. Service validation additionally requires 2–10 nonblank, case-insensitively distinct choices and exactly one selected correct answer. No separate free-text MCQ answer competes with that selection.
+
+`Question`, `QuestionInput`, `AnswerChoice`, `QuestionType` and `Difficulty` are independent domain types. `QuestionRepository` uses prepared SQL and a small transaction callback added to the existing `JdbcOperations` helper. Every aggregate write commits question and choices together; failures roll back both, preserving rollback exceptions as suppressed diagnostics. Aggregate reads share one transaction for a consistent question/choice snapshot. The current list loads all questions and their choices; pagination/bulk reads should be considered if measured bank size warrants them. An index covers course/type/difficulty.
+
+`QuestionService` owns validation, normalization, course existence and timestamps. Null optional text becomes empty; null characters and excess lengths are rejected. Marks are stored as integer hundredths to avoid binary floating-point rounding. True/False answers normalize to uppercase. Short-answer, essay and coding model answers are optional because professors may build prompts before writing a marking guide. Editing preserves usage metadata; input models and forms cannot alter it. No usage is fabricated on viewing or editing questions.
+
+`QuestionController`, `QuestionsView` and `QuestionFormDialog` follow the existing background-worker/form conventions. Exam Bank provides CRUD, fresh details, confirmed deletion, immediate literal search over question/topic/answer/explanation/choices, and combined course/type/difficulty filters. Filters do not depend on session offering. Save clears filters and selects the saved question. The form shares create/edit logic with tabs for question, MCQ choices, answer/explanation and image path. Empty states distinguish missing courses, an empty bank, no matches and load errors.
+
+Topic association is an optional free-text label at this stage, not an invented topic-management subsystem; a later taxonomy can migrate labels to entities. Images are local path references only: the file chooser is a convenience, missing files are allowed so moving files does not prevent editing question text, and there is no image copying, preview, execution or export. Paths must be absolute and syntactically valid; portability and managed attachments remain future work.
+
+Future ExamQuestion should link an Exam to a stable question ID and hold exam-specific position/marks and a frozen question/choice snapshot or revision. Published exams must not change when the bank is edited. That future migration must restrict deletion of referenced questions and record usage in the same transaction as actual exam use. No Exam/ExamQuestion tables, generation algorithm, fake usage updater or PDF dependency are introduced now. No third-party dependencies were added.
+
 ## Major Technical Decisions
 
 ### Decision
@@ -215,6 +251,7 @@ Planned documentation: exam constraint generation, question difficulty analysis,
 - Students provides directory management; Settings provides academic term management. Courses includes offering creation, course-specific offering lists and access to each offering's roster.
 - Enrollment supports selecting an existing student, duplicate prevention, withdrawal, completion and reactivation while retaining history.
 - Lectures and Timeline provide persisted offering-specific lecture organization, search, chronological ordering, completion counts and basic schedule status.
+- Exam Bank provides reusable Course questions, five types, MCQ choices/correct answer, difficulty, decimal marks, optional topic/image reference, CRUD/details/search and combined filters.
 - All other destinations explicitly identify themselves as planned.
 - Transactional versioned SQLite migrations, CSS theme, Maven wrapper, repository/service tests and an opt-in desktop workflow check.
 
@@ -222,7 +259,7 @@ Planned documentation: exam constraint generation, question difficulty analysis,
 
 - Excel student import.
 - Broader semester planning beyond the offering-specific lecture timeline.
-- Question bank, constraint-based exam generation and multiple exam versions.
+- Constraint-based exam generation and multiple exam versions.
 - Required PDF exam generation and PDF answer keys.
 - Grade tracking and required Excel grade export.
 - Attendance, learning outcomes, question quality analysis, student performance analysis and course analytics.
@@ -231,6 +268,7 @@ Planned documentation: exam constraint generation, question difficulty analysis,
 ## Known Limitations
 
 - No exams, grades, attendance, exports or advanced analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
+- Question usage remains zero/never until real exam workflows record use. Image paths are external references and are not bundled, previewed or checked for existence. Topic labels are free text rather than managed entities.
 - Course codes, student numbers and sections use the documented ASCII identifier format. Localized identifier formats need an explicit future decision and migration.
 - Active offering selection lasts for the running session only. Academic statuses are explicit user choices, not automatic date-driven transitions; multiple active terms are allowed.
 - Lists are loaded in full and changes from other app instances require Refresh or navigation. Multi-user editing/conflict resolution is outside this phase.
@@ -287,3 +325,13 @@ Planned documentation: exam constraint generation, question difficulty analysis,
 - Final clean build passed using the documented Windows workaround: `cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify"`. All 84 tests passed with zero failures, errors or skips. The desktop profile starts the application and exercises its controls; form, table and timeline snapshots were visually inspected, including minimum window size.
 - Persistence was verified through new connections and a rebuilt workspace. This phase did not separately verify an OS-process restart or physical keyboard entry in every dialog; automated control interaction is not claimed as manual keyboard testing. The existing Windows AutoRun workaround remains necessary and no machine settings were changed.
 - Updated README status/workflow and this notebook. Exams, grades, attendance, exports and advanced analytics remain outside scope.
+
+### 2026-10-17 — Phase 5: exam question bank
+
+- Added V007 without changing previous migrations. Implemented Course-owned questions, ordered MCQ choices and atomic aggregate persistence, with service/controller/view layers matching existing conventions. Added no dependencies.
+- Added 26 normal test cases (109 total): V006 upgrade/idempotence/foreign-key integrity, all question types, aggregate CRUD and reopening, failed-write rollback, course/correct-choice constraints, type transitions, preserved usage metadata, search/combined filters, marks limits, required fields, invalid MCQ configurations, Unicode normalization, True/False answers and timestamp preservation.
+- Extended the desktop workflow to submit all five question types, reject missing courses and invalid MCQ configuration, edit a question, view details, combine/reset filters, exercise empty/no-match states, cancel/confirm deletion and reconstruct the workspace against the saved temporary database. No user database was touched.
+- Inspected form, details and bank snapshots, including the minimum window size. Corrected cramped MCQ action labels and missing all-filter labels found during visual inspection.
+- Final clean verification succeeded with the documented Windows workflow: `cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify"`, with JAVA_HOME/MAVEN_OPTS and isolated smoke storage set per README. All 110 tests passed with zero failures, errors or skips; whitespace checks passed.
+- Desktop verification exercised actual JavaFX controls and inspected generated screenshots. Persistence was checked using new database connections and a reconstructed workspace; separate OS-process restart and physical keyboard/file-chooser interaction were not manually reverified. The existing Windows AutoRun workaround remains unchanged.
+- Updated README and this notebook. Image references, free-text topic labels and future exam snapshot/usage policy are documented; automatic exam generation and PDF export remain unimplemented as requested.

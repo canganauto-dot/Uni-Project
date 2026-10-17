@@ -66,7 +66,7 @@ public final class CourseRepository {
                     && (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_FOREIGNKEY
                     || sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_TRIGGER)) {
                 throw new com.professoros.model.CourseValidationException(
-                        "This course has offerings and cannot be deleted. Preserve its academic history.");
+                        "This course has offerings or bank questions and cannot be deleted. Preserve its academic records.");
             }
             throw new CourseStorageException("Could not delete the course. It may be in use.", failure);
         }

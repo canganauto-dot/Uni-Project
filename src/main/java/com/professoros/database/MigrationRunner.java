@@ -21,7 +21,8 @@ public final class MigrationRunner {
                 "/db/migrations/V003__course_offerings.sql",
                 "/db/migrations/V004__students.sql",
                 "/db/migrations/V005__enrollments.sql",
-                "/db/migrations/V006__lectures.sql"));
+                "/db/migrations/V006__lectures.sql",
+                "/db/migrations/V007__question_bank.sql"));
     }
 
     MigrationRunner(List<String> resources) {
