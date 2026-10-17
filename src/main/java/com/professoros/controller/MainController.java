@@ -18,6 +18,7 @@ public final class MainController implements AutoCloseable {
     private final TermController termController;
     private final OfferingController offeringController;
     private final EnrollmentController enrollmentController;
+    private final LectureController lectureController;
     private final SessionContext session = new SessionContext();
     private List<OfferingSummary> offeringChoices = List.of();
 
@@ -32,6 +33,7 @@ public final class MainController implements AutoCloseable {
         studentController = new StudentController(academic.students(), academic.enrollments(), students);
         termController = new TermController(academic.terms(), terms, offeringController::refreshChoices);
         enrollmentController = new EnrollmentController(academic);
+        lectureController = new LectureController(academic.lectures());
         courses.onDetails(() -> offeringController.courseDetails(courses.selectedCourse()));
         courses.onCreateOffering(() -> offeringController.createForCourse(courses.selectedCourse()));
         courses.onOfferings(() -> view.showPage("Courses", offeringController.createView(null)));
@@ -46,6 +48,7 @@ public final class MainController implements AutoCloseable {
             case "Courses" -> { view.showPage(section, courses); courseController.refresh(); }
             case "Students" -> { view.showPage(section, students); studentController.refresh(null); }
             case "Settings" -> { view.showPage(section, terms); termController.refresh(); }
+            case "Lectures", "Timeline" -> showLectures(section);
             default -> view.showPlaceholder(section);
         }
         offeringController.refreshChoices();
@@ -55,20 +58,32 @@ public final class MainController implements AutoCloseable {
         session.select(offering);
         view.offeringChoices(offeringChoices, offering);
         dashboard.setActiveOffering(offering.label());
-        view.showPage("Courses", enrollmentController.createView(offering));
+        if (view.currentSection().equals("Lectures") || view.currentSection().equals("Timeline")) {
+            showLectures(view.currentSection());
+        } else { view.showPage("Courses", enrollmentController.createView(offering)); }
     }
 
     private void updateChoices(List<OfferingSummary> choices) {
         offeringChoices = choices;
+        OfferingSummary previous = session.activeOffering().orElse(null);
         Long activeId = session.activeOffering().map(value -> value.offering().id()).orElse(null);
         OfferingSummary updated = choices.stream().filter(value -> activeId != null && value.offering().id() == activeId).findFirst().orElse(null);
         if (updated == null) { session.clear(); } else { session.select(updated); }
         view.offeringChoices(choices, updated);
         dashboard.setActiveOffering(updated == null ? null : updated.label());
+        if (!java.util.Objects.equals(previous, updated)
+                && (view.currentSection().equals("Lectures") || view.currentSection().equals("Timeline"))) {
+            showLectures(view.currentSection());
+        }
+    }
+
+    private void showLectures(String section) {
+        view.showPage(section, lectureController.show(session.activeOffering().orElse(null), section.equals("Timeline")));
     }
 
     @Override public void close() {
         courseController.close(); studentController.close(); termController.close();
         offeringController.close(); enrollmentController.close();
+        lectureController.close();
     }
 }

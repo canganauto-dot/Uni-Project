@@ -121,3 +121,10 @@
 .tab:selected { -fx-background-color: -app-accent-soft; }
 .tab .tab-label { -fx-text-fill: -app-text; }
 .tab:selected .tab-label { -fx-text-fill: -app-accent; -fx-font-weight: bold; }
+
+.lecture-timeline-entry { -fx-padding: 16 20; -fx-background-color: -app-surface; -fx-border-color: transparent transparent -app-border -app-accent; -fx-border-width: 0 0 1 3; }
+.timeline-date { -fx-text-fill: -app-accent; -fx-font-weight: bold; -fx-font-size: 12px; }
+#lecture-timeline { -fx-background-color: -app-surface; -fx-border-color: -app-border; -fx-background-radius: 8; -fx-border-radius: 8; }
+#lecture-timeline .list-cell { -fx-background-color: -app-surface; -fx-padding: 4; }
+#lecture-timeline .list-cell:filled:selected { -fx-background-color: -app-accent-soft; }
+#lecture-timeline .list-cell:filled:selected .lecture-timeline-entry { -fx-background-color: -app-accent-soft; }

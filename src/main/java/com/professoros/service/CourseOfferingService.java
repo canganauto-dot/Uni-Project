@@ -25,14 +25,17 @@ public final class CourseOfferingService {
         CourseOffering existing = findById(id);
         CourseOfferingInput valid = validate(input);
         if ((existing.courseId() != valid.courseId() || existing.academicTermId() != valid.academicTermId())
-                && repository.hasEnrollments(id)) {
-            throw new DomainValidationException("An offering with enrollment history cannot be moved to another course or term.");
+                && (repository.hasEnrollments(id) || repository.hasLectures(id))) {
+            throw new DomainValidationException("An offering with academic history cannot be moved to another course or term.");
         }
         duplicate(valid, id);
         return repository.update(id, valid, AcademicValidation.updated(clock, existing.updatedAt()))
                 .orElseThrow(() -> AcademicValidation.missing("Offering"));
     }
     public void delete(long id) {
+        if (repository.hasLectures(id)) {
+            throw new DomainValidationException("This offering has lectures and cannot be deleted. Archive it instead.");
+        }
         if (repository.hasEnrollments(id)) {
             throw new DomainValidationException("This offering has enrollment history and cannot be deleted. Archive it instead.");
         }

@@ -20,7 +20,8 @@ public final class MigrationRunner {
                 "/db/migrations/V002__academic_terms.sql",
                 "/db/migrations/V003__course_offerings.sql",
                 "/db/migrations/V004__students.sql",
-                "/db/migrations/V005__enrollments.sql"));
+                "/db/migrations/V005__enrollments.sql",
+                "/db/migrations/V006__lectures.sql"));
     }
 
     MigrationRunner(List<String> resources) {

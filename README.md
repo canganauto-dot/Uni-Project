@@ -2,12 +2,13 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 3 academic workspace.** Courses, academic terms, course offerings, students and enrollment are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
+**Status: Phase 4 lecture organizer and timeline.** Courses, academic terms, course offerings, students, enrollment and lectures are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
 
 ## Implemented
 
 - JavaFX shell, catalog Course CRUD, term management under Settings and student directory management.
 - Course offerings by term/section, an active offering selector and enrollment rosters with withdrawal/completion/reactivation.
+- Offering-specific lecture CRUD and search, chronological timeline, completion counts and basic schedule status.
 - Real course count and active offering on Dashboard; explicitly demo student/exam/grading cards, schedule, deadlines, progress and activity.
 - Dedicated CSS theme, keyboard-focus styling and scrollable content.
 - Versioned SQLite migrations, unique identifiers, foreign-key deletion restrictions and configurable storage. Application startup never seeds demo records.
@@ -15,7 +16,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Planned
 
-Excel student import, lecture organization, semester timeline, question bank, constraint-based exam generation, multiple exam versions, **PDF exams and answer keys**, grades and **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
+Excel student import, broader semester planning, question bank, constraint-based exam generation, multiple exam versions, **PDF exams and answer keys**, grades and **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
 
 ## Academic workflow
 
@@ -23,6 +24,7 @@ Excel student import, lecture organization, semester timeline, question bank, co
 2. Create/select a catalog course in **Courses**, then choose **Create Offering** and select a term and section.
 3. Add students in **Students**.
 4. Open an offering through Course Details, All Offerings or the top-bar selector; use its **Students** tab to enroll existing students.
+5. Select **Lectures** to organize the active offering's lectures, or **Timeline** to see them chronologically. Switching the top-bar offering updates either page. Progress covers all lectures in that offering, independent of search.
 
 Course is a reusable catalog definition. Enrollment links a student to a specific offering, never directly to the catalog course. Records with dependent academic history cannot be deleted. Active offering selection lasts for the current application session.
 
@@ -125,7 +127,7 @@ src/main/java/com/professoros/
   util/                      Reserved for focused shared utilities
 src/main/resources/
   css/                       Theme stylesheet
-  db/migrations/             Append-only schema migrations V001–V005
+  db/migrations/             Append-only schema migrations V001–V006
   fxml/                      Reserved; current layouts are Java code
   images/                    Reserved for application assets
 src/test/java/com/professoros/ Database, path and optional desktop tests

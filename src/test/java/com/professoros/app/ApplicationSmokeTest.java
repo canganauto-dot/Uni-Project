@@ -58,6 +58,10 @@ class ApplicationSmokeTest {
                         assertNotNull(root.lookup("#students-page"));
                     } else if ("Settings".equals(section)) {
                         assertNotNull(root.lookup("#terms-page"));
+                    } else if ("Lectures".equals(section)) {
+                        assertNotNull(root.lookup("#lectures-page"));
+                    } else if ("Timeline".equals(section)) {
+                        assertNotNull(root.lookup("#timeline-page"));
                     } else if (!"Dashboard".equals(section)) {
                         assertEquals(section, ((Label) root.lookup("#placeholder-title")).getText());
                     }
@@ -96,6 +100,7 @@ class ApplicationSmokeTest {
             completed.get(30, TimeUnit.SECONDS);
             new CourseWorkflowCheck(temporaryDirectory.resolve("courses.db")).verify();
             new AcademicWorkflowCheck(temporaryDirectory.resolve("academic.db")).verify();
+            new LectureWorkflowCheck(temporaryDirectory.resolve("lectures.db")).verify();
         } finally {
             application.stop();
             Platform.exit();

@@ -38,7 +38,7 @@ Local development database files live in ignored `data/`. Future generated PDFs/
 
 ## Database Design
 
-**Courses, academic terms, offerings, students and enrollments are implemented.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
+**Courses, academic terms, offerings, students, enrollments and lectures are implemented.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
 
 - Every connection enables and verifies `PRAGMA foreign_keys = ON` and sets a five-second busy timeout.
 - All variable SQL values use prepared statements.
@@ -123,7 +123,32 @@ Students has its own controller/view and an in-memory filtered/sorted list. Sett
 
 New controllers use `UiTaskRunner` for the established JavaFX Task/background-worker pattern. Shared form code only handles layout, busy/error state and Save/Cancel behavior; each entity form explicitly declares its fields. These small helpers remove actual duplication without introducing generic CRUD frameworks. No new third-party dependencies were added.
 
-Future Lecture, Assessment and Exam records should reference CourseOffering; attendance should reference offering/enrollment; grades should relate Enrollment and Assessment.
+Lectures reference CourseOffering. Future Assessment and Exam records should also reference CourseOffering; attendance should reference offering/enrollment; grades should relate Enrollment and Assessment.
+
+### Phase 4 lecture organizer and timeline
+
+Migration `V006__lectures.sql` adds `CourseOffering 1 → * Lecture`; V001–V005 remain unchanged. The existing transactional migration runner applies it and records its checksum. An upgrade test starts from V005 with academic data and verifies preservation and repeated initialization.
+
+| Column | Storage and constraints |
+| --- | --- |
+| `id` | INTEGER PRIMARY KEY |
+| `course_offering_id` | Required foreign key, ON DELETE RESTRICT |
+| `lecture_number` | Required integer 1–9999; unique within its offering |
+| `title` | Required trimmed text, maximum 200 characters |
+| `planned_date` | Required ISO date; Java LocalDate, years 0001–9999 |
+| `topics` | Optional text, maximum 5000 characters |
+| `description`, `professor_notes` | Optional text, maximum 10000 characters each |
+| `duration_minutes` | Required integer 1–1440 |
+| `status` | PLANNED, COMPLETED, PARTIALLY_COMPLETED or CANCELLED |
+| `created_at`, `updated_at` | ISO UTC instants; creation preserved and updates monotonic |
+
+Optional text is trimmed and normalized to empty; null characters are rejected. Database CHECK and unique constraints complement useful service validation messages. Cancelled lectures retain their numbers. An offering/date/number index supports chronological retrieval. Lectures prevent offering deletion and reassignment to another course or term; service checks and a V006 trigger protect history, including direct database writes. Confirmed lecture deletion is permanent.
+
+`Lecture`, `LectureInput`, `LectureStatus`, `LectureProgress` and `LectureOverview` are independent domain records/enum. `LectureRepository` uses the existing prepared JDBC helper and scopes reads, updates and deletion to offering ID. `LectureService` validates input, relationships and duplicates, owns timestamps, and computes simple progress with an injectable Clock. Lecture input cannot move a lecture to another offering. No new dependencies or generic framework were introduced.
+
+`LectureController` coordinates the Lectures table and chronological Timeline using `LecturesView` and one reusable `LectureFormDialog`. Both use the current session offering, provide immediate literal search over number/title/topics/description/notes, and support create, edit, confirmed deletion, empty/error states and refresh. Timeline ordering is planned date, lecture number, then ID. Switching offerings keeps these pages open and reloads their context; request revisions ignore stale asynchronous results. Form operations capture their offering ID when opened.
+
+Planned dates outside the term and corrections to lectures in completed/archived offerings are allowed: historical correction is useful, and no term-bound restriction was requested. The timeline is an offering-specific chronological list, not a calendar or forecasting module. No automatic status transitions are performed.
 
 ## Major Technical Decisions
 
@@ -174,7 +199,11 @@ Flyway/Liquibase, ORM, generic CRUD framework, SQL search per keystroke and pagi
 
 ## Algorithms
 
-No academic analysis algorithms are implemented. Course search is a literal, case-insensitive scan over the loaded list. Planned documentation: exam constraint generation, question difficulty analysis, performance risk scoring and semester progress forecasting. Record inputs, assumptions, method, edge cases and validation when each is introduced.
+Search is a literal, case-insensitive scan over loaded records. Lecture progress reports total, completed, partial and cancelled counts. Completion percentage is fully completed / (total minus cancelled), or zero when that denominator is zero; partial lectures receive no invented fractional weight. Counts always cover the full offering, not just search matches.
+
+Basic schedule status compares unfinished lectures (planned or partial) with today's local date: dates before today are overdue; today's lectures are due today; otherwise show the next planned date. Empty, all-cancelled and fully completed plans have distinct messages. Counts and schedule share one loaded snapshot and update on refresh/navigation or a successful edit, not a midnight timer. These are descriptive rules, not advanced analytics or forecasts.
+
+Planned documentation: exam constraint generation, question difficulty analysis, performance risk scoring and semester progress forecasting. Record inputs, assumptions, method, edge cases and validation when each is introduced.
 
 ## Implemented Features
 
@@ -185,13 +214,14 @@ No academic analysis algorithms are implemented. Course search is a literal, cas
 - Sample schedule, deadlines, lecture completion and recent activity. Sample dates are relative illustrative labels, not a live calendar.
 - Students provides directory management; Settings provides academic term management. Courses includes offering creation, course-specific offering lists and access to each offering's roster.
 - Enrollment supports selecting an existing student, duplicate prevention, withdrawal, completion and reactivation while retaining history.
+- Lectures and Timeline provide persisted offering-specific lecture organization, search, chronological ordering, completion counts and basic schedule status.
 - All other destinations explicitly identify themselves as planned.
 - Transactional versioned SQLite migrations, CSS theme, Maven wrapper, repository/service tests and an opt-in desktop workflow check.
 
 ## Planned Features
 
 - Excel student import.
-- Lecture organizer and semester timeline.
+- Broader semester planning beyond the offering-specific lecture timeline.
 - Question bank, constraint-based exam generation and multiple exam versions.
 - Required PDF exam generation and PDF answer keys.
 - Grade tracking and required Excel grade export.
@@ -200,7 +230,7 @@ No academic analysis algorithms are implemented. Course search is a literal, cas
 
 ## Known Limitations
 
-- No lectures, exams, grades, attendance, exports or analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
+- No exams, grades, attendance, exports or advanced analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
 - Course codes, student numbers and sections use the documented ASCII identifier format. Localized identifier formats need an explicit future decision and migration.
 - Active offering selection lasts for the running session only. Academic statuses are explicit user choices, not automatic date-driven transitions; multiple active terms are allowed.
 - Lists are loaded in full and changes from other app instances require Refresh or navigation. Multi-user editing/conflict resolution is outside this phase.
@@ -248,3 +278,12 @@ No academic analysis algorithms are implemented. Course search is a literal, cas
 - Form creation and duplicate checks were exercised by automated JavaFX controls; manual checks covered the launched application, selection, roster and restart persistence. Native keyboard entry into every modal was not reverified, given the desktop-tool limitation recorded in Phase 2.
 - Updated README feature status/workflow and this notebook. Preserved existing Git history, local Windows shell settings, user data and future export boundaries.
 - Final verification passed on 2026-10-17: `cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify"`, with the documented JAVA_HOME/MAVEN_OPTS and isolated smoke data directory. All 58 tests passed with zero failures, errors or skips; Git whitespace checks passed.
+
+### 2026-10-17 — Phase 4: lecture organizer and timeline
+
+- Added V006, Lecture domain/repository/service, shared lecture form, Lectures table, chronological Timeline and simple progress/schedule rules. Extended session offering navigation and protected offerings with lecture history. Existing migrations and Course functionality were preserved; no dependencies added.
+- Added 26 normal test cases: V005 upgrade/data preservation/idempotence; repository CRUD/reopening, offering isolation, uniqueness, ordering/search, all statuses, checks and foreign keys; service normalization, invalid inputs, timestamp behavior, relationship restrictions and progress/date edge cases. The normal suite has 83 tests.
+- Extended the desktop workflow with actual form submission, required-field and duplicate rejection, search, edit, cancelled/confirmed deletion, offering switching on both pages, chronological order, empty states, progress and workspace reconstruction against the saved temporary database. All test data remains isolated from user storage.
+- Final clean build passed using the documented Windows workaround: `cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify"`. All 84 tests passed with zero failures, errors or skips. The desktop profile starts the application and exercises its controls; form, table and timeline snapshots were visually inspected, including minimum window size.
+- Persistence was verified through new connections and a rebuilt workspace. This phase did not separately verify an OS-process restart or physical keyboard entry in every dialog; automated control interaction is not claimed as manual keyboard testing. The existing Windows AutoRun workaround remains necessary and no machine settings were changed.
+- Updated README status/workflow and this notebook. Exams, grades, attendance, exports and advanced analytics remain outside scope.

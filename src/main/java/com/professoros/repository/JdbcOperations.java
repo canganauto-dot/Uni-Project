@@ -65,7 +65,7 @@ final class JdbcOperations {
                 return new DomainValidationException("This change is blocked by linked academic records. Refresh and review its relationships.");
             }
             if (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_TRIGGER) {
-                return new DomainValidationException("An offering with enrollment history cannot be moved to another course or term.");
+                return new DomainValidationException("An offering with academic history cannot be moved to another course or term.");
             }
         }
         return new StorageException("The academic records could not be saved or loaded. Refresh and try again.", failure);
