@@ -103,3 +103,21 @@
 .course-dialog { -fx-background-color: -app-surface; -fx-padding: 18; }
 .course-dialog:header .header-panel { -fx-background-color: -app-surface; -fx-padding: 0 0 18 0; }
 .course-dialog:header .header-panel .label { -fx-font-size: 20px; -fx-font-weight: bold; }
+
+/* Academic selection controls and offering tabs. */
+.combo-box-base, .date-picker {
+    -fx-background-color: -app-surface; -fx-border-color: #bac5d6;
+    -fx-border-radius: 5; -fx-background-radius: 5; -fx-min-height: 35;
+}
+.combo-box-base:focused, .date-picker:focused { -fx-border-color: -app-accent; }
+.combo-box .list-cell { -fx-text-fill: -app-text; -fx-padding: 7 10; }
+.combo-box-popup .list-view { -fx-background-color: -app-surface; -fx-border-color: -app-border; }
+.combo-box-popup .list-cell { -fx-background-color: -app-surface; }
+.combo-box-popup .list-cell:hover, .combo-box-popup .list-cell:selected { -fx-background-color: -app-accent-soft; }
+.date-picker > .arrow-button { -fx-background-color: -app-accent-soft; }
+.tab-pane > .tab-header-area > .tab-header-background { -fx-background-color: transparent; }
+.tab-pane > .tab-header-area { -fx-padding: 0 0 8 0; }
+.tab { -fx-background-color: -app-surface; -fx-background-radius: 6 6 0 0; -fx-padding: 9 18; }
+.tab:selected { -fx-background-color: -app-accent-soft; }
+.tab .tab-label { -fx-text-fill: -app-text; }
+.tab:selected .tab-label { -fx-text-fill: -app-accent; -fx-font-weight: bold; }

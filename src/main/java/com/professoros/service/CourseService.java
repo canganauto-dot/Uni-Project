@@ -43,6 +43,9 @@ public final class CourseService {
     }
 
     public void delete(long id) {
+        if (repository.hasOfferings(id)) {
+            throw new CourseValidationException("This course has offerings and cannot be deleted. Preserve its academic history.");
+        }
         if (!repository.delete(id)) {
             throw missingCourse();
         }

@@ -62,8 +62,23 @@ public final class CourseRepository {
             statement.setLong(1, id);
             return statement.executeUpdate() == 1;
         } catch (SQLException failure) {
-            // No cascade: future foreign keys should protect dependent data.
+            if (failure instanceof SQLiteException sqlite
+                    && (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_FOREIGNKEY
+                    || sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_TRIGGER)) {
+                throw new com.professoros.model.CourseValidationException(
+                        "This course has offerings and cannot be deleted. Preserve its academic history.");
+            }
             throw new CourseStorageException("Could not delete the course. It may be in use.", failure);
+        }
+    }
+
+    public boolean hasOfferings(long id) {
+        try (var connection = database.openConnection();
+             var statement = connection.prepareStatement("SELECT EXISTS(SELECT 1 FROM course_offerings WHERE course_id=?)")) {
+            statement.setLong(1, id);
+            try (var rows = statement.executeQuery()) { return rows.next() && rows.getBoolean(1); }
+        } catch (SQLException failure) {
+            throw new CourseStorageException("Could not check this course's offerings.", failure);
         }
     }
 

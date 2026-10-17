@@ -17,6 +17,7 @@ import java.util.List;
 public final class DashboardView extends VBox {
     private final Label courseCount = label("…", "metric-value");
     private final Label courseCountDetail = label("Loading saved courses…", "small-muted");
+    private final Label activeOffering = label("Active offering: none selected. Choose one in the top bar.", "muted");
     public DashboardView(DemoDashboard data) {
         super(20);
         setId("dashboard");
@@ -48,12 +49,17 @@ public final class DashboardView extends VBox {
         panels.add(entryPanel("Upcoming Deadlines", "Example dates · not live reminders", data.deadlines()), 1, 0);
         panels.add(progressPanel(data), 0, 1);
         panels.add(entryPanel("Recent Activity", "Illustrative activity only", data.activity()), 1, 1);
-        getChildren().addAll(heading, demoNotice, metrics, panels);
+        activeOffering.setId("dashboard-active-offering");
+        getChildren().addAll(heading, activeOffering, demoNotice, metrics, panels);
     }
 
     public void setCourseCount(Integer value) {
         courseCount.setText(value == null ? "—" : value.toString());
         courseCountDetail.setText(value == null ? "Saved courses unavailable" : "Persisted on this device");
+    }
+
+    public void setActiveOffering(String label) {
+        activeOffering.setText(label == null ? "Active offering: none selected. Choose one in the top bar." : "Active offering: " + label);
     }
 
     private static GridPane grid(int columns) {

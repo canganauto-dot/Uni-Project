@@ -31,6 +31,8 @@ public final class CoursesView extends VBox {
     private final Button delete = button("Delete", "delete-course", "danger-button");
     private final Button details = button("View Details", "course-details", "secondary-button");
     private final Button refresh = button("Refresh", "refresh-courses", "secondary-button");
+    private final Button offerings = button("All Offerings", "all-offerings", "secondary-button");
+    private final Button createOffering = button("Create Offering", "create-course-offering", "primary-button");
     private final Label status = DashboardView.label("Loading saved courses…", "muted");
     private final Label count = DashboardView.label("", "small-muted");
     private boolean busy;
@@ -81,7 +83,7 @@ public final class CoursesView extends VBox {
         VBox.setVgrow(table, Priority.ALWAYS);
         table.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> updateActions());
         status.setId("courses-status");
-        HBox actions = new HBox(10, edit, details, delete, refresh);
+        HBox actions = new HBox(10, edit, details, delete, refresh, createOffering, offerings);
         getChildren().addAll(toolbar, DashboardView.label("Saved locally · Manage the courses you teach.", "muted"),
                 actions, table, count, status);
         updateActions();
@@ -109,6 +111,8 @@ public final class CoursesView extends VBox {
     public void onDelete(Runnable action) { delete.setOnAction(event -> action.run()); }
     public void onDetails(Runnable action) { details.setOnAction(event -> action.run()); }
     public void onRefresh(Runnable action) { refresh.setOnAction(event -> action.run()); }
+    public void onOfferings(Runnable action) { offerings.setOnAction(event -> action.run()); }
+    public void onCreateOffering(Runnable action) { createOffering.setOnAction(event -> action.run()); }
     public Course selectedCourse() { return table.getSelectionModel().getSelectedItem(); }
 
     public void showCourses(List<Course> result, Long selectId) {
@@ -146,6 +150,7 @@ public final class CoursesView extends VBox {
         edit.setDisable(disabled);
         delete.setDisable(disabled);
         details.setDisable(disabled);
+        createOffering.setDisable(disabled);
     }
 
     private void updatePlaceholder() {

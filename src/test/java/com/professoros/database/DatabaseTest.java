@@ -24,7 +24,7 @@ class DatabaseTest {
             statement.setString(1, "table");
             try (var rows = statement.executeQuery()) {
                 assertTrue(rows.next());
-                assertEquals(2, rows.getInt(1));
+                assertEquals(6, rows.getInt(1));
             }
         }
     }

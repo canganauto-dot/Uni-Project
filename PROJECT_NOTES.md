@@ -24,9 +24,9 @@ Version availability was checked against Maven Central. Setup guidance: [OpenJFX
 
 Intended dependency direction: **UI → services → repositories → database**. Domain models must stay independent of JavaFX and JDBC so future Excel/PDF services can reuse them.
 
-`ProfessorOsApplication` is the composition root: it initializes/migrates the database before showing the window and constructs `CourseRepository` and `CourseService`. `MainController` handles navigation and wires `CourseController` to `CoursesView` and the dashboard course count. Views construct layouts; controllers coordinate interactions; services own validation and timestamps; repositories own JDBC and row mapping. `DemoDashboard` supplies only clearly labelled synthetic content.
+`ProfessorOsApplication` is the composition root: it initializes/migrates the database before showing the window and constructs CourseService plus AcademicServices. MainController wires entity controllers, navigation, the dashboard and session offering context. Views construct layouts; controllers coordinate interactions; services own validation and timestamps; repositories own JDBC and row mapping. `DemoDashboard` supplies only clearly labelled synthetic content.
 
-Database initialization runs in JavaFX's `init()` lifecycle method, off the JavaFX application thread. Course operations use JavaFX `Task` on a single background worker; controls update on the JavaFX thread. Writes disable the form until completion and close it only after success. Each database operation owns a short-lived connection and closes it with try-with-resources; no pool is needed yet. Expected validation failures have specific exception types; unexpected storage failures retain their causes, are logged and show concise messages.
+Database initialization runs in JavaFX's `init()` lifecycle method, off the JavaFX application thread. Each entity controller submits service operations through a serial background worker; JavaFX Task callbacks update controls on the JavaFX thread. Writes disable the form until completion and close it only after success. Each database operation owns a short-lived connection and closes it with try-with-resources; no pool is needed yet. Expected validation failures have specific exception types; unexpected storage failures retain their causes, are logged and show concise messages.
 
 ## Directory Structure
 
@@ -38,7 +38,7 @@ Local development database files live in ignored `data/`. Future generated PDFs/
 
 ## Database Design
 
-**Course schema implemented; relationships to future domains remain preliminary.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
+**Courses, academic terms, offerings, students and enrollments are implemented.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
 
 - Every connection enables and verifies `PRAGMA foreign_keys = ON` and sets a five-second busy timeout.
 - All variable SQL values use prepared statements.
@@ -77,9 +77,53 @@ The unique course-code constraint provides the lookup/order index; no speculativ
 
 Timestamps are generated from an injectable UTC `Clock`, truncated to milliseconds and serialized with `Instant.toString()`. Creation time is preserved on edits, and update time cannot go backwards when the system clock moves back. SQLite text remains readable and timezone-independent; the UI formats instants in the local timezone.
 
-Deletion is permanent and requires explicit UI confirmation; Cancel is the default action. There are no dependent entities yet. Future migrations should enforce foreign-key restrictions and revisit archive behavior alongside actual requirements.
+Deletion requires explicit UI confirmation; Cancel is the default action. Courses with offerings cannot be deleted. Foreign-key restrictions preserve the academic history described below.
 
 Tests use temporary SQLite files, never the user's database. This exercises independent connections and persistence across reopening without the connection-lifetime traps of SQLite `:memory:` databases.
+
+### Phase 3 academic relationship model
+
+```text
+Course       AcademicTerm
+   1              1
+   |              |
+   +------* CourseOffering
+                  1
+                  |
+                  * Enrollment *-------1 Student
+```
+
+A Course is the reusable catalog definition (CS201, Object Oriented Programming). A CourseOffering delivers that course in a specific term and section. Students belong to offerings through Enrollment, a many-to-many join entity with its own status and enrollment date. No student is permanently attached to a catalog course, and no student/catalog details are copied into relationship tables.
+
+| Migration | Table and important constraints |
+| --- | --- |
+| V001 (unchanged) | Existing catalog courses |
+| V002 | `academic_terms`: name, academic_year, start_date, end_date, status, timestamps; unique name/year |
+| V003 | `course_offerings`: course_id, academic_term_id, section, notes, status, timestamps; unique course/term/section |
+| V004 | `students`: student_number, first_name, last_name, email, notes, timestamps; globally unique student number |
+| V005 | `enrollments`: student_id, course_offering_id, enrolled_at, status; unique student/offering |
+
+All tables use integer primary keys. Foreign keys use `ON DELETE RESTRICT`: offerings protect courses and terms; any enrollment history protects students and offerings. Withdrawal does not remove a row or release the uniqueness constraint; reactivation updates that row. An offering with enrollments cannot be reassigned to another course or term, enforced both by service validation and a small V005 trigger. Section labels, notes and status may still be corrected. Foreign-key lookup indexes cover term-to-offerings and offering-to-enrollments; composite unique indexes cover course-to-offerings and student-to-enrollments.
+
+Terms use `LocalDate` and ISO `yyyy-MM-dd` storage, with an end date strictly after the start date and years 0001–9999. Names are required (80 characters maximum); academic year is a required free-form label (40 characters maximum), allowing labels such as 2026–2027. Names/years are trimmed. Term and offering statuses are PLANNED, ACTIVE, COMPLETED or ARCHIVED.
+
+Sections and student numbers are trimmed, uppercased using `Locale.ROOT`, required and limited to 40 ASCII identifier characters (letters, digits, spaces, dots, hyphens, underscores; first character alphanumeric). Student first/last names are required, Unicode-capable and limited to 100 characters each. Optional email is trimmed, limited to 254 characters and checked for a reasonable address structure; it is not an RFC-complete parser or proof of deliverability. Notes are optional, limited to 5000 characters. Null characters are rejected; optional null text becomes empty. Timestamps remain UTC ISO-8601 instants, with creation time preserved and update time monotonic.
+
+Enrollment statuses are ACTIVE, WITHDRAWN and COMPLETED. New and reactivated enrollment requires an existing student and a PLANNED or ACTIVE offering and term. Completed/archived terms and offerings remain readable; status changes never cascade into enrollment rows. Changing a term's dates or status is an explicit administrative action, not a background scheduling algorithm.
+
+### Phase 3 layers and session context
+
+Each entity has a concrete repository and service. Repositories use the existing short-lived JDBC connection/parameter binding pattern. `JdbcOperations` only shares resource ownership, parameter binding and exception translation between the four new repositories; it does not generate SQL or introduce an ORM. Joined read records (`OfferingSummary`, `EnrolledStudent`, `StudentOffering`) provide labels and roster/history data without denormalizing persistence.
+
+Service validation handles input normalization, relationships, duplicates and deletion restrictions; database constraints remain authoritative for races. `DomainValidationException` covers expected academic failures and is now the base of the existing course validation exception. Unexpected failures retain causes in `StorageException` and are logged with concise UI messages. Academic services are explicitly composed by `AcademicServices`; no dependency injection framework was added.
+
+`SessionContext` is a plain instance owned by `MainController`, with no static state or JavaFX dependency. It holds the selected offering for this session. The top-bar selector opens the offering, and Open reopens the same selection after navigating elsewhere. Refresh reconciles the selection by ID against current summaries, updates labels and clears missing selections. Future screens should obtain their offering identity from this context, never infer it from a catalog course.
+
+Students has its own controller/view and an in-memory filtered/sorted list. Settings hosts Terms. Course details shows only that course's offerings; All Offerings and Create Offering actions keep the catalog table uncluttered. Offering details contains Overview and Students tabs. The roster displays real active/total enrollment counts. Dashboard shows the selected offering and real course count; student/exam/grading metric cards remain explicitly demo values.
+
+New controllers use `UiTaskRunner` for the established JavaFX Task/background-worker pattern. Shared form code only handles layout, busy/error state and Save/Cancel behavior; each entity form explicitly declares its fields. These small helpers remove actual duplication without introducing generic CRUD frameworks. No new third-party dependencies were added.
+
+Future Lecture, Assessment and Exam records should reference CourseOffering; attendance should reference offering/enrollment; grades should relate Enrollment and Assessment.
 
 ## Major Technical Decisions
 
@@ -135,16 +179,18 @@ No academic analysis algorithms are implemented. Course search is a literal, cas
 ## Implemented Features
 
 - Main window with Dashboard, Courses, Students, Lectures, Exam Bank, Exams, Grades, Attendance, Analytics, Timeline and Settings navigation.
-- Header with application title, current-course placeholder and disabled search placeholder.
+- Header with application title, session offering selector, Open action and disabled global search placeholder.
 - Persisted course count on the dashboard, labelled “Courses · saved”; other cards explicitly remain demo values (126 students, 2 upcoming exams, 18 pending grading items). An unavailable count is shown as unknown, not zero.
 - Course creation, editing, details, confirmed deletion and immediate code/name/department search. Table sorting, empty/no-match/error states, selected saved rows and double-click editing are supported. Create/edit share a form with inline validation, default Save and Escape/Cancel behavior.
 - Sample schedule, deadlines, lecture completion and recent activity. Sample dates are relative illustrative labels, not a live calendar.
-- All destinations other than Dashboard and Courses explicitly identify themselves as planned.
+- Students provides directory management; Settings provides academic term management. Courses includes offering creation, course-specific offering lists and access to each offering's roster.
+- Enrollment supports selecting an existing student, duplicate prevention, withdrawal, completion and reactivation while retaining history.
+- All other destinations explicitly identify themselves as planned.
 - Transactional versioned SQLite migrations, CSS theme, Maven wrapper, repository/service tests and an opt-in desktop workflow check.
 
 ## Planned Features
 
-- Student management and course relationships; Excel student import.
+- Excel student import.
 - Lecture organizer and semester timeline.
 - Question bank, constraint-based exam generation and multiple exam versions.
 - Required PDF exam generation and PDF answer keys.
@@ -154,8 +200,9 @@ No academic analysis algorithms are implemented. Course search is a literal, cas
 
 ## Known Limitations
 
-- Courses are the only persistent academic feature. No active-course selector, students, lectures, exams, grades, attendance, exports or analytics yet. Header course/search controls remain placeholders.
-- Course codes are globally unique and limited to the documented ASCII format; semester-specific offerings or localized course-code formats need an explicit future decision and migration.
+- No lectures, exams, grades, attendance, exports or analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
+- Course codes, student numbers and sections use the documented ASCII identifier format. Localized identifier formats need an explicit future decision and migration.
+- Active offering selection lasts for the running session only. Academic statuses are explicit user choices, not automatic date-driven transitions; multiple active terms are allowed.
 - Lists are loaded in full and changes from other app instances require Refresh or navigation. Multi-user editing/conflict resolution is outside this phase.
 - No installer or packaged runtime; a compatible JDK and Maven dependency cache are needed for development launch.
 - Only local Windows desktop validation is available at initialization; other supported JavaFX platforms need their own checks.
@@ -189,3 +236,15 @@ No academic analysis algorithms are implemented. Course search is a literal, cas
 - Ran `javafx:run` against isolated `target/manual-course-qa` storage and visually checked the Courses page, empty state, form and required-code validation. Fixed a label-column sizing issue found during this check. Inspected generated populated-table, form and deletion-confirmation screenshots.
 - Manual native keyboard/CRUD/restart verification remains incomplete: the desktop-control tool could click modal buttons but did not deliver text to JavaFX modal inputs reliably. The automated UI workflow verifies control-to-service persistence and recreates the entire workspace against the saved file; it does not claim to test physical keyboard events or a separate OS-process restart. No user database was used for testing.
 - Build/run prerequisites and commands remain unchanged, so README was left unchanged as requested. The existing Windows shell workaround is still required on this machine; no shell or registry setting was changed.
+
+### 2026-10-17 — Phase 3: academic offerings and enrollment
+
+- Added migrations V002–V005 without editing V001. Existing course data survives the upgrade; history checksums and repeated initialization are tested.
+- Implemented AcademicTerm, CourseOffering, Student and Enrollment records, repositories/services, relationship read models and session context. Added corresponding controllers/views/forms using the existing JavaFX/JDBC architecture. No dependencies were added.
+- Added 22 normal test cases: migration upgrade/idempotence/date constraints, term CRUD, offering uniqueness/lookups, student CRUD/search/uniqueness, enrollment in both directions, retained withdrawal history, missing parents, deletion restrictions, protected offering reassignment, required fields/date validation/email validation, enrollment eligibility and independent session contexts. The normal suite now contains 57 tests.
+- Extended the opt-in desktop scenario with actual term/offering/student form submissions, Ahmed Ali (2026001), Sara Hassan (2026002), two enrollments, duplicate rejection, student search, session selection and workspace reconstruction from the saved database. The desktop profile runs 58 total tests.
+- Inspected generated term, offering, student and roster screenshots. Added consistent combo-box/date-picker/tab styling and a top-bar Open action to reopen the current offering after other navigation.
+- Launched the actual application in a separate Java process against the generated isolated fixture `target/academic-workflow-data/professor-os.db`. After that process closed, launched it again and manually selected CS201 / Fall 2026–2027 / Section A. The course/term/offering label and roster showed both Ahmed and Sara with ACTIVE enrollments after restart. The new session correctly began without an active selection. Closed the verification window afterward.
+- Form creation and duplicate checks were exercised by automated JavaFX controls; manual checks covered the launched application, selection, roster and restart persistence. Native keyboard entry into every modal was not reverified, given the desktop-tool limitation recorded in Phase 2.
+- Updated README feature status/workflow and this notebook. Preserved existing Git history, local Windows shell settings, user data and future export boundaries.
+- Final verification passed on 2026-10-17: `cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify"`, with the documented JAVA_HOME/MAVEN_OPTS and isolated smoke data directory. All 58 tests passed with zero failures, errors or skips; Git whitespace checks passed.

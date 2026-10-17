@@ -25,6 +25,9 @@ public final class MainView extends BorderPane {
     private final Map<String, ToggleButton> navigation = new LinkedHashMap<>();
     private final ScrollPane content = new ScrollPane();
     private final Label sectionLabel = DashboardView.label("Dashboard", "breadcrumb");
+    private final javafx.scene.control.ComboBox<com.professoros.model.OfferingSummary> offering = new javafx.scene.control.ComboBox<>();
+    private boolean updatingOffering;
+    private final javafx.scene.control.Button openOffering = AcademicControls.button("Open", "open-active-offering", "secondary-button");
 
     public MainView() {
         getStyleClass().add("workspace");
@@ -58,7 +61,7 @@ public final class MainView extends BorderPane {
         Region space = new Region();
         VBox.setVgrow(space, Priority.ALWAYS);
         VBox footer = new VBox(7, DashboardView.label("OFFLINE WORKSPACE", "sidebar-caption"),
-                DashboardView.label("Course management · Phase 2", "sidebar-detail"));
+                DashboardView.label("Academic workspace · Phase 3", "sidebar-detail"));
         VBox sidebar = new VBox(22, brand, DashboardView.label("WORKSPACE", "sidebar-caption"), links, space, footer);
         sidebar.getStyleClass().add("sidebar");
         sidebar.setPrefWidth(228);
@@ -70,14 +73,21 @@ public final class MainView extends BorderPane {
         VBox location = new VBox(4, DashboardView.label("Professor OS", "topbar-title"), sectionLabel);
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        Label course = DashboardView.label("Current course: not selected", "course-placeholder");
+        offering.setId("active-offering");
+        offering.setPromptText("Select a course offering");
+        offering.setPrefWidth(330);
+        offering.setAccessibleText("Active teaching offering");
+        offering.setTooltip(new javafx.scene.control.Tooltip("Select an offering to open its overview and students."));
         TextField search = new TextField();
         search.setPromptText("Search · planned");
         search.setAccessibleText("Search is planned and unavailable in this foundation");
         search.setDisable(true);
         search.setPrefWidth(195);
         search.getStyleClass().add("search-field");
-        HBox bar = new HBox(22, location, spacer, course, search);
+        openOffering.disableProperty().bind(offering.valueProperty().isNull());
+        HBox context = new HBox(8, offering, openOffering);
+        context.setAlignment(Pos.CENTER_LEFT);
+        HBox bar = new HBox(22, location, spacer, context, search);
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().add("topbar");
         return bar;
@@ -91,7 +101,7 @@ public final class MainView extends BorderPane {
         sectionLabel.setText(section);
         navigation.get(section).setSelected(true);
         content.setContent(page);
-        content.setFitToHeight("Courses".equals(section));
+        content.setFitToHeight(java.util.Set.of("Courses", "Students", "Settings").contains(section));
         content.setVvalue(0);
     }
 
@@ -104,4 +114,20 @@ public final class MainView extends BorderPane {
         page.getStyleClass().add("page");
         showPage(section, page);
     }
+
+    public void onOffering(java.util.function.Consumer<com.professoros.model.OfferingSummary> action) {
+        openOffering.setOnAction(event -> { if (offering.getValue() != null) { action.accept(offering.getValue()); } });
+        offering.setOnAction(event -> {
+            if (!updatingOffering && offering.getValue() != null) { action.accept(offering.getValue()); }
+        });
+    }
+
+    public void offeringChoices(java.util.List<com.professoros.model.OfferingSummary> choices, com.professoros.model.OfferingSummary active) {
+        updatingOffering = true;
+        try { offering.getItems().setAll(choices); offering.setValue(active); }
+        finally { updatingOffering = false; }
+        offering.setTooltip(new javafx.scene.control.Tooltip("Select an offering to open its overview and students."));
+    }
+
+    public void offeringError(String message) { offering.setTooltip(new javafx.scene.control.Tooltip(message)); }
 }

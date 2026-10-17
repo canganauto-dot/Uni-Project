@@ -142,7 +142,8 @@ final class CourseWorkflowCheck {
         database.initialize();
         fx(() -> {
             root = new MainView();
-            controller = new MainController(root, new DemoDashboard(), new CourseService(new CourseRepository(database)));
+            controller = new MainController(root, new DemoDashboard(), new CourseService(new CourseRepository(database)),
+                    com.professoros.service.AcademicServices.create(database));
             stage = new Stage();
             Scene scene = new Scene(root, 1360, 900);
             scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());

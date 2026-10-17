@@ -28,6 +28,10 @@ public final class CourseDialogs {
     }
 
     public static void showDetails(Window owner, Course course) {
+        showDetails(owner, course, null);
+    }
+
+    public static void showDetails(Window owner, Course course, javafx.scene.Node offerings) {
         Dialog<Void> details = new Dialog<>();
         details.initOwner(owner);
         details.setTitle("Course Details");
@@ -41,11 +45,19 @@ public final class CourseDialogs {
                 DashboardView.label("Created: " + CoursesView.formatTime(course.createdAt()), "small-muted"),
                 DashboardView.label("Updated: " + CoursesView.formatTime(course.updatedAt()), "small-muted"));
         body.setMaxWidth(480);
+        if (offerings != null) {
+            body.setMaxWidth(Double.MAX_VALUE);
+            body.getChildren().add(offerings);
+        }
         ScrollPane scroll = new ScrollPane(body);
         scroll.setFitToWidth(true);
         scroll.setPrefViewportHeight(280);
         details.getDialogPane().setPrefWidth(540);
         details.getDialogPane().setContent(scroll);
+        if (offerings != null) {
+            details.getDialogPane().setPrefWidth(950);
+            scroll.setPrefViewportHeight(560);
+        }
         details.show();
     }
 

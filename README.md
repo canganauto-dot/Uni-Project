@@ -2,19 +2,29 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: foundation preview.** The dashboard displays clearly labeled sample data. Academic workflows are planned and are not yet implemented.
+**Status: Phase 3 academic workspace.** Courses, academic terms, course offerings, students and enrollment are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
 
 ## Implemented
 
-- JavaFX application shell with eleven navigation destinations and honest placeholder pages.
-- Demo dashboard: Courses (4), Students (126), Upcoming Exams (2), Pending Grading (18), schedule, deadlines, course progress and recent activity.
+- JavaFX shell, catalog Course CRUD, term management under Settings and student directory management.
+- Course offerings by term/section, an active offering selector and enrollment rosters with withdrawal/completion/reactivation.
+- Real course count and active offering on Dashboard; explicitly demo student/exam/grading cards, schedule, deadlines, progress and activity.
 - Dedicated CSS theme, keyboard-focus styling and scrollable content.
-- SQLite connection infrastructure, foreign key enforcement, configurable storage and startup error reporting; no domain tables or demo database records.
+- Versioned SQLite migrations, unique identifiers, foreign-key deletion restrictions and configurable storage. Application startup never seeds demo records.
 - Maven wrapper, JUnit tests, optional desktop smoke test and permanent AI development rules.
 
 ## Planned
 
-Course/student management, Excel student import, lecture organization, semester timeline, question bank, constraint-based exam generation, multiple exam versions, **PDF exams and answer keys**, grades and **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
+Excel student import, lecture organization, semester timeline, question bank, constraint-based exam generation, multiple exam versions, **PDF exams and answer keys**, grades and **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
+
+## Academic workflow
+
+1. Create an academic term in **Settings**.
+2. Create/select a catalog course in **Courses**, then choose **Create Offering** and select a term and section.
+3. Add students in **Students**.
+4. Open an offering through Course Details, All Offerings or the top-bar selector; use its **Students** tab to enroll existing students.
+
+Course is a reusable catalog definition. Enrollment links a student to a specific offering, never directly to the catalog course. Records with dependent academic history cannot be deleted. Active offering selection lasts for the current application session.
 
 ## Technology stack
 
@@ -108,13 +118,14 @@ src/main/java/com/professoros/
   controller/                Navigation coordination
   view/                      JavaFX layout composition
   demo/                      Explicitly synthetic dashboard data
-  model/                     Reserved for domain models
-  service/                   Reserved for business operations
-  repository/                Reserved for persistence operations
-  database/                  JDBC connection infrastructure
+  model/                     Academic entities, inputs and joined read models
+  service/                   Validation, academic operations and session context
+  repository/                Prepared JDBC queries and row mapping
+  database/                  Connections and versioned migration runner
   util/                      Reserved for focused shared utilities
 src/main/resources/
   css/                       Theme stylesheet
+  db/migrations/             Append-only schema migrations V001–V005
   fxml/                      Reserved; current layouts are Java code
   images/                    Reserved for application assets
 src/test/java/com/professoros/ Database, path and optional desktop tests
@@ -123,4 +134,4 @@ exports/                     Future generated PDF/Excel exports (ignored)
 target/                      Build output and test reports (ignored)
 ```
 
-Read [AGENTS.md](AGENTS.md) before changing code and record significant decisions in [PROJECT_NOTES.md](PROJECT_NOTES.md). Start the next increment by defining course fields, a migration strategy, and a small course-management use case.
+Read [AGENTS.md](AGENTS.md) before changing code and record significant decisions in [PROJECT_NOTES.md](PROJECT_NOTES.md). Future teaching features should attach to CourseOffering or Enrollment as appropriate.

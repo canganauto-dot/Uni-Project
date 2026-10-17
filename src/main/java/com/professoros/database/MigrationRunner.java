@@ -16,7 +16,11 @@ public final class MigrationRunner {
     private final List<String> resources;
 
     public MigrationRunner() {
-        this(List.of("/db/migrations/V001__create_courses.sql"));
+        this(List.of("/db/migrations/V001__create_courses.sql",
+                "/db/migrations/V002__academic_terms.sql",
+                "/db/migrations/V003__course_offerings.sql",
+                "/db/migrations/V004__students.sql",
+                "/db/migrations/V005__enrollments.sql"));
     }
 
     MigrationRunner(List<String> resources) {

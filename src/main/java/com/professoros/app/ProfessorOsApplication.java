@@ -21,6 +21,7 @@ public final class ProfessorOsApplication extends Application {
     private static final Logger LOGGER = Logger.getLogger(ProfessorOsApplication.class.getName());
     private Exception startupFailure;
     private CourseService courseService;
+    private com.professoros.service.AcademicServices academicServices;
     private MainController controller;
 
     @Override
@@ -30,6 +31,7 @@ public final class ProfessorOsApplication extends Application {
             Database database = new Database(AppPaths.databaseFile());
             database.initialize();
             courseService = new CourseService(new CourseRepository(database));
+            academicServices = com.professoros.service.AcademicServices.create(database);
         } catch (SQLException | IllegalArgumentException | SecurityException exception) {
             startupFailure = exception;
             LOGGER.log(Level.SEVERE, "Database startup failed", exception);
@@ -51,7 +53,7 @@ public final class ProfessorOsApplication extends Application {
         }
 
         MainView view = new MainView();
-        controller = new MainController(view, new DemoDashboard(), courseService);
+        controller = new MainController(view, new DemoDashboard(), courseService, academicServices);
         Scene scene = new Scene(view, 1360, 900);
         scene.getStylesheets().add(Objects.requireNonNull(
                 getClass().getResource("/css/theme.css"), "Missing application stylesheet").toExternalForm());
@@ -60,7 +62,7 @@ public final class ProfessorOsApplication extends Application {
         stage.setMinHeight(740);
         stage.setScene(scene);
         stage.show();
-        LOGGER.info("Professor OS window shown — persistent courses; other dashboard sections remain demo data");
+        LOGGER.info("Professor OS window shown — academic terms, offerings, students and enrollment ready");
     }
 
     @Override
