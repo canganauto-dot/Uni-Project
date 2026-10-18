@@ -14,6 +14,7 @@ public final class ExamsView extends VBox {
     public final Button finalizeExam=AcademicControls.button("Finalize","finalize-exam","secondary-button");
     public final Button archive=AcademicControls.button("Archive","archive-exam","secondary-button");
     public final Button refresh=AcademicControls.button("Refresh","refresh-exams","secondary-button");
+    public final Button export=AcademicControls.button("Preview / PDF","export-exam-pdf","primary-button");
     public final Label message=DashboardView.label("","muted");
     private final Label context=DashboardView.label("","muted");
     private boolean hasOffering,busy;
@@ -26,7 +27,7 @@ public final class ExamsView extends VBox {
         AcademicControls.column(table,"Questions",e -> Integer.toString(e.questions().size()),80);
         table.getSelectionModel().selectedItemProperty().addListener((o,a,b)->actions());
         getChildren().addAll(new HBox(10,DashboardView.label("Exams","page-title"),space,create),context,
-                new FlowPane(8,8,edit,details,delete,finalizeExam,archive,refresh),table,message);
+                new FlowPane(8,8,edit,details,export,delete,finalizeExam,archive,refresh),table,message);
         noOffering();
     }
     public Exam selected() { return table.getSelectionModel().getSelectedItem(); }
@@ -40,6 +41,7 @@ public final class ExamsView extends VBox {
         boolean unavailable=busy || !hasOffering; Exam selected=selected();
         create.setDisable(unavailable); refresh.setDisable(unavailable); table.setDisable(unavailable);
         details.setDisable(unavailable || selected==null);
+        export.setDisable(unavailable || selected==null);
         boolean draft=selected!=null && selected.status()==ExamStatus.DRAFT;
         edit.setDisable(unavailable || !draft); delete.setDisable(unavailable || !draft); finalizeExam.setDisable(unavailable || !draft);
         archive.setDisable(unavailable || selected==null || selected.status()!=ExamStatus.FINALIZED);

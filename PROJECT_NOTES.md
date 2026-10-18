@@ -2,7 +2,7 @@
 
 ## Project Goal
 
-Build an all-in-one offline desktop workspace for university professors: courses, students, lectures, exams, grades, attendance and semester planning. The software should reduce fragmented administration while remaining understandable and defensible as an academic Java software engineering project. PDF exam generation and Excel grade export are required future capabilities.
+Build an all-in-one offline desktop workspace for university professors: courses, students, lectures, exams, grades, attendance and semester planning. The software should reduce fragmented administration while remaining understandable and defensible as an academic Java software engineering project. PDF exam generation is implemented; Excel grade export remains a required future capability.
 
 ## Technology Stack
 
@@ -16,7 +16,7 @@ Build an all-in-one offline desktop workspace for university professors: courses
 | SQLite JDBC | 3.53.4.0 | Local storage engine and JDBC driver |
 | JUnit Jupiter | 5.14.0, test scope | Meaningful foundation tests |
 | Apache POI | Planned | Excel student import and grade export |
-| PDFBox or OpenPDF | Choice deferred | Exam and answer-key PDFs |
+| Apache PDFBox / ICU4J | 3.0.8 / 78.3 | PDF generation/preview and Arabic shaping/bidi |
 
 Version availability was checked against Maven Central. Setup guidance: [OpenJFX](https://openjfx.io/openjfx-docs/), [Apache Maven Wrapper](https://maven.apache.org/tools/wrapper/), [Xerial SQLite JDBC](https://github.com/xerial/sqlite-jdbc), [JUnit 5 release notes](https://docs.junit.org/5.14.0/release-notes/).
 
@@ -291,7 +291,7 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 - Excel student import.
 - Broader semester planning beyond the offering-specific lecture timeline.
 - Advanced generation constraints and multiple exam versions.
-- Required PDF exam generation and PDF answer keys.
+- Further PDF layout customization.
 - Grade tracking and required Excel grade export.
 - Attendance, learning outcomes, question quality analysis, student performance analysis and course analytics.
 - Backup and restore.
@@ -300,7 +300,7 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 
 - No grades, attendance, exports or advanced analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
 - Question usage counts finalized exams, not draft selections or previews. Image paths are external references and are not bundled, previewed or checked for existence. Topic labels are free text rather than managed entities.
-- Exam generation has explicit count/bank/search limits and no exact-mark optimization. Version variants and PDF export remain future work. Snapshot locks are enforced by the application repository/service workflows, not protection against arbitrary external SQL edits.
+- Exam generation has explicit count/bank/search limits and no exact-mark optimization. Version variants remain future work. Snapshot locks are enforced by the application repository/service workflows, not protection against arbitrary external SQL edits.
 - Course codes, student numbers and sections use the documented ASCII identifier format. Localized identifier formats need an explicit future decision and migration.
 - Active offering selection lasts for the running session only. Academic statuses are explicit user choices, not automatic date-driven transitions; multiple active terms are allowed.
 - Lists are loaded in full and changes from other app instances require Refresh or navigation. Multi-user editing/conflict resolution is outside this phase.
@@ -377,3 +377,19 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 - Final clean build passed using the documented Windows workflow: `cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify"`, with JAVA_HOME/MAVEN_OPTS and isolated smoke storage configured per README. All 129 tests passed with zero failures, errors or skips.
 - Verification used automated JavaFX controls and visual snapshot inspection. Persistence was checked through new connections and workspace reconstruction, not a separately automated OS-process restart. Physical keyboard/file-picker behavior was not manually reverified. The existing Windows AutoRun workaround is unchanged.
 - README and technical notes now describe the generation limits, finalization semantics, snapshot policy and future ExamVersion migration direction. PDF generation and A/B/C/D variants remain outside this phase.
+
+### 2026-10-18 — Phase 7: PDF exam generation
+
+- Added PDFBox 3.0.8 and ICU4J 78.3, pinned after checking Maven Central and official API documentation. PDFBox provides both writing and preview rasterization; ICU supplies Arabic shaping and bidirectional ordering absent from the low-level PDF text API. OpenPDF was considered; PDFBox keeps generation and preview in one library. No Excel or unrelated dependencies were added.
+- Bundled unmodified Noto Sans regular/bold, Sans Mono and Naskh Arabic static fonts, subset-embedded into each PDF. The fonts README records the pinned upstream commit; the accompanying SIL OFL 1.1 license is included. Rendering does not depend on locally installed fonts.
+- Added the pdf package: ExamPdfRenderer, PdfFonts, PdfImages, PdfKind, ExamPrintSource, ExamPrintProfile and RenderedExamPdf. ExamPdfService loads saved exams, renders previews and writes files; ExamPdfController coordinates background work and ExamPdfDialog builds the UI. Existing exam business logic and repositories remain separate from rendering.
+- No migration was necessary: V001–V008 are unchanged. Questions, order, marks, choices, answers, explanations and image references come only from saved exam snapshots. Current course/offering labels supply the header; university/department/professor/logo are export-session inputs rather than persisted settings. Drafts are explicitly labelled DRAFT.
+- Implemented A4 layout with institutional and course headers, date/duration/instructions, actual marks, student name/ID fields, numbered questions, per-question marks, automatic wrapping/pagination and Page X of N. All five types render; MCQ choices retain saved order, coding text uses shaded monospace blocks with preserved line breaks and four-space tabs. Written responses have answer space. Heading layout reserves room for following text.
+- Student output never emits stored model answers, explanations or correct-choice indicators; Answer Key is generated independently and includes them. Both documents naturally include every MCQ option. Professors remain responsible for answers manually embedded in prompts or image pixels. Images are decoded/reencoded without source metadata; PDF metadata includes document identity, not answer fields.
+- PNG/JPEG logos and question images are proportionally scaled. Missing/invalid images fail export with an actionable message. Limits are 10 MB/20 megapixels per image and 500 pages. Snapshot image paths refer to external files, not frozen image bytes: preserve those files for exact future reproduction.
+- Arabic uses ICU contextual forms/bidi and embedded Naskh glyphs, RTL line alignment and mixed Latin support. This is basic Arabic/RTL support, not full OpenType typography or a localized interface. Complex diacritics, other scripts, math typesetting and emoji are not guaranteed; unsupported glyphs fail explicitly. Copy/extraction order for shaped Arabic may differ from logical input. No PDF/A or tagged-accessibility claim is made.
+- Preview renders one page at a time with Previous/Next and invalidates when document type or print details change. Save writes the exact reviewed bytes. Student Exam and Answer Key are previewed and saved separately. Mark mismatches display both totals, require explicit acknowledgement and never change exam content.
+- Export stages a complete file in the destination directory and moves it without REPLACE_EXISTING; existing files are rejected even when selected through the native chooser. Failures retain diagnostic causes, show concise messages and clean up staging files where possible.
+- Added eight PDF tests: all question types, student confidentiality including metadata/annotations, saved snapshots after bank edits, independent student/key files, A4 margins/long-text pagination, images/missing/corrupt images, embedded fonts, mixed Arabic, unsupported glyphs, mismatch acknowledgement and overwrite prevention. Extended the existing desktop workflow to open export, generate both previews and verify stale-preview invalidation.
+- Clean verification passed using the documented Windows workaround with isolated smoke storage: cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify". All 137 tests passed, zero failures/errors/skips (136 non-UI plus the desktop workflow). Student/key/Arabic PDFs and desktop snapshots were visually inspected; an orphaned answer heading found during review was corrected before the final build.
+- Native file-picker/physical keyboard interaction was not manually exercised; file writing, preview decoding and overwrite rejection are covered by isolated tests. No known build/test failures remain. A/B/C/D versions, grades, Excel and advanced analytics remain outside scope.

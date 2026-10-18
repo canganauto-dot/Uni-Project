@@ -37,7 +37,7 @@ public final class MainController implements AutoCloseable {
         enrollmentController = new EnrollmentController(academic);
         lectureController = new LectureController(academic.lectures());
         questionController = new QuestionController(academic.questions(), service);
-        examController = new ExamController(academic.exams());
+        examController = new ExamController(academic.exams(), new ExamPdfService(academic.exams(), academic.offerings(), service));
         courses.onDetails(() -> offeringController.courseDetails(courses.selectedCourse()));
         courses.onCreateOffering(() -> offeringController.createForCourse(courses.selectedCourse()));
         courses.onOfferings(() -> view.showPage("Courses", offeringController.createView(null)));

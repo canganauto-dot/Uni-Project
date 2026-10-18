@@ -2,9 +2,11 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 6 exam builder.** Academic records, lectures, reusable questions and offering-specific exams are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
+**Status: Phase 7 exam PDF export.** Academic records, lectures, reusable questions and offering-specific exams are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
 
 ## Implemented
+
+- Student Exam and Answer Key PDF preview/export from saved snapshots, with A4 pagination, embedded fonts and basic Arabic/RTL support.
 
 - JavaFX shell, catalog Course CRUD, term management under Settings and student directory management.
 - Course offerings by term/section, an active offering selector and enrollment rosters with withdrawal/completion/reactivation.
@@ -18,7 +20,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Planned
 
-Excel student import, broader semester planning, advanced generation constraints, multiple exam versions, **PDF exams and answer keys**, grades and **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
+Excel student import, broader semester planning, advanced generation constraints, multiple exam versions, grades and **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
 
 ## Academic workflow
 
@@ -32,13 +34,16 @@ Excel student import, broader semester planning, advanced generation constraints
 
 Course is a reusable catalog definition. Enrollment links a student to a specific offering, never directly to the catalog course. Records with dependent academic history cannot be deleted. Active offering selection lasts for the current application session.
 
+For PDFs, select a saved exam and choose **Preview / PDF**. Enter university, department, professor and an optional PNG/JPEG logo. Generate and review Student Exam, then save to a new filename. Switch to Answer Key, generate its preview and save separately. A mark mismatch requires acknowledgement; existing files are never replaced. Print details are entered per export session. Missing images or unsupported glyphs produce an actionable error rather than silently disappearing.
+
 ## Technology stack
 
 - Java 25 LTS; JavaFX Controls 25.0.4 (includes JavaFX Base/Graphics).
 - Maven 3.9.11 via the wrapper; JavaFX Maven plugin 0.0.8.
 - SQLite JDBC 3.53.4.0; JDBC and `java.util.logging` from the JDK.
 - JUnit Jupiter 5.14.0 for tests.
-- Apache POI and PDFBox/OpenPDF will be evaluated when Excel/PDF implementation begins; they are not dependencies yet.
+- Apache PDFBox 3.0.8; ICU4J 78.3 for Arabic shaping/bidi; bundled Noto fonts under SIL OFL 1.1.
+- Apache POI remains planned for Excel features; it is not a dependency yet.
 
 ## Prerequisites
 
@@ -128,9 +133,11 @@ src/main/java/com/professoros/
   service/                   Validation, academic operations and session context
   repository/                Prepared JDBC queries and row mapping
   database/                  Connections and versioned migration runner
+  pdf/                       Snapshot PDF layout, fonts and image validation
   util/                      Reserved for focused shared utilities
 src/main/resources/
   css/                       Theme stylesheet
+  fonts/                     Embedded Noto fonts, license and provenance
   db/migrations/             Append-only schema migrations V001–V008
   fxml/                      Reserved; current layouts are Java code
   images/                    Reserved for application assets

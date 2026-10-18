@@ -97,6 +97,23 @@ final class ExamWorkflowCheck {
             Platform.runLater(() -> button(root,"delete-exam").fire()); await(() -> !noDialog());
             fx(() -> { button(dialog(),"confirm-academic-action").fire(); return null; }); ready(1);
             assertEquals(1,f.academic().questions().findById(first.id()).usageCount());
+            fx(() -> { table().getSelectionModel().selectFirst(); button(root,"export-exam-pdf").fire(); return null; });
+            await(() -> !noDialog());
+            fx(() -> {
+                text("pdf-university","Example University"); text("pdf-department","Computer Science"); text("pdf-professor","Dr. Example");
+                assertTrue(button(dialog(),"save-exam-pdf").isDisabled());
+                button(dialog(),"preview-exam-pdf").fire(); return null;
+            });
+            await(() -> !button(dialog(),"save-exam-pdf").isDisabled());
+            fx(() -> {
+                assertNotNull(((javafx.scene.image.ImageView)dialog().lookup("#exam-pdf-image")).getImage());
+                snapshot(dialog(),"student-pdf-preview.png");
+                combo(dialog(),"pdf-kind").setValue(com.professoros.pdf.PdfKind.ANSWER_KEY);
+                assertTrue(button(dialog(),"save-exam-pdf").isDisabled());
+                button(dialog(),"preview-exam-pdf").fire(); return null;
+            });
+            await(() -> !button(dialog(),"save-exam-pdf").isDisabled());
+            fx(() -> { snapshot(dialog(),"answer-key-preview.png"); ((Button)dialog().lookupButton(ButtonType.CLOSE)).fire(); return null; });
         } finally { close(); }
     }
     private void fill(String title) { text("exam-title",title); text("exam-date","2026-11-15"); text("exam-duration","60"); text("exam-intended","10"); }

@@ -15,10 +15,22 @@
     <javafx.version>25.0.4</javafx.version>
     <sqlite.version>3.53.4.0</sqlite.version>
     <junit.version>5.14.0</junit.version>
+    <pdfbox.version>3.0.8</pdfbox.version>
+    <icu4j.version>78.3</icu4j.version>
     <excludedTestGroups>ui</excludedTestGroups>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>pdfbox</artifactId>
+      <version>${pdfbox.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.ibm.icu</groupId>
+      <artifactId>icu4j</artifactId>
+      <version>${icu4j.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.openjfx</groupId>
       <artifactId>javafx-controls</artifactId>

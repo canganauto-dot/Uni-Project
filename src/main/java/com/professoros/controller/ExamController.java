@@ -10,11 +10,17 @@ public final class ExamController implements AutoCloseable {
     private final ExamService service;
     private final ExamsView view=new ExamsView();
     private final UiTaskRunner tasks=new UiTaskRunner();
+    private final ExamPdfController pdfController;
     private OfferingSummary offering;
     private long revision;
     private record EditorData(Exam exam,List<Question> bank) { }
-    public ExamController(ExamService service) {
+    public ExamController(ExamService service,com.professoros.service.ExamPdfService pdfService) {
         this.service=service;
+        pdfController=new ExamPdfController(pdfService);
+        view.export.setOnAction(e -> {
+            Exam selected=view.selected();
+            if(selected!=null && offering!=null) { pdfController.open(view.getScene().getWindow(),offering.offering().id(),selected.id(),view::error); }
+        });
         view.create.setOnAction(e -> edit(null)); view.edit.setOnAction(e -> { if(view.selected()!=null) { edit(view.selected().id()); } });
         view.refresh.setOnAction(e -> load(null)); view.details.setOnAction(e -> details());
         view.delete.setOnAction(e -> change("Delete draft exam?","This permanently deletes the draft and its saved question selection.",0));
@@ -85,5 +91,5 @@ public final class ExamController implements AutoCloseable {
         tasks.run(operation,ignored -> { if(request==revision) { load(action==0?null:selected.id()); } },
                 error -> { if(request==revision) { view.error(error); } });
     }
-    @Override public void close() { revision++; tasks.close(); }
+    @Override public void close() { revision++; tasks.close(); pdfController.close(); }
 }
