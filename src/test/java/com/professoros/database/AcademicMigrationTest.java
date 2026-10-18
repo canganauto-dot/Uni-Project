@@ -23,7 +23,7 @@ class AcademicMigrationTest {
         try (var connection = database.openConnection(); var query = connection.createStatement();
              var rows = query.executeQuery("SELECT group_concat(version || ':' || checksum || ':' || applied_at) FROM (SELECT * FROM schema_version ORDER BY version)")) {
             assertTrue(rows.next()); history = rows.getString(1);
-            assertEquals(7, history.split(",").length);
+            assertEquals(8, history.split(",").length);
         }
         database.initialize();
         assertEquals(saved, courses.findById(saved.id()).orElseThrow());

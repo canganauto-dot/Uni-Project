@@ -31,7 +31,7 @@ class QuestionMigrationTest {
     }
     private String history(Database database) throws Exception {
         try(var c=database.openConnection();var s=c.createStatement();var r=s.executeQuery("SELECT group_concat(version || ':' || checksum || ':' || applied_at) FROM schema_version")) {
-            assertTrue(r.next()); String result=r.getString(1); assertEquals(7,result.split(",").length); return result;
+            assertTrue(r.next()); String result=r.getString(1); assertEquals(8,result.split(",").length); return result;
         }
     }
 }

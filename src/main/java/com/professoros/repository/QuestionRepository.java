@@ -68,7 +68,7 @@ public final class QuestionRepository {
                 && (type == null || q.type() == type)
                 && (difficulty == null || q.difficulty() == difficulty)).toList();
     }
-    private static Optional<Question> read(Connection connection, long id) throws SQLException {
+    static Optional<Question> read(Connection connection, long id) throws SQLException {
         try (var statement = connection.prepareStatement("SELECT * FROM questions WHERE id=?")) {
             statement.setLong(1, id);
             try (var rows = statement.executeQuery()) { return rows.next() ? Optional.of(map(connection, rows)) : Optional.empty(); }

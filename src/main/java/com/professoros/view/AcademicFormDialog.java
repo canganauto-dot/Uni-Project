@@ -11,6 +11,7 @@ public class AcademicFormDialog extends Dialog<Void> {
     private final GridPane fields = new GridPane();
     private final Label error = DashboardView.label("", "error-message");
     private final Button save;
+    private String saveLabel = "Save";
     private boolean busy;
     private int row;
 
@@ -71,8 +72,9 @@ public class AcademicFormDialog extends Dialog<Void> {
         fields.setDisable(value);
         save.setDisable(value);
         getDialogPane().lookupButton(ButtonType.CANCEL).setDisable(value);
-        save.setText(value ? "Saving…" : "Save");
+        save.setText(value ? "Working…" : saveLabel);
     }
+    protected void setSaveLabel(String label) { saveLabel = label; save.setText(label); }
     public void showError(String message) {
         error.setText(message);
         error.setVisible(true);

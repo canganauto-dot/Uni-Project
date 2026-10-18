@@ -43,6 +43,7 @@ public final class CourseOfferingRepository {
     }
     public boolean hasEnrollments(long id) { return jdbc.exists("SELECT EXISTS(SELECT 1 FROM enrollments WHERE course_offering_id=?)", id); }
     public boolean hasLectures(long id) { return jdbc.exists("SELECT EXISTS(SELECT 1 FROM lectures WHERE course_offering_id=?)", id); }
+    public boolean hasExams(long id) { return jdbc.exists("SELECT EXISTS(SELECT 1 FROM exams WHERE course_offering_id=?)", id); }
     static CourseOffering map(ResultSet row) throws SQLException {
         return new CourseOffering(row.getLong("id"), row.getLong("course_id"), row.getLong("academic_term_id"),
                 row.getString("section"), row.getString("notes"), AcademicStatus.valueOf(row.getString("status")),

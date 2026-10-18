@@ -64,6 +64,8 @@ class ApplicationSmokeTest {
                         assertNotNull(root.lookup("#timeline-page"));
                     } else if ("Exam Bank".equals(section)) {
                         assertNotNull(root.lookup("#questions-page"));
+                    } else if ("Exams".equals(section)) {
+                        assertNotNull(root.lookup("#exams-page"));
                     } else if (!"Dashboard".equals(section)) {
                         assertEquals(section, ((Label) root.lookup("#placeholder-title")).getText());
                     }
@@ -104,6 +106,7 @@ class ApplicationSmokeTest {
             new AcademicWorkflowCheck(temporaryDirectory.resolve("academic.db")).verify();
             new LectureWorkflowCheck(temporaryDirectory.resolve("lectures.db")).verify();
             new QuestionWorkflowCheck(temporaryDirectory.resolve("questions.db")).verify();
+            new ExamWorkflowCheck(temporaryDirectory.resolve("exams.db")).verify();
         } finally {
             application.stop();
             Platform.exit();

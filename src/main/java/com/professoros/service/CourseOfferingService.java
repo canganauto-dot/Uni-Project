@@ -25,7 +25,7 @@ public final class CourseOfferingService {
         CourseOffering existing = findById(id);
         CourseOfferingInput valid = validate(input);
         if ((existing.courseId() != valid.courseId() || existing.academicTermId() != valid.academicTermId())
-                && (repository.hasEnrollments(id) || repository.hasLectures(id))) {
+                && (repository.hasEnrollments(id) || repository.hasLectures(id) || repository.hasExams(id))) {
             throw new DomainValidationException("An offering with academic history cannot be moved to another course or term.");
         }
         duplicate(valid, id);
@@ -33,6 +33,9 @@ public final class CourseOfferingService {
                 .orElseThrow(() -> AcademicValidation.missing("Offering"));
     }
     public void delete(long id) {
+        if (repository.hasExams(id)) {
+            throw new DomainValidationException("This offering has exams and cannot be deleted. Archive it instead.");
+        }
         if (repository.hasLectures(id)) {
             throw new DomainValidationException("This offering has lectures and cannot be deleted. Archive it instead.");
         }

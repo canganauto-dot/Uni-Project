@@ -72,7 +72,13 @@ final class JdbcOperations {
 
     private RuntimeException translate(SQLException failure) {
         if (failure instanceof SQLiteException sqlite) {
-            if (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE) {
+            if (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_TRIGGER
+                    && (failure.getMessage().contains("Exam questions must") || failure.getMessage().contains("Exam offering cannot")
+                    || failure.getMessage().contains("A question used in exams"))) {
+                return new DomainValidationException("Exam and question course relationships cannot be changed. Keep questions in the offering's course.");
+            }
+            if (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_UNIQUE
+                    || sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_PRIMARYKEY) {
                 return new DomainValidationException(duplicateMessage);
             }
             if (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_FOREIGNKEY

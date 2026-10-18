@@ -2,7 +2,7 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 5 exam question bank.** Courses, academic terms, course offerings, students, enrollment, lectures and reusable questions are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
+**Status: Phase 6 exam builder.** Academic records, lectures, reusable questions and offering-specific exams are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
 
 ## Implemented
 
@@ -10,6 +10,7 @@ An offline-first desktop workspace for university professors, built as an academ
 - Course offerings by term/section, an active offering selector and enrollment rosters with withdrawal/completion/reactivation.
 - Offering-specific lecture CRUD and search, chronological timeline, completion counts and basic schedule status.
 - Catalog question bank with five question types, MCQ choices, difficulty/marks, optional topic/image path, details, search and course/type/difficulty filters.
+- Manual exam building, ordered question snapshots, mark-total warnings and deterministic generation with exact count/distribution constraints. Finalization locks content and records bank usage; archived exams preserve history.
 - Real course count and active offering on Dashboard; explicitly demo student/exam/grading cards, schedule, deadlines, progress and activity.
 - Dedicated CSS theme, keyboard-focus styling and scrollable content.
 - Versioned SQLite migrations, unique identifiers, foreign-key deletion restrictions and configurable storage. Application startup never seeds demo records.
@@ -17,7 +18,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Planned
 
-Excel student import, broader semester planning, constraint-based exam generation, multiple exam versions, **PDF exams and answer keys**, grades and **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
+Excel student import, broader semester planning, advanced generation constraints, multiple exam versions, **PDF exams and answer keys**, grades and **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
 
 ## Academic workflow
 
@@ -27,6 +28,7 @@ Excel student import, broader semester planning, constraint-based exam generatio
 4. Open an offering through Course Details, All Offerings or the top-bar selector; use its **Students** tab to enroll existing students.
 5. Select **Lectures** to organize the active offering's lectures, or **Timeline** to see them chronologically. Switching the top-bar offering updates either page. Progress covers all lectures in that offering, independent of search.
 6. Use **Exam Bank** to create reusable questions for a catalog course. No term or active offering is required. Choose 2–10 distinct choices and one correct answer for MCQs, or a True/False answer when applicable. Optional image files are referenced by absolute local path, not copied into the database.
+7. Select an offering and open **Exams**. Create a draft, add questions from its course's bank, and use the Selected tab to remove/reorder them. Generate Selection supports exact difficulty/type/topic counts; leaving a whole distribution blank makes it unrestricted. Review calculated versus intended marks, then Save. Finalize only when content is ready: finalized exams cannot be edited or deleted.
 
 Course is a reusable catalog definition. Enrollment links a student to a specific offering, never directly to the catalog course. Records with dependent academic history cannot be deleted. Active offering selection lasts for the current application session.
 
@@ -129,7 +131,7 @@ src/main/java/com/professoros/
   util/                      Reserved for focused shared utilities
 src/main/resources/
   css/                       Theme stylesheet
-  db/migrations/             Append-only schema migrations V001–V007
+  db/migrations/             Append-only schema migrations V001–V008
   fxml/                      Reserved; current layouts are Java code
   images/                    Reserved for application assets
 src/test/java/com/professoros/ Database, path and optional desktop tests

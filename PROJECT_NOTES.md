@@ -38,7 +38,7 @@ Local development database files live in ignored `data/`. Future generated PDFs/
 
 ## Database Design
 
-**Courses, academic terms, offerings, students, enrollments, lectures and the question bank are implemented.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
+**Courses, academic terms, offerings, students, enrollments, lectures, the question bank and exams are implemented.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
 
 - Every connection enables and verifies `PRAGMA foreign_keys = ON` and sets a five-second busy timeout.
 - All variable SQL values use prepared statements.
@@ -123,7 +123,7 @@ Students has its own controller/view and an in-memory filtered/sorted list. Sett
 
 New controllers use `UiTaskRunner` for the established JavaFX Task/background-worker pattern. Shared form code only handles layout, busy/error state and Save/Cancel behavior; each entity form explicitly declares its fields. These small helpers remove actual duplication without introducing generic CRUD frameworks. No new third-party dependencies were added.
 
-Lectures reference CourseOffering. Future Assessment and Exam records should also reference CourseOffering; attendance should reference offering/enrollment; grades should relate Enrollment and Assessment.
+Lectures and Exams reference CourseOffering. Future Assessment records should also reference CourseOffering; attendance should reference offering/enrollment; grades should relate Enrollment and Assessment.
 
 ### Phase 4 lecture organizer and timeline
 
@@ -157,7 +157,7 @@ Migration `V007__question_bank.sql` adds `questions` and `question_choices`. V00
 ```text
 Course 1 ── * Question 1 ── * AnswerChoice
                    |
-              future ExamQuestion ── Exam ── CourseOffering
+                    ExamQuestion ── Exam ── CourseOffering
 ```
 
 | Question column | Storage and rules |
@@ -184,7 +184,27 @@ Choices have composite key `(question_id, position)`, positions 1–10, required
 
 Topic association is an optional free-text label at this stage, not an invented topic-management subsystem; a later taxonomy can migrate labels to entities. Images are local path references only: the file chooser is a convenience, missing files are allowed so moving files does not prevent editing question text, and there is no image copying, preview, execution or export. Paths must be absolute and syntactically valid; portability and managed attachments remain future work.
 
-Future ExamQuestion should link an Exam to a stable question ID and hold exam-specific position/marks and a frozen question/choice snapshot or revision. Published exams must not change when the bank is edited. That future migration must restrict deletion of referenced questions and record usage in the same transaction as actual exam use. No Exam/ExamQuestion tables, generation algorithm, fake usage updater or PDF dependency are introduced now. No third-party dependencies were added.
+Phase 6 implements the planned ExamQuestion relationship and frozen question/choice content described below. Published exams do not change when the bank is edited. No third-party dependencies were added.
+
+### Phase 6 exam builder
+
+Migration `V008__exam_builder.sql` adds three tables; V001–V007 remain unchanged:
+
+- `exams`: integer primary key, required CourseOffering foreign key (ON DELETE RESTRICT), title (1–200 characters), ISO exam date, duration (1–1440 whole minutes), intended marks in integer hundredths (0.01–100000 marks), instructions (up to 20000 characters), DRAFT/FINALIZED/ARCHIVED status and ISO UTC timestamps.
+- `exam_questions`: composite primary key (exam_id, question_id), unique ordered position 1–100 per exam, source question foreign key (ON DELETE RESTRICT), and saved type/text/topic/difficulty/marks/answer/explanation/image path. An exam owns these rows (ON DELETE CASCADE). A bank question can occur once in a given exam.
+- `exam_question_choices`: ordered copied answer choices with correctness flags, owned by the composite exam-question relationship. At most one correct choice is enforced by a partial unique index; copying validated MCQs preserves the full choice configuration.
+
+Indexes support offering/date lookup and finding exams that reference a bank question. Triggers reject cross-course exam-question links, moving an exam to another offering, moving a referenced bank question to another course, and moving an offering with exams to another course or term. Services also provide useful errors. Referenced bank questions cannot be deleted; offerings with exams are protected even when drafts are empty.
+
+`Exam`, `ExamInput`, `ExamQuestion`, `ExamStatus` and `GenerationRequest` remain independent domain types. `ExamRepository` saves metadata and the complete ordered selection in one transaction. It rechecks offering/course identity and draft status in that transaction, snapshots newly selected bank questions, preserves existing snapshots when reordering/editing an exam, and rolls back all changes on failure. `ExamService` validates required fields, ISO dates, limits, decimal marks and unique selections. Empty drafts are allowed; a finalized exam must contain at least one question.
+
+Marks use BigDecimal in Java and integer hundredths in SQLite. Calculated total is the exact sum of saved question marks; intended marks are a separate professor-entered target. A mismatch is a visible warning, not an implicit rescaling or a prohibition on saving/finalizing. There is no automatic mark-budget constraint in this phase.
+
+Finalize is an explicit confirmed DRAFT → FINALIZED transition. It makes content read-only in application workflows and increments each selected bank question's usage count once, recording the local finalization date as last-used (never moving it backwards). Usage here means inclusion in a finalized exam, not proof that an exam was administered. Creating/editing drafts or generation previews does not record usage. FINALIZED → ARCHIVED preserves everything and does not count again. Only drafts can be deleted; there is no unfinalize action. Image paths are snapshotted strings, not copied image bytes.
+
+`ExamController`, `ExamsView`, `ExamBuilderDialog` and `ExamGenerationDialog` extend the existing view/controller/background-service pattern. Exams follow the session offering and ignore stale load callbacks after a context change. The builder keeps a local selection until Save succeeds, supports adding/removing/reordering, filters bank questions by type/difficulty/topic/text, and displays live totals. The course is fixed by the offering and labelled rather than exposed as an unsafe cross-course selector. Generation replaces the local selection only after success, with confirmation when replacing a nonempty selection. Details display saved snapshots, including answers.
+
+The current exam represents a single paper. Future A/B/C/D support should introduce an ExamVersion child (label/seed/version-specific ordering), then move the existing ordered snapshot collection under a default version in a new migration. Source question IDs, independent content snapshots and explicit order are already separated from exam metadata; no choice randomization or speculative version-generation UI is introduced now.
 
 ## Major Technical Decisions
 
@@ -235,11 +255,21 @@ Flyway/Liquibase, ORM, generic CRUD framework, SQL search per keystroke and pagi
 
 ## Algorithms
 
+### Basic exam generation
+
+`ExamGenerator` is a pure, deterministic, bounded backtracking selector. Input is the offering's course bank (using existing saved snapshots for questions already in the edited exam), required question count 1–100, and optional exact distributions by difficulty, type and topic. A whole empty distribution is unrestricted; otherwise its nonnegative integer counts must sum to the total and omitted categories mean zero. Topic matching normalizes surrounding whitespace and case; the empty topic represents untagged questions.
+
+Candidates outside positive quotas are removed, then ordered by ascending usage count and stable question ID. Depth-first selection tries each distinct question at most once per branch. Remaining eligible counts prune branches that cannot meet the total or any quota. Failed choices backtrack rather than silently relaxing a constraint or relying on random retries. All quotas hold when the requested count is reached, since each constrained distribution started with that total and cannot go negative. Fixed inputs always produce the same result.
+
+Too few candidates or exhausted search reports that constraints cannot be satisfied; incompatible overlapping distributions receive an explicit joint-feasibility message. A 100000-node search budget and 1000 eligible-question limit bound basic generation. Reaching the search budget reports feasibility as **unknown**, not impossible, and suggests simplifying constraints/manual building. No partial solution is returned or saved. Tests compare small distributions with an independent exhaustive-subset oracle, cover backtracking past an early dead end, and distinguish search limits from infeasibility.
+
+This is a selection preview, not automatic persistence. The UI subsequently saves the professor-reviewed ordered IDs. Retained exam questions keep their snapshots; newly selected questions are read again at save time. Concurrent bank editing by another application instance can therefore change new-question content between preview and save; multi-instance version-conflict detection remains future work. Exact target marks, learning outcomes and A/B/C/D generation are not constraints in this first algorithm.
+
 Search is a literal, case-insensitive scan over loaded records. Lecture progress reports total, completed, partial and cancelled counts. Completion percentage is fully completed / (total minus cancelled), or zero when that denominator is zero; partial lectures receive no invented fractional weight. Counts always cover the full offering, not just search matches.
 
 Basic schedule status compares unfinished lectures (planned or partial) with today's local date: dates before today are overdue; today's lectures are due today; otherwise show the next planned date. Empty, all-cancelled and fully completed plans have distinct messages. Counts and schedule share one loaded snapshot and update on refresh/navigation or a successful edit, not a midnight timer. These are descriptive rules, not advanced analytics or forecasts.
 
-Planned documentation: exam constraint generation, question difficulty analysis, performance risk scoring and semester progress forecasting. Record inputs, assumptions, method, edge cases and validation when each is introduced.
+Planned algorithm documentation: advanced exam constraints, question difficulty analysis, performance risk scoring and semester progress forecasting. Record inputs, assumptions, method, edge cases and validation when each is introduced.
 
 ## Implemented Features
 
@@ -252,6 +282,7 @@ Planned documentation: exam constraint generation, question difficulty analysis,
 - Enrollment supports selecting an existing student, duplicate prevention, withdrawal, completion and reactivation while retaining history.
 - Lectures and Timeline provide persisted offering-specific lecture organization, search, chronological ordering, completion counts and basic schedule status.
 - Exam Bank provides reusable Course questions, five types, MCQ choices/correct answer, difficulty, decimal marks, optional topic/image reference, CRUD/details/search and combined filters.
+- Exams provides offering-scoped draft creation/editing, manual ordered selections, saved question snapshots, marks warnings, constrained generation previews, finalization and archiving.
 - All other destinations explicitly identify themselves as planned.
 - Transactional versioned SQLite migrations, CSS theme, Maven wrapper, repository/service tests and an opt-in desktop workflow check.
 
@@ -259,7 +290,7 @@ Planned documentation: exam constraint generation, question difficulty analysis,
 
 - Excel student import.
 - Broader semester planning beyond the offering-specific lecture timeline.
-- Constraint-based exam generation and multiple exam versions.
+- Advanced generation constraints and multiple exam versions.
 - Required PDF exam generation and PDF answer keys.
 - Grade tracking and required Excel grade export.
 - Attendance, learning outcomes, question quality analysis, student performance analysis and course analytics.
@@ -267,8 +298,9 @@ Planned documentation: exam constraint generation, question difficulty analysis,
 
 ## Known Limitations
 
-- No exams, grades, attendance, exports or advanced analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
-- Question usage remains zero/never until real exam workflows record use. Image paths are external references and are not bundled, previewed or checked for existence. Topic labels are free text rather than managed entities.
+- No grades, attendance, exports or advanced analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
+- Question usage counts finalized exams, not draft selections or previews. Image paths are external references and are not bundled, previewed or checked for existence. Topic labels are free text rather than managed entities.
+- Exam generation has explicit count/bank/search limits and no exact-mark optimization. Version variants and PDF export remain future work. Snapshot locks are enforced by the application repository/service workflows, not protection against arbitrary external SQL edits.
 - Course codes, student numbers and sections use the documented ASCII identifier format. Localized identifier formats need an explicit future decision and migration.
 - Active offering selection lasts for the running session only. Academic statuses are explicit user choices, not automatic date-driven transitions; multiple active terms are allowed.
 - Lists are loaded in full and changes from other app instances require Refresh or navigation. Multi-user editing/conflict resolution is outside this phase.
@@ -335,3 +367,13 @@ Planned documentation: exam constraint generation, question difficulty analysis,
 - Final clean verification succeeded with the documented Windows workflow: `cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify"`, with JAVA_HOME/MAVEN_OPTS and isolated smoke storage set per README. All 110 tests passed with zero failures, errors or skips; whitespace checks passed.
 - Desktop verification exercised actual JavaFX controls and inspected generated screenshots. Persistence was checked using new database connections and a reconstructed workspace; separate OS-process restart and physical keyboard/file-chooser interaction were not manually reverified. The existing Windows AutoRun workaround remains unchanged.
 - Updated README and this notebook. Image references, free-text topic labels and future exam snapshot/usage policy are documented; automatic exam generation and PDF export remain unimplemented as requested.
+
+### 2026-10-18 — Phase 6: exam builder
+
+- Added V008 for exams, ordered exam-question snapshots and saved choices. Previous migrations and Git history are preserved; no dependencies were added.
+- Implemented offering-scoped draft building, add/remove/reorder, course-safe bank filtering, mark-total warnings, saved details, explicit finalization/usage accounting and archiving. The generator validates exact count/distribution constraints, deterministically backtracks, reports unsatisfied requests and distinguishes search-budget exhaustion from proven infeasibility.
+- Added 19 non-UI tests (128 total): migration upgrade/idempotence, manual ordering/removal/reopening, exact decimal totals, snapshot preservation after bank edits, cross-course and wrong-offering rejection, rollback, history restrictions, finalization exactly once, required/range validation, deterministic selection, joint infeasibility, backtracking, search limits and comparison with an independent exhaustive-subset oracle over small distributions.
+- Extended the desktop scenario with empty/no-offering states, real form submission, adding/filtering/removing/reordering, mismatch warnings, failed and successful generation, offering switching, reopening persisted exams, finalization, details and cancelled/confirmed draft deletion. Screenshots of builder, generation, saved details and the minimum-size Exams page were inspected. Fixed asynchronous test waits, the generation dialog's action-button initialization and truncated instructions found during verification.
+- Final clean build passed using the documented Windows workflow: `cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify"`, with JAVA_HOME/MAVEN_OPTS and isolated smoke storage configured per README. All 129 tests passed with zero failures, errors or skips.
+- Verification used automated JavaFX controls and visual snapshot inspection. Persistence was checked through new connections and workspace reconstruction, not a separately automated OS-process restart. Physical keyboard/file-picker behavior was not manually reverified. The existing Windows AutoRun workaround is unchanged.
+- README and technical notes now describe the generation limits, finalization semantics, snapshot policy and future ExamVersion migration direction. PDF generation and A/B/C/D variants remain outside this phase.
