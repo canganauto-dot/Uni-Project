@@ -72,6 +72,9 @@ final class JdbcOperations {
 
     private RuntimeException translate(SQLException failure) {
         if (failure instanceof SQLiteException sqlite) {
+            if (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_TRIGGER && failure.getMessage().contains("Grade exceeds")) {
+                return new DomainValidationException("A grade exceeds the assessment maximum. Refresh and review the scores.");
+            }
             if (sqlite.getResultCode() == SQLiteErrorCode.SQLITE_CONSTRAINT_TRIGGER
                     && (failure.getMessage().contains("Exam questions must") || failure.getMessage().contains("Exam offering cannot")
                     || failure.getMessage().contains("A question used in exams"))) {

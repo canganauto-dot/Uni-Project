@@ -2,12 +2,12 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 7 exam PDF export.** Academic records, lectures, reusable questions and offering-specific exams are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
+**Status: Phase 8 grade management.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
 
 ## Implemented
 
 - Student Exam and Answer Key PDF preview/export from saved snapshots, with A4 pagination, embedded fonts and basic Arabic/RTL support.
-
+- Offering-scoped gradebook with editable cells, bulk plain-text entry, weighted categories, assessment CRUD, configurable letter/pass thresholds, incomplete results and basic class statistics.
 - JavaFX shell, catalog Course CRUD, term management under Settings and student directory management.
 - Course offerings by term/section, an active offering selector and enrollment rosters with withdrawal/completion/reactivation.
 - Offering-specific lecture CRUD and search, chronological timeline, completion counts and basic schedule status.
@@ -20,7 +20,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Planned
 
-Excel student import, broader semester planning, advanced generation constraints, multiple exam versions, grades and **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
+Excel student import, broader semester planning, advanced generation constraints, multiple exam versions, **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
 
 ## Academic workflow
 
@@ -35,6 +35,8 @@ Excel student import, broader semester planning, advanced generation constraints
 Course is a reusable catalog definition. Enrollment links a student to a specific offering, never directly to the catalog course. Records with dependent academic history cannot be deleted. Active offering selection lasts for the current application session.
 
 For PDFs, select a saved exam and choose **Preview / PDF**. Enter university, department, professor and an optional PNG/JPEG logo. Generate and review Student Exam, then save to a new filename. Switch to Answer Key, generate its preview and save separately. A mark mismatch requires acknowledgement; existing files are never replaced. Print details are entered per export session. Missing images or unsupported glyphs produce an actionable error rather than silently disappearing.
+
+For grades, select an offering and open **Grades**. Create weighted categories under **Categories & Scale**, then dated assessments under **Assessments**. Enter scores directly or use **Bulk Entry** (student number, TAB, score per line), then **Save Grades**. Blank means ungraded; zero is a real score. Final results require weights totaling 100% and complete scores in all positive-weight categories. The default scale is A ≥90, B ≥80, C ≥70, D ≥60, F below 60, pass ≥60; configure thresholds per offering. Deleting an assessment also deletes its grades after confirmation.
 
 ## Technology stack
 
@@ -138,7 +140,7 @@ src/main/java/com/professoros/
 src/main/resources/
   css/                       Theme stylesheet
   fonts/                     Embedded Noto fonts, license and provenance
-  db/migrations/             Append-only schema migrations V001–V008
+  db/migrations/             Append-only schema migrations V001–V009
   fxml/                      Reserved; current layouts are Java code
   images/                    Reserved for application assets
 src/test/java/com/professoros/ Database, path and optional desktop tests

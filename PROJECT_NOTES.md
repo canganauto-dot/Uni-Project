@@ -123,7 +123,7 @@ Students has its own controller/view and an in-memory filtered/sorted list. Sett
 
 New controllers use `UiTaskRunner` for the established JavaFX Task/background-worker pattern. Shared form code only handles layout, busy/error state and Save/Cancel behavior; each entity form explicitly declares its fields. These small helpers remove actual duplication without introducing generic CRUD frameworks. No new third-party dependencies were added.
 
-Lectures and Exams reference CourseOffering. Future Assessment records should also reference CourseOffering; attendance should reference offering/enrollment; grades should relate Enrollment and Assessment.
+Lectures, Exams and Assessments reference CourseOffering. Grades relate Enrollment and Assessment within that same offering; future attendance should reference offering/enrollment.
 
 ### Phase 4 lecture organizer and timeline
 
@@ -283,6 +283,8 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 - Lectures and Timeline provide persisted offering-specific lecture organization, search, chronological ordering, completion counts and basic schedule status.
 - Exam Bank provides reusable Course questions, five types, MCQ choices/correct answer, difficulty, decimal marks, optional topic/image reference, CRUD/details/search and combined filters.
 - Exams provides offering-scoped draft creation/editing, manual ordered selections, saved question snapshots, marks warnings, constrained generation previews, finalization and archiving.
+- Exams exports separate Student Exam and Answer Key PDFs from saved snapshots, with preview and safe file selection.
+- Grades provides offering-scoped assessment/category management, direct and bulk score entry, weighted totals, configurable grading scales, incomplete results, search/sorting and basic class statistics.
 - All other destinations explicitly identify themselves as planned.
 - Transactional versioned SQLite migrations, CSS theme, Maven wrapper, repository/service tests and an opt-in desktop workflow check.
 
@@ -292,13 +294,13 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 - Broader semester planning beyond the offering-specific lecture timeline.
 - Advanced generation constraints and multiple exam versions.
 - Further PDF layout customization.
-- Grade tracking and required Excel grade export.
+- Required Excel grade export.
 - Attendance, learning outcomes, question quality analysis, student performance analysis and course analytics.
 - Backup and restore.
 
 ## Known Limitations
 
-- No grades, attendance, exports or advanced analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
+- No attendance, Excel functionality or advanced analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
 - Question usage counts finalized exams, not draft selections or previews. Image paths are external references and are not bundled, previewed or checked for existence. Topic labels are free text rather than managed entities.
 - Exam generation has explicit count/bank/search limits and no exact-mark optimization. Version variants remain future work. Snapshot locks are enforced by the application repository/service workflows, not protection against arbitrary external SQL edits.
 - Course codes, student numbers and sections use the documented ASCII identifier format. Localized identifier formats need an explicit future decision and migration.
@@ -393,3 +395,39 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 - Added eight PDF tests: all question types, student confidentiality including metadata/annotations, saved snapshots after bank edits, independent student/key files, A4 margins/long-text pagination, images/missing/corrupt images, embedded fonts, mixed Arabic, unsupported glyphs, mismatch acknowledgement and overwrite prevention. Extended the existing desktop workflow to open export, generate both previews and verify stale-preview invalidation.
 - Clean verification passed using the documented Windows workaround with isolated smoke storage: cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify". All 137 tests passed, zero failures/errors/skips (136 non-UI plus the desktop workflow). Student/key/Arabic PDFs and desktop snapshots were visually inspected; an orphaned answer heading found during review was corrected before the final build.
 - Native file-picker/physical keyboard interaction was not manually exercised; file writing, preview decoding and overwrite rejection are covered by isolated tests. No known build/test failures remain. A/B/C/D versions, grades, Excel and advanced analytics remain outside scope.
+
+### 2026-10-18 — Phase 8: grade management
+
+#### Schema and relationships
+V009__grade_management.sql adds assessment_categories, assessments, student_grades and grading_scales. V001–V008 are unchanged. Categories and assessments belong to CourseOffering. Each grade identifies an Enrollment and Assessment; composite foreign keys require both to belong to the recorded offering. Student/catalog details are never copied into grade cells. A unique enrollment/assessment key permits exactly one score.
+
+Weights, maximum marks, score values and scale thresholds are stored as integer hundredths, avoiding SQLite floating-point drift; domain APIs use BigDecimal. Scores and weights accept at most two decimal places. Categories require unique names within an offering, 0–100% weight; assessment titles are required, dates are ISO LocalDate, maxima are 0.01–100000. Scores range from zero through the assessment maximum. Database triggers reject excessive scores and maximum reductions that invalidate existing grades. Timestamped categories, assessments and grades preserve creation time and use fixed-millisecond UTC ISO text with monotonic updates.
+
+Category deletion is restricted while assessments use it. Offering deletion/reassignment is restricted by grading history. Enrollment deletion is restricted by grades. Explicitly confirmed assessment deletion cascades only to that assessment's grade cells; the confirmation states that those grades are permanently removed. Blank entries delete a grade cell, while a numeric zero remains a saved score. No speculative Exam-to-Assessment coupling was introduced.
+
+#### Calculation policy
+For each positive-weight category: sum earned marks / sum maximum marks across its assessments × category weight. Thus a 20-point and an 80-point assessment contribute in a 1:4 ratio within their category. Category contributions sum to weighted points out of 100, equivalent to percentage when weights total 100%. Weights are never silently normalized. Individual weights must be valid; the UI warns when their total differs from 100%.
+
+Missing scores contribute no earned points to the displayed provisional subtotal, but remain missing rather than becoming zero records. Final percentage classification requires weights totaling exactly 100%, an assessment in every positive-weight category, and all such assessments graded. Otherwise the result is INCOMPLETE, displays graded/required counts, and withholds letter/pass/fail. Empty positive-weight categories are named in a warning. Zero-weight categories are optional practice and do not affect totals or completeness.
+
+The default per-offering grading scale is A ≥90, B ≥80, C ≥70, D ≥60, F below D; pass ≥60. All five minimum thresholds are configurable to hundredths; A > B > C > D and each threshold lies in 0–100. Pass is intentionally an independent threshold. Letter labels remain A/B/C/D/F in this phase. Reduced rational arithmetic retains exact category fractions and compares thresholds before two-decimal HALF_UP display rounding, avoiding boundary errors from repeating decimals. A displayed 90.00 can therefore still be B if the exact result is below 90.
+
+Basic class statistics show complete/incomplete counts and, for complete results, mean/min/max and pass count. They cover the whole offering regardless of search. Withdrawn enrollments are visible for historical correction but excluded from class statistics; ACTIVE and COMPLETED enrollments are included. Statistics use the displayed two-decimal results. There is no forecasting, ranking, curve, extra credit or missing-as-zero finalization policy.
+
+#### Implementation and workflow
+GradebookRepository follows existing prepared-JDBC conventions. GradebookService validates inputs/relationships and owns operations. GradeCalculator is pure Java arithmetic with independent tests. GradebookDraft keeps unsaved cell strings, including invalid input, outside persistence. These domain/service APIs expose IDs and decimal values that future Excel adapters can reuse without depending on JavaFX.
+
+GradebookController coordinates background loads/writes and GradebookView/GradeForms compose the interface. Grades uses the active offering with Gradebook, Assessments and Categories & Scale tabs. Students are rows; assessments are editable columns with maxima. Blank is labelled Ungraded. Search matches student number/full name, table headers sort, and wide gradebooks scroll horizontally. Totals/statistics update as valid edits are typed; invalid input remains editable with a useful error.
+
+Bulk Entry accepts plain text with student number TAB score per line for one selected assessment. It validates every line, rejects unknown/duplicate students, then stages all changes together. This is a text-entry convenience, not Excel/CSV import. Save Grades validates the whole change set and persists it in one transaction; an invalid write rolls the batch back. Discard/Reload, navigation, offering changes and window close protect unsaved edits with a cancellation-first confirmation. Structural settings require existing grade edits to be saved/discarded first.
+
+No new dependencies were added. No Excel, advanced analytics, attendance or unrelated modules were implemented. The existing dashboard's non-course metrics remain explicitly demo data.
+
+#### Verification and limitations
+Added 23 normal tests covering V008→V009 preservation/idempotence, grade CRUD/reopening, actual-zero versus missing, range/date/name/scale validation, weighted points, partial/empty categories, threshold boundaries and repeating fractions, relationship isolation, repository constraints, atomic rollback, assessment deletion, bulk parsing, draft behavior, statistics and monotonic timestamps. Extended the existing desktop test with category/assessment forms, inline grades, invalid-score rejection, bulk entry, search/sorting, scale changes, confirmed/cancelled deletion, cancelled navigation/offering/window-close requests, discard/reload and workspace reconstruction from saved data.
+
+The verified Windows workflow uses the existing cmd /d /c and -DforkCount=0 workaround, without changing machine settings. UI tests use isolated storage and run the real JavaFX application. Gradebook snapshots were inspected at default and minimum window sizes. Automated control interaction does not claim manual physical-keyboard testing or a separate OS-process restart.
+
+Current limits: fixed A/B/C/D/F labels with configurable cutoffs, points-proportional weighting inside categories, no per-assessment exemption or dropped-lowest policy, no grade audit history, no multi-instance optimistic conflict detection, and no crash recovery for unsaved drafts. Assessment deletion is irreversible after confirmation. These are deliberate scope boundaries to revisit before broader grading/import features.
+
+Final Phase 8 verification: cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify" passed all 160 tests (159 normal cases plus the desktop workflow), with zero failures, errors or skips. Previous migration files and Git history were preserved; no dependencies or Windows settings changed.

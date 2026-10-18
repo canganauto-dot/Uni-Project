@@ -61,6 +61,7 @@ public final class ProfessorOsApplication extends Application {
         stage.setMinWidth(1100);
         stage.setMinHeight(740);
         stage.setScene(scene);
+        stage.setOnCloseRequest(event -> { if (!controller.canClose()) { event.consume(); } });
         stage.show();
         LOGGER.info("Professor OS window shown — academic terms, offerings, students and enrollment ready");
     }

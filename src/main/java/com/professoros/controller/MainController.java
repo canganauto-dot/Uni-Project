@@ -21,6 +21,7 @@ public final class MainController implements AutoCloseable {
     private final LectureController lectureController;
     private final QuestionController questionController;
     private final ExamController examController;
+    private final GradebookController gradebookController;
     private final SessionContext session = new SessionContext();
     private List<OfferingSummary> offeringChoices = List.of();
 
@@ -38,6 +39,7 @@ public final class MainController implements AutoCloseable {
         lectureController = new LectureController(academic.lectures());
         questionController = new QuestionController(academic.questions(), service);
         examController = new ExamController(academic.exams(), new ExamPdfService(academic.exams(), academic.offerings(), service));
+        gradebookController = new GradebookController(academic.grades());
         courses.onDetails(() -> offeringController.courseDetails(courses.selectedCourse()));
         courses.onCreateOffering(() -> offeringController.createForCourse(courses.selectedCourse()));
         courses.onOfferings(() -> view.showPage("Courses", offeringController.createView(null)));
@@ -47,6 +49,7 @@ public final class MainController implements AutoCloseable {
     }
 
     private void navigate(String section) {
+        if (view.currentSection().equals("Grades") && !gradebookController.canLeave()) { view.selectSection("Grades"); return; }
         switch (section) {
             case "Dashboard" -> { view.showPage(section, dashboard); courseController.refresh(); }
             case "Courses" -> { view.showPage(section, courses); courseController.refresh(); }
@@ -55,18 +58,21 @@ public final class MainController implements AutoCloseable {
             case "Lectures", "Timeline" -> showLectures(section);
             case "Exam Bank" -> view.showPage(section, questionController.show());
             case "Exams" -> showExams();
+            case "Grades" -> view.showPage(section,gradebookController.show(session.activeOffering().orElse(null)));
             default -> view.showPlaceholder(section);
         }
         offeringController.refreshChoices();
     }
 
     private void openOffering(OfferingSummary offering) {
+        if (view.currentSection().equals("Grades") && !gradebookController.canLeave()) { view.offeringChoices(offeringChoices,session.activeOffering().orElse(null)); return; }
         session.select(offering);
         view.offeringChoices(offeringChoices, offering);
         dashboard.setActiveOffering(offering.label());
         if (view.currentSection().equals("Lectures") || view.currentSection().equals("Timeline")) {
             showLectures(view.currentSection());
         } else if (view.currentSection().equals("Exams")) { showExams(); }
+        else if (view.currentSection().equals("Grades")) { view.showPage("Grades",gradebookController.show(offering)); }
         else { view.showPage("Courses", enrollmentController.createView(offering)); }
     }
 
@@ -97,5 +103,7 @@ public final class MainController implements AutoCloseable {
         lectureController.close();
         questionController.close();
         examController.close();
+        gradebookController.close();
     }
+    public boolean canClose() { return gradebookController.canLeave(); }
 }
