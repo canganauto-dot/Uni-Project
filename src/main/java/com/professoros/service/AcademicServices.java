@@ -6,7 +6,7 @@ import com.professoros.repository.*;
 /** Explicit composition of the academic services; shared by application startup and desktop tests. */
 public record AcademicServices(AcademicTermService terms, CourseOfferingService offerings,
                                StudentService students, EnrollmentService enrollments, LectureService lectures,
-                               QuestionService questions, ExamService exams, GradebookService grades) {
+                               QuestionService questions, ExamService exams, GradebookService grades, StudentImportService imports) {
     public static AcademicServices create(Database database) {
         var terms = new AcademicTermRepository(database);
         var offerings = new CourseOfferingRepository(database);
@@ -17,6 +17,7 @@ public record AcademicServices(AcademicTermService terms, CourseOfferingService 
                 new LectureService(new LectureRepository(database), offerings),
                 new QuestionService(new QuestionRepository(database), new CourseRepository(database)),
                 new ExamService(new ExamRepository(database), offerings, new QuestionRepository(database)),
-                new GradebookService(new GradebookRepository(database),offerings,new EnrollmentRepository(database)));
+                new GradebookService(new GradebookRepository(database),offerings,new EnrollmentRepository(database)),
+                new StudentImportService(new StudentImportRepository(database),students,new EnrollmentRepository(database),offerings,terms));
     }
 }

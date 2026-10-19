@@ -17,10 +17,16 @@
     <junit.version>5.14.0</junit.version>
     <pdfbox.version>3.0.8</pdfbox.version>
     <icu4j.version>78.3</icu4j.version>
+    <poi.version>5.5.1</poi.version>
     <excludedTestGroups>ui</excludedTestGroups>
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>org.apache.poi</groupId>
+      <artifactId>poi-ooxml</artifactId>
+      <version>${poi.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.apache.pdfbox</groupId>
       <artifactId>pdfbox</artifactId>

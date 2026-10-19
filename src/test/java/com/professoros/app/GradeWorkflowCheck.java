@@ -44,7 +44,7 @@ final class GradeWorkflowCheck {
             ready();
             assertEquals("18.00",f.academic().grades().load(f.first().id()).grades().getFirst().score().toPlainString());
             fx(()->{ text(root,cell().substring(1),"99"); button(root,"save-grades").fire(); return null; });
-            await(()->((Label)root.lookup("#grade-status")).getText().contains("Score must"));
+            await(()->!button(root,"save-grades").isDisabled() && ((Label)root.lookup("#grade-status")).getText().contains("Score must"));
             assertEquals("18.00",f.academic().grades().load(f.first().id()).grades().getFirst().score().toPlainString());
             // Cancel navigation must preserve the invalid draft and the active context.
             Platform.runLater(()->((ToggleButton)root.lookup("#nav-courses")).fire()); await(()->!noDialog());
@@ -62,6 +62,12 @@ final class GradeWorkflowCheck {
             await(this::noDialog);
             fx(()->{ assertFalse(button(root,"save-grades").isDisabled()); button(root,"save-grades").fire(); return null; }); ready();
             assertEquals(2,f.academic().grades().load(f.first().id()).grades().size());
+            Path report=path.getParent().resolve("ui-gradebook.xlsx");
+            fx(()->{ button(root,"export-grades-excel").fire(); return null; }); await(()->!noDialog());
+            fx(()->{ dialog().applyCss(); dialog().layout(); ApplicationSmokeTest.saveSnapshot(dialog().snapshot(null,null),"excel-export-dialog.png"); return null; });
+            fx(()->{ text(dialog(),"excel-export-path",report.toString()); button(dialog(),"save-academic").fire(); return null; }); await(this::noDialog);
+            assertTrue(java.nio.file.Files.isRegularFile(report));
+            try(var input=java.nio.file.Files.newInputStream(report);var workbook=new org.apache.poi.xssf.usermodel.XSSFWorkbook(input)) { assertEquals(3,workbook.getNumberOfSheets()); }
             fx(()->{
                 text(root,"grade-search","sara"); assertEquals(1,table().getItems().size()); text(root,"grade-search","");
                 table().getColumns().get(0).setSortType(TableColumn.SortType.DESCENDING);
@@ -74,6 +80,7 @@ final class GradeWorkflowCheck {
             await(()->stage.getScene().getWidth()<1101);
             fx(()->{ root.applyCss(); root.layout(); ApplicationSmokeTest.saveSnapshot(root.snapshot(null,null),"gradebook-minimum.png"); return null; });
             fx(()->{ assertEquals("18.00",((TextField)root.lookup(cell())).getText()); text(root,cell().substring(1),"1"); return null; });
+            fx(()->{ button(root,"export-grades-excel").fire(); assertTrue(noDialog()); assertTrue(((Label)root.lookup("#grade-status")).getText().contains("Save or discard")); return null; });
             Platform.runLater(()->button(root,"reload-grades").fire()); await(()->!noDialog());
             fx(()->{ button(dialog(),"confirm-academic-action").fire(); return null; }); ready();
             fx(()->{ assertEquals("18.00",((TextField)root.lookup(cell())).getText()); return null; });

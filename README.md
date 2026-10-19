@@ -2,10 +2,11 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 8 grade management.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
+**Status: Phase 9 Excel integration.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
 
 ## Implemented
 
+- Excel student import with Arabic/English mapping, validation preview and optional offering enrollment; formatted gradebook export with saved calculations.
 - Student Exam and Answer Key PDF preview/export from saved snapshots, with A4 pagination, embedded fonts and basic Arabic/RTL support.
 - Offering-scoped gradebook with editable cells, bulk plain-text entry, weighted categories, assessment CRUD, configurable letter/pass thresholds, incomplete results and basic class statistics.
 - JavaFX shell, catalog Course CRUD, term management under Settings and student directory management.
@@ -20,7 +21,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Planned
 
-Excel student import, broader semester planning, advanced generation constraints, multiple exam versions, **Excel grade export**, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
+Broader semester planning, advanced generation constraints, multiple exam versions, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
 
 ## Academic workflow
 
@@ -38,6 +39,10 @@ For PDFs, select a saved exam and choose **Preview / PDF**. Enter university, de
 
 For grades, select an offering and open **Grades**. Create weighted categories under **Categories & Scale**, then dated assessments under **Assessments**. Enter scores directly or use **Bulk Entry** (student number, TAB, score per line), then **Save Grades**. Blank means ungraded; zero is a real score. Final results require weights totaling 100% and complete scores in all positive-weight categories. The default scale is A ≥90, B ≥80, C ≥70, D ≥60, F below 60, pass ≥60; configure thresholds per offering. Deleting an assessment also deletes its grades after confirmation.
 
+For Excel, choose **Import from Excel** in Students or an offering's Students tab. Load an `.xlsx`, select its sheet/header, review automatic Arabic/English column mapping (or map manually), then preview and confirm valid rows. Existing profiles are never overwritten. Repeated IDs and conflicting profiles are errors; matching students can be enrolled without duplication. Section must match the selected offering when supplied. Store student IDs as text to preserve leading zeros; numeric cells can only preserve digits still present in Excel.
+
+In Grades, save or discard pending edits, then choose **Export to Excel** and a new filename. Grades, Assessment Breakdown and Statistics contain a saved report, not recalculating formulas. Missing scores remain blank and zero stays numeric zero. Attendance is omitted until that module exists. Imports do not evaluate formulas; replace formula cells with reviewed values first. `.xls`, `.xlsm`, CSV and grade import are not supported. No Microsoft Excel installation is required.
+
 ## Technology stack
 
 - Java 25 LTS; JavaFX Controls 25.0.4 (includes JavaFX Base/Graphics).
@@ -45,7 +50,7 @@ For grades, select an offering and open **Grades**. Create weighted categories u
 - SQLite JDBC 3.53.4.0; JDBC and `java.util.logging` from the JDK.
 - JUnit Jupiter 5.14.0 for tests.
 - Apache PDFBox 3.0.8; ICU4J 78.3 for Arabic shaping/bidi; bundled Noto fonts under SIL OFL 1.1.
-- Apache POI remains planned for Excel features; it is not a dependency yet.
+- Apache POI 5.5.1 for .xlsx student import and gradebook export.
 
 ## Prerequisites
 
@@ -136,6 +141,7 @@ src/main/java/com/professoros/
   repository/                Prepared JDBC queries and row mapping
   database/                  Connections and versioned migration runner
   pdf/                       Snapshot PDF layout, fonts and image validation
+  excel/                     Bounded workbook reading and formatted grade reports
   util/                      Reserved for focused shared utilities
 src/main/resources/
   css/                       Theme stylesheet
@@ -145,7 +151,7 @@ src/main/resources/
   images/                    Reserved for application assets
 src/test/java/com/professoros/ Database, path and optional desktop tests
 data/                        Local database (ignored)
-exports/                     Future generated PDF/Excel exports (ignored)
+exports/                     Generated PDF/Excel exports (ignored)
 target/                      Build output and test reports (ignored)
 ```
 

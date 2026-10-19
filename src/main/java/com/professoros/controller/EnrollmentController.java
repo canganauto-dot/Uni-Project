@@ -7,10 +7,12 @@ import com.professoros.view.*;
 public final class EnrollmentController implements AutoCloseable {
     private final AcademicServices services;
     private final UiTaskRunner tasks = new UiTaskRunner();
-    public EnrollmentController(AcademicServices services) { this.services = services; }
+    private final StudentImportController imports;
+    public EnrollmentController(AcademicServices services) { this.services = services; imports=new StudentImportController(services.imports()); }
     public OfferingDetailsView createView(OfferingSummary summary) {
         OfferingDetailsView view = new OfferingDetailsView(summary);
         long offeringId = summary.offering().id();
+        view.importExcel.setOnAction(e->imports.open(view.getScene().getWindow(),offeringId,summary.label(),()->refresh(view,offeringId)));
         view.refresh.setOnAction(event -> refresh(view, offeringId));
         view.enroll.setOnAction(event -> {
             view.setDisable(true);
@@ -49,5 +51,5 @@ public final class EnrollmentController implements AutoCloseable {
     private static void error(OfferingDetailsView view, String message) {
         view.setDisable(false); AcademicControls.status(view.status, message, true);
     }
-    @Override public void close() { tasks.close(); }
+    @Override public void close() { tasks.close(); imports.close(); }
 }

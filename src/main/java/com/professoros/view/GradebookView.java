@@ -11,6 +11,7 @@ import java.util.function.BiConsumer;
 
 public final class GradebookView extends VBox {
     public final Button save=button("Save Grades","save-grades"),discard=button("Discard / Reload","reload-grades"),bulk=button("Bulk Entry","bulk-grades");
+    public final Button exportExcel=button("Export to Excel","export-grades-excel");
     public final Button newCategory=button("New Category","new-category"),editCategory=button("Edit","edit-category"),deleteCategory=button("Delete","delete-category");
     public final Button newAssessment=button("New Assessment","new-assessment"),editAssessment=button("Edit","edit-assessment"),deleteAssessment=button("Delete","delete-assessment"),scale=button("Grading Scale","grading-scale");
     public final TableView<AssessmentCategory> categories=AcademicControls.table("grade-categories");
@@ -40,12 +41,12 @@ public final class GradebookView extends VBox {
         categories.setPlaceholder(new Label("Create categories and assign weights (total 100%)."));
         assessments.setPlaceholder(new Label("Create a category, then add assessments."));
         tabs.setId("grade-tabs");
-        tabs.getTabs().addAll(tab("Gradebook",new VBox(10,new FlowPane(8,8,search,save,discard,bulk),table)),
+        tabs.getTabs().addAll(tab("Gradebook",new VBox(10,new FlowPane(8,8,search,save,discard,bulk,exportExcel),table)),
                 tab("Assessments",new VBox(10,new FlowPane(8,8,newAssessment,editAssessment,deleteAssessment),assessments)),
                 tab("Categories & Scale",new VBox(10,new FlowPane(8,8,newCategory,editCategory,deleteCategory,scale),categories)));
         VBox.setVgrow(tabs,Priority.ALWAYS);
         getChildren().addAll(DashboardView.label("Grades","page-title"),context,weights,tabs,statistics,status);
-        buttons=List.of(save,discard,bulk,newCategory,editCategory,deleteCategory,newAssessment,editAssessment,deleteAssessment,scale);
+        buttons=List.of(save,discard,bulk,exportExcel,newCategory,editCategory,deleteCategory,newAssessment,editAssessment,deleteAssessment,scale);
         setBusy(true);
     }
     private static Button button(String name,String id) { return AcademicControls.button(name,id,id.equals("save-grades")?"primary-button":"secondary-button"); }

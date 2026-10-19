@@ -36,7 +36,7 @@ public final class StudentService {
             throw new DomainValidationException("Student number " + number + " already exists.");
         }
     }
-    private StudentInput validate(StudentInput input) {
+    public static StudentInput validate(StudentInput input) {
         AcademicValidation.required(input, "Student details");
         String number = AcademicValidation.identifier(input.studentNumber(), "Student number");
         String first = AcademicValidation.text(input.firstName(), "First name", 100, true);

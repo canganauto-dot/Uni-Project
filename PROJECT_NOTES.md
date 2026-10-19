@@ -2,7 +2,7 @@
 
 ## Project Goal
 
-Build an all-in-one offline desktop workspace for university professors: courses, students, lectures, exams, grades, attendance and semester planning. The software should reduce fragmented administration while remaining understandable and defensible as an academic Java software engineering project. PDF exam generation is implemented; Excel grade export remains a required future capability.
+Build an all-in-one offline desktop workspace for university professors: courses, students, lectures, exams, grades, attendance and semester planning. The software should reduce fragmented administration while remaining understandable and defensible as an academic Java software engineering project. PDF exam generation and Excel grade export are implemented.
 
 ## Technology Stack
 
@@ -15,7 +15,7 @@ Build an all-in-one offline desktop workspace for university professors: courses
 | Maven Compiler / Surefire | 3.14.1 / 3.6.0 | Java 25 compilation and JUnit execution |
 | SQLite JDBC | 3.53.4.0 | Local storage engine and JDBC driver |
 | JUnit Jupiter | 5.14.0, test scope | Meaningful foundation tests |
-| Apache POI | Planned | Excel student import and grade export |
+| Apache POI | 5.5.1 | Excel student import and grade export |
 | Apache PDFBox / ICU4J | 3.0.8 / 78.3 | PDF generation/preview and Arabic shaping/bidi |
 
 Version availability was checked against Maven Central. Setup guidance: [OpenJFX](https://openjfx.io/openjfx-docs/), [Apache Maven Wrapper](https://maven.apache.org/tools/wrapper/), [Xerial SQLite JDBC](https://github.com/xerial/sqlite-jdbc), [JUnit 5 release notes](https://docs.junit.org/5.14.0/release-notes/).
@@ -30,7 +30,7 @@ Database initialization runs in JavaFX's `init()` lifecycle method, off the Java
 
 ## Directory Structure
 
-Standard Maven `src/main/java`, `src/main/resources` and `src/test/java` layouts, under package `com.professoros`. Packages: `app`, `controller`, `view`, `demo`, `model`, `service`, `repository`, `database`, `util`. Resources: `css`, `fxml`, `images`, `db/migrations`. Migration failure fixtures live separately in `src/test/resources/db/migrations`.
+Standard Maven `src/main/java`, `src/main/resources` and `src/test/java` layouts, under package `com.professoros`. Packages: `app`, `controller`, `view`, `demo`, `model`, `service`, `repository`, `database`, `pdf`, `excel`, `util`. Resources: `css`, `fxml`, `images`, `db/migrations`. Migration failure fixtures live separately in `src/test/resources/db/migrations`.
 
 The requested structure gains `view` to keep layout construction out of controllers and `demo` to isolate sample content from domain/persistence code. Reserved packages/resources use `.gitkeep` rather than empty placeholder classes. No FXML dependency is needed until an FXML file is actually introduced.
 
@@ -285,6 +285,7 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 - Exams provides offering-scoped draft creation/editing, manual ordered selections, saved question snapshots, marks warnings, constrained generation previews, finalization and archiving.
 - Exams exports separate Student Exam and Answer Key PDFs from saved snapshots, with preview and safe file selection.
 - Grades provides offering-scoped assessment/category management, direct and bulk score entry, weighted totals, configurable grading scales, incomplete results, search/sorting and basic class statistics.
+- Excel imports students globally or into an offering after mapping/preview; exports formatted grade reports using existing calculations.
 - All other destinations explicitly identify themselves as planned.
 - Transactional versioned SQLite migrations, CSS theme, Maven wrapper, repository/service tests and an opt-in desktop workflow check.
 
@@ -300,7 +301,7 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 
 ## Known Limitations
 
-- No attendance, Excel functionality or advanced analytics yet. Global header search remains a placeholder. Enrollment uses existing students; create new students in the directory first.
+- No attendance or advanced analytics yet. Global header search remains a placeholder. Excel supports student import and saved grade export only; see Phase 9 limits.
 - Question usage counts finalized exams, not draft selections or previews. Image paths are external references and are not bundled, previewed or checked for existence. Topic labels are free text rather than managed entities.
 - Exam generation has explicit count/bank/search limits and no exact-mark optimization. Version variants remain future work. Snapshot locks are enforced by the application repository/service workflows, not protection against arbitrary external SQL edits.
 - Course codes, student numbers and sections use the documented ASCII identifier format. Localized identifier formats need an explicit future decision and migration.
@@ -431,3 +432,36 @@ The verified Windows workflow uses the existing cmd /d /c and -DforkCount=0 work
 Current limits: fixed A/B/C/D/F labels with configurable cutoffs, points-proportional weighting inside categories, no per-assessment exemption or dropped-lowest policy, no grade audit history, no multi-instance optimistic conflict detection, and no crash recovery for unsaved drafts. Assessment deletion is irreversible after confirmation. These are deliberate scope boundaries to revisit before broader grading/import features.
 
 Final Phase 8 verification: cmd /d /c ".\mvnw.cmd -B -ntp -DforkCount=0 -Pui-smoke clean verify" passed all 160 tests (159 normal cases plus the desktop workflow), with zero failures, errors or skips. Previous migration files and Git history were preserved; no dependencies or Windows settings changed.
+
+
+### 2026-10-19 — Phase 9: Excel integration
+
+#### Architecture and dependency
+Added Apache POI poi-ooxml 5.5.1, pinned after checking the [official release page](https://poi.apache.org/download.cgi) and [spreadsheet guide](https://poi.apache.org/components/spreadsheet/quick-guide.html). POI provides Java-native XLSX reading/writing without Microsoft Excel or external services. No migration is required: existing students, enrollments and grading tables are reused; V001–V009 are unchanged.
+
+The excel package owns bounded workbook reading, header detection and report formatting. StudentImportService owns validation/preview decisions; StudentImportRepository owns the atomic JDBC transaction. Detached import records contain no POI or JavaFX objects. StudentImportController and StudentImportDialog are reused by the student directory and offering roster. ExcelExportService loads saved data and writes files; GradeWorkbookWriter uses GradeCalculator for totals and statistics. GradeStatistics exposes the existing calculation result without parsing UI text. No competing grading formula was introduced.
+
+#### Import policy
+Import accepts XLSX, selects a worksheet/header and detects Arabic/English aliases for student ID, full name or first/last names, email and section. Manual mapping resolves unknown/ambiguous headers. Arabic/Persian decimal digits normalize to ASCII identifiers. Full-name-only input splits the first word from the remainder, explicitly noted in preview; it is not a linguistic name parser. StudentService's existing validation is reused.
+
+Text IDs retain leading zeros; numeric IDs use Excel's displayed number format and show a warning. Precision or leading zeros already discarded by Excel cannot be recovered. Unsafe numeric values, formula/error/boolean cells in mapped fields, invalid emails and missing required names/IDs produce visible row errors. Formulas are never evaluated, and external links are not resolved. All repeated IDs within the sheet are rejected, rather than choosing an arbitrary winner.
+
+Preview shows create/enroll/skip/error decisions and selected-row explanations. Confirmation explicitly imports valid rows; validation failures are counted separately. Exact matching existing students are skipped globally or enrolled into the selected offering. Conflicting names or supplied emails are rejected; no existing profile is updated. Already-enrolled students are skipped, including withdrawn enrollments (no implicit reactivation). A supplied section must match the target offering; global import retains section in newly created students' notes and does not invent offerings.
+
+All actionable creates/enrollments commit in one transaction with prepared statements. Existing student snapshots and target offering/term eligibility are checked again at confirmation. A concurrent change or database failure rolls the actionable batch back; it does not leave a partial import. Created/enrolled counts are separate and may overlap for new students enrolled immediately. Skipped and failed-validation counts describe untouched rows. File/sheet/header/mapping changes invalidate confirmation until a new preview is generated.
+
+Bounds: 20 MB compressed, 64 MB expanded ZIP content, 2,000 ZIP parts, 20 sheets, last row no later than 10,001 (header included), 100 columns, 200,000 visited cells and 5,000 characters per imported cell. Disguised macro workbooks are rejected. Malformed/encrypted files produce a concise error with diagnostic cause retained.
+
+#### Export policy and formatting
+Export uses saved grades only; pending edits must first be saved or discarded. Three sheets are generated: Grades, Assessment Breakdown and Statistics. Attendance is not implemented, so no fictitious Attendance sheet is emitted. IDs are literal text cells with text number format; names beginning with '=' remain literal strings. Missing scores are true blank cells; actual zeros remain numeric. Final percentage/letter stay blank until complete; provisional weighted points and incomplete status remain explicit.
+
+Category weights, grading scales, threshold comparisons, incomplete handling and withdrawn-enrollment statistics follow GradeCalculator unchanged. Breakdown means include actual zeros and exclude missing/withdrawn scores. Class mean/pass rate cover complete ACTIVE/COMPLETED results. Reports are static snapshots, clearly labelled as such; editing Excel cells does not recalculate totals. There are no generated formulas or executable external links.
+
+Formatting includes restrained headers, typed dates/numbers/percentages, wrapped text, column widths, row sizing, frozen identifiers/headers, filters, A4 landscape print setup and page-number footers. Limits are 1,000 assessments, 10,000 students and 200,000 grade cells. Export stages the file in the destination folder and moves it without replacement; existing destinations are never silently overwritten.
+
+#### Verification and limitations
+Added 14 integration tests covering bilingual/manual mapping, full names, Arabic digits, leading zeros and formatted numeric IDs, duplicate/conflict/section policies, formula/error cells, malformed/empty/oversized/macro files, transactional rollback, stale previews, withdrawn enrollment preservation, blank versus zero, literal formula-like text, nonzero weighted results/class statistics, empty reports and overwrite protection. Desktop workflows exercise global and offering imports, mapping invalidation, validation previews, counts, persistence through service reconstruction, export and unsaved-edit protection. A pre-existing desktop-test race was corrected by waiting for failed-save completion before testing navigation protection.
+
+Workbook layouts and JavaFX snapshots are visually inspected. The auxiliary workbook renderer coerces numeric-looking text IDs in its own preview; POI round-trip assertions verify the actual XLSX retains string IDs and leading zeros. Native Excel rendering, physical keyboard interaction and OS file-picker interaction are not claimed; tests enter file paths through the actual dialogs. No XLS/CSV/XLSM, formula evaluation, grade import, attendance or advanced analytics were added. Full-name splitting and locale-specific headers remain reviewable through manual mapping and preview.
+
+Final Phase 9 verification: the documented cmd /d /c workflow with -DforkCount=0 -Pui-smoke clean verify passed all 174 tests (173 normal tests plus the desktop workflow), zero failures/errors/skips. The real JavaFX windows ran against isolated temporary databases; import/export snapshots and all three workbook sheet layouts were inspected. No known build failures remain. Windows settings and previous migration files were preserved.

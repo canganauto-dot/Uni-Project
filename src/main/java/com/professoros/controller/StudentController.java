@@ -11,8 +11,11 @@ public final class StudentController implements AutoCloseable {
     private final EnrollmentService enrollments;
     private final StudentsView view;
     private final UiTaskRunner tasks = new UiTaskRunner();
-    public StudentController(StudentService service, EnrollmentService enrollments, StudentsView view) {
+    private final StudentImportController imports;
+    public StudentController(StudentService service, EnrollmentService enrollments, StudentsView view,StudentImportService importService) {
+        imports=new StudentImportController(importService);
         this.service = service; this.enrollments = enrollments; this.view = view;
+        view.importExcel.setOnAction(e->imports.open(view.getScene().getWindow(),null,"Global student directory",()->refresh(null)));
         view.create.setOnAction(event -> edit(null));
         view.edit.setOnAction(event -> edit(view.table.getSelectionModel().getSelectedItem()));
         view.refresh.setOnAction(event -> refresh(null));
@@ -72,5 +75,5 @@ public final class StudentController implements AutoCloseable {
             AcademicControls.details(view.getScene().getWindow(), student.toString(), body);
         }, message -> { view.setDisable(false); AcademicControls.status(view.status, message, true); });
     }
-    @Override public void close() { tasks.close(); }
+    @Override public void close() { tasks.close(); imports.close(); }
 }

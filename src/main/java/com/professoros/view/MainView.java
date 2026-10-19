@@ -61,7 +61,7 @@ public final class MainView extends BorderPane {
         Region space = new Region();
         VBox.setVgrow(space, Priority.ALWAYS);
         VBox footer = new VBox(7, DashboardView.label("OFFLINE WORKSPACE", "sidebar-caption"),
-                DashboardView.label("Teaching workspace · Phase 8", "sidebar-detail"));
+                DashboardView.label("Teaching workspace · Phase 9", "sidebar-detail"));
         VBox sidebar = new VBox(22, brand, DashboardView.label("WORKSPACE", "sidebar-caption"), links, space, footer);
         sidebar.getStyleClass().add("sidebar");
         sidebar.setPrefWidth(228);

@@ -12,6 +12,7 @@ public final class OfferingDetailsView extends VBox {
     public final Button complete = AcademicControls.button("Mark Completed", "complete-enrollment", "secondary-button");
     public final Button reactivate = AcademicControls.button("Reactivate", "reactivate-enrollment", "secondary-button");
     public final Button refresh = AcademicControls.button("Refresh", "refresh-roster", "secondary-button");
+    public final Button importExcel = AcademicControls.button("Import from Excel", "import-enrollments-excel", "secondary-button");
     public final Label status = DashboardView.label("", "muted");
     public final TabPane tabs = new TabPane();
     private final Label rosterCount = DashboardView.label("", "muted");
@@ -29,7 +30,7 @@ public final class OfferingDetailsView extends VBox {
                 DashboardView.label(summary.offering().notes().isBlank() ? "No schedule or notes added." : summary.offering().notes(), "muted"),
                 DashboardView.label("This is the active teaching context. Future teaching modules will attach to this offering.", "muted"));
         overview.getStyleClass().add("page");
-        VBox roster = new VBox(14, new HBox(10, enroll, withdraw, complete, reactivate, refresh), rosterCount, table, status);
+        VBox roster = new VBox(14, new javafx.scene.layout.FlowPane(10,10,enroll,withdraw,complete,reactivate,refresh,importExcel), rosterCount, table, status);
         roster.setStyle("-fx-padding: 18 0 0 0;");
         Tab overviewTab = new Tab("Overview", overview);
         Tab studentsTab = new Tab("Students", roster); studentsTab.setId("offering-students-tab");

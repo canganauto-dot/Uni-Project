@@ -48,12 +48,17 @@ public final class GradeCalculator {
         Map<GradeKey,BigDecimal> result=new HashMap<>(); book.grades().forEach(g->result.put(g.key(),g.score())); return result;
     }
     public static String statistics(Gradebook book,Map<GradeKey,BigDecimal> scores) {
+        var summary=classStatistics(book,scores);
+        if(summary.complete()==0) { return "No complete results · "+summary.incomplete()+" incomplete · withdrawn students excluded"; }
+        return "Complete: "+summary.complete()+" · Incomplete: "+summary.incomplete()+" · Mean: "+summary.mean()+"% · Min: "+summary.minimum()+"% · Max: "+summary.maximum()+"% · Passed: "+summary.passed()+" (withdrawn excluded)";
+    }
+    public static GradeStatistics classStatistics(Gradebook book,Map<GradeKey,BigDecimal> scores) {
         var results=book.students().stream().filter(s->s.enrollment().status()!=EnrollmentStatus.WITHDRAWN)
                 .map(s->calculate(book,s.enrollment().id(),scores)).toList();
         var complete=results.stream().filter(GradeResult::complete).toList();
-        if(complete.isEmpty()) { return "No complete results · "+results.size()+" incomplete · withdrawn students excluded"; }
+        if(complete.isEmpty()) { return new GradeStatistics(0,results.size(),0,null,null,null); }
         var values=complete.stream().map(GradeResult::weightedPoints).toList();
         var mean=values.stream().reduce(BigDecimal.ZERO,BigDecimal::add).divide(BigDecimal.valueOf(values.size()),2,RoundingMode.HALF_UP);
-        return "Complete: "+complete.size()+" · Incomplete: "+(results.size()-complete.size())+" · Mean: "+mean+"% · Min: "+Collections.min(values)+"% · Max: "+Collections.max(values)+"% · Passed: "+complete.stream().filter(r->r.outcome().equals("PASS")).count()+" (withdrawn excluded)";
+        return new GradeStatistics(complete.size(),results.size()-complete.size(),complete.stream().filter(r->r.outcome().equals("PASS")).count(),mean,Collections.min(values),Collections.max(values));
     }
 }

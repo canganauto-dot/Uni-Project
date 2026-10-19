@@ -14,8 +14,20 @@ public final class GradebookController implements AutoCloseable {
     private GradebookDraft draft;
     private long revision;
     private boolean busy;
-    public GradebookController(GradebookService service) {
+    public GradebookController(GradebookService service,ExcelExportService exporter) {
         this.service=service;
+        view.exportExcel.setOnAction(e->{
+            if(!configurable()) { return; } long offeringId=id();
+            var dialog=new ExcelExportDialog(owner(),GradeCalculator.configurationMessage(draft.book()));
+            dialog.onSave(()->{
+                try {
+                    var destination=dialog.path(); dialog.setBusy(true); busy=true;
+                    tasks.run(()->{ var bytes=exporter.render(offeringId); exporter.save(bytes,destination); return destination; },path->{
+                        busy=false; dialog.setBusy(false); dialog.close(); view.status("Excel report saved to "+path,false);
+                    },message->{ busy=false; dialog.setBusy(false); dialog.showError(message); });
+                } catch(DomainValidationException failure) { dialog.showError(failure.getMessage()); }
+            }); dialog.show();
+        });
         view.onChange((key,value)->{ if(draft!=null) { draft.set(key,value); summarize(false); } });
         view.save.setOnAction(e->save());
         view.discard.setOnAction(e->{ if(canLeave()) { load(); } });
@@ -88,7 +100,7 @@ public final class GradebookController implements AutoCloseable {
     }
     private boolean configurable() {
         if(draft==null || busy) { return false; }
-        if(draft.dirty()) { view.status("Save or discard grade edits before changing assessment settings.",true); return false; }
+        if(draft.dirty()) { view.status("Save or discard grade edits before exporting or changing assessment settings.",true); return false; }
         return true;
     }
     private void category(AssessmentCategory existing) {

@@ -33,13 +33,13 @@ public final class MainController implements AutoCloseable {
             dashboard.setCourseCount(count);
             offeringController.refreshChoices();
         });
-        studentController = new StudentController(academic.students(), academic.enrollments(), students);
+        studentController = new StudentController(academic.students(), academic.enrollments(), students,academic.imports());
         termController = new TermController(academic.terms(), terms, offeringController::refreshChoices);
         enrollmentController = new EnrollmentController(academic);
         lectureController = new LectureController(academic.lectures());
         questionController = new QuestionController(academic.questions(), service);
         examController = new ExamController(academic.exams(), new ExamPdfService(academic.exams(), academic.offerings(), service));
-        gradebookController = new GradebookController(academic.grades());
+        gradebookController = new GradebookController(academic.grades(),new ExcelExportService(academic.grades(),academic.offerings()));
         courses.onDetails(() -> offeringController.courseDetails(courses.selectedCourse()));
         courses.onCreateOffering(() -> offeringController.createForCourse(courses.selectedCourse()));
         courses.onOfferings(() -> view.showPage("Courses", offeringController.createView(null)));

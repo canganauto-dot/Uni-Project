@@ -110,6 +110,7 @@ class ApplicationSmokeTest {
             new QuestionWorkflowCheck(temporaryDirectory.resolve("questions.db")).verify();
             new ExamWorkflowCheck(temporaryDirectory.resolve("exams.db")).verify();
             new GradeWorkflowCheck(temporaryDirectory.resolve("grades.db")).verify();
+            new ExcelWorkflowCheck(temporaryDirectory.resolve("excel")).verify();
         } finally {
             application.stop();
             Platform.exit();

@@ -15,6 +15,7 @@ public final class StudentsView extends VBox {
     public final Button details = AcademicControls.button("View Details", "student-details", "secondary-button");
     public final Button delete = AcademicControls.button("Delete", "delete-student", "danger-button");
     public final Button refresh = AcademicControls.button("Refresh", "refresh-students", "secondary-button");
+    public final Button importExcel = AcademicControls.button("Import from Excel", "import-students-excel", "secondary-button");
     public final Label status = DashboardView.label("", "muted");
     private final ObservableList<Student> rows = FXCollections.observableArrayList();
     private final FilteredList<Student> filtered = new FilteredList<>(rows);
@@ -32,7 +33,7 @@ public final class StudentsView extends VBox {
         Region space = new Region(); HBox.setHgrow(space, Priority.ALWAYS);
         getChildren().addAll(new HBox(12, DashboardView.label("Students", "page-title"), space, search, create),
                 DashboardView.label("Student directory · Enrollment belongs to a specific offering.", "muted"),
-                new HBox(10, edit, details, delete, refresh), table, status);
+                new HBox(10, edit, details, delete, refresh, importExcel), table, status);
         placeholder();
     }
     public void showStudents(List<Student> students, Long selectedId) {
