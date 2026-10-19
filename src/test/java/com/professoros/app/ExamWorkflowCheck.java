@@ -2,7 +2,7 @@ package com.professoros.app;
 
 import com.professoros.controller.MainController;
 import com.professoros.database.Database;
-import com.professoros.demo.DemoDashboard;
+
 import com.professoros.model.*;
 import com.professoros.repository.CourseRepository;
 import com.professoros.service.*;
@@ -120,7 +120,7 @@ final class ExamWorkflowCheck {
     private void open() throws Exception {
         Database db=new Database(file); db.initialize();
         fx(() -> {
-            root=new MainView(); controller=new MainController(root,new DemoDashboard(),new CourseService(new CourseRepository(db)),AcademicServices.create(db));
+            root=new MainView(); controller=new MainController(root,new CourseService(new CourseRepository(db)),AcademicServices.create(db));
             stage=new Stage(); Scene scene=new Scene(root,1360,900); scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
             stage.setScene(scene); stage.show(); ((ToggleButton)root.lookup("#nav-exams")).fire(); return null;
         });

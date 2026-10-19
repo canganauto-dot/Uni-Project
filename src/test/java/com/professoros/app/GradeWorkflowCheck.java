@@ -1,6 +1,6 @@
 package com.professoros.app;
 import com.professoros.controller.MainController;
-import com.professoros.demo.DemoDashboard;
+
 import com.professoros.model.*;
 import com.professoros.repository.CourseRepository;
 import com.professoros.service.*;
@@ -51,6 +51,11 @@ final class GradeWorkflowCheck {
             fx(()->{ ((Button)dialog().lookupButton(ButtonType.CANCEL)).fire(); assertEquals("Grades",root.currentSection()); return null; });
             fx(()->{
                 text(root,cell().substring(1),"17"); var field=root.lookup(cell());
+                button(root,"sidebar-toggle").fire(); assertTrue(root.isSidebarCollapsed());
+                assertSame(field,root.lookup(cell())); assertEquals("17",((TextField)field).getText());
+                ((ToggleButton)root.lookup("#nav-grades")).fire();
+                assertSame(field,root.lookup(cell())); assertTrue(noDialog());
+                button(root,"sidebar-toggle").fire(); assertFalse(root.isSidebarCollapsed());
                 root.themes().select(ThemeMode.DARK); root.applyCss(); root.layout();
                 assertSame(field,root.lookup(cell())); assertEquals("17",((TextField)field).getText());
                 assertFalse(button(root,"save-grades").isDisabled()); assertEquals("Grades",root.currentSection());
@@ -113,7 +118,7 @@ final class GradeWorkflowCheck {
     private String cell() { return "#grade-cell-"+enrollment+"-"+assessment; }
     private void open() throws Exception {
         fx(()->{
-            root=new MainView(); controller=new MainController(root,new DemoDashboard(),new CourseService(new CourseRepository(f.database())),AcademicServices.create(f.database()));
+            root=new MainView(); controller=new MainController(root,new CourseService(new CourseRepository(f.database())),AcademicServices.create(f.database()));
             stage=new Stage(); var scene=new Scene(root,1360,900); scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm());
             stage.setScene(scene); stage.setOnCloseRequest(e->{ if(!controller.canClose()) { e.consume(); } }); stage.show();
             ((ToggleButton)root.lookup("#nav-grades")).fire(); return null;

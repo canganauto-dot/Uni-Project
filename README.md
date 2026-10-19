@@ -2,7 +2,7 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 10A modern UI theme foundation.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
+**Status: Phase 10B dashboard and navigation redesign.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard counts, lecture progress and upcoming lectures/exams use saved records; no demo metrics are displayed.
 
 ## Implemented
 
@@ -14,7 +14,7 @@ An offline-first desktop workspace for university professors, built as an academ
 - Offering-specific lecture CRUD and search, chronological timeline, completion counts and basic schedule status.
 - Catalog question bank with five question types, MCQ choices, difficulty/marks, optional topic/image path, details, search and course/type/difficulty filters.
 - Manual exam building, ordered question snapshots, mark-total warnings and deterministic generation with exact count/distribution constraints. Finalization locks content and records bank usage; archived exams preserve history.
-- Real course count and active offering on Dashboard; explicitly demo student/exam/grading cards, schedule, deadlines, progress and activity.
+- Grouped, collapsible icon sidebar; real dashboard counts and active-offering lecture progress, upcoming activities and recently updated records. Refresh overview reloads saved data.
 - Persistent Light, Dark and System appearance modes, shared CSS component styling, keyboard focus and scrollable content.
 - Versioned SQLite migrations, unique identifiers, foreign-key deletion restrictions and configurable storage. Application startup never seeds demo records.
 - Maven wrapper, JUnit tests, optional desktop smoke test and permanent AI development rules.
@@ -137,7 +137,6 @@ src/main/java/com/professoros/
   app/                       Startup and storage-path policy
   controller/                Navigation coordination
   view/                      JavaFX layout composition
-  demo/                      Explicitly synthetic dashboard data
   model/                     Academic entities, inputs and joined read models
   service/                   Validation, academic operations and session context
   repository/                Prepared JDBC queries and row mapping

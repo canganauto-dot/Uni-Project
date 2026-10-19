@@ -2,7 +2,7 @@ package com.professoros.app;
 
 import com.professoros.controller.MainController;
 import com.professoros.database.Database;
-import com.professoros.demo.DemoDashboard;
+
 import com.professoros.view.MainView;
 import com.professoros.repository.CourseRepository;
 import com.professoros.service.CourseService;
@@ -53,7 +53,7 @@ public final class ProfessorOsApplication extends Application {
         }
 
         MainView view = new MainView();
-        controller = new MainController(view, new DemoDashboard(), courseService, academicServices);
+        controller = new MainController(view, courseService, academicServices);
         Scene scene = new Scene(view, 1360, 900);
         scene.getStylesheets().add(Objects.requireNonNull(
                 getClass().getResource("/css/theme.css"), "Missing application stylesheet").toExternalForm());

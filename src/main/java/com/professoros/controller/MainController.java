@@ -1,6 +1,5 @@
 package com.professoros.controller;
 
-import com.professoros.demo.DemoDashboard;
 import com.professoros.model.OfferingSummary;
 import com.professoros.service.*;
 import com.professoros.view.*;
@@ -10,6 +9,9 @@ import java.util.List;
 public final class MainController implements AutoCloseable {
     private final MainView view;
     private final DashboardView dashboard;
+    private final DashboardService dashboardService;
+    private final UiTaskRunner dashboardTasks=new UiTaskRunner();
+    private long dashboardRevision;
     private final CoursesView courses = new CoursesView();
     private final StudentsView students = new StudentsView();
     private final TermsView terms = new TermsView();
@@ -25,15 +27,17 @@ public final class MainController implements AutoCloseable {
     private final SessionContext session = new SessionContext();
     private List<OfferingSummary> offeringChoices = List.of();
 
-    public MainController(MainView view, DemoDashboard data, CourseService service, AcademicServices academic) {
+    public MainController(MainView view, CourseService service, AcademicServices academic) {
         this.view = view;
         terms.appearance(view.themes());
-        dashboard = new DashboardView(data);
+        dashboard = new DashboardView();
+        dashboardService=new DashboardService(academic);
         offeringController = new OfferingController(academic, service, view, this::openOffering, this::updateChoices);
         courseController = new CourseController(service, courses, count -> {
             dashboard.setCourseCount(count);
             offeringController.refreshChoices();
         });
+        dashboard.refresh.setOnAction(e->{ courseController.refresh(); refreshDashboard(); });
         studentController = new StudentController(academic.students(), academic.enrollments(), students,academic.imports());
         termController = new TermController(academic.terms(), terms, offeringController::refreshChoices);
         enrollmentController = new EnrollmentController(academic);
@@ -45,14 +49,17 @@ public final class MainController implements AutoCloseable {
         courses.onCreateOffering(() -> offeringController.createForCourse(courses.selectedCourse()));
         courses.onOfferings(() -> view.showPage("Courses", offeringController.createView(null)));
         view.onOffering(this::openOffering);
-        view.onNavigate(this::navigate);
+        view.onNavigate(section -> {
+            if(section.equals(view.currentSection()) && !section.equals("Courses")) { view.selectSection(section); return; }
+            navigate(section);
+        });
         navigate("Dashboard");
     }
 
     private void navigate(String section) {
         if (view.currentSection().equals("Grades") && !gradebookController.canLeave()) { view.selectSection("Grades"); return; }
         switch (section) {
-            case "Dashboard" -> { view.showPage(section, dashboard); courseController.refresh(); }
+            case "Dashboard" -> { view.showPage(section, dashboard); courseController.refresh(); refreshDashboard(); }
             case "Courses" -> { view.showPage(section, courses); courseController.refresh(); }
             case "Students" -> { view.showPage(section, students); studentController.refresh(null); }
             case "Settings" -> { view.showPage(section, terms); termController.refresh(); }
@@ -85,6 +92,7 @@ public final class MainController implements AutoCloseable {
         if (updated == null) { session.clear(); } else { session.select(updated); }
         view.offeringChoices(choices, updated);
         dashboard.setActiveOffering(updated == null ? null : updated.label());
+        if(!java.util.Objects.equals(previous,updated) && view.currentSection().equals("Dashboard")) { refreshDashboard(); }
         if (!java.util.Objects.equals(previous, updated) && view.currentSection().equals("Exams")) { showExams(); }
         if (!java.util.Objects.equals(previous, updated)
                 && (view.currentSection().equals("Lectures") || view.currentSection().equals("Timeline"))) {
@@ -99,6 +107,7 @@ public final class MainController implements AutoCloseable {
     private void showExams() { view.showPage("Exams", examController.show(session.activeOffering().orElse(null))); }
 
     @Override public void close() {
+        dashboardRevision++; dashboardTasks.close();
         view.themes().close();
         courseController.close(); studentController.close(); termController.close();
         offeringController.close(); enrollmentController.close();
@@ -108,4 +117,9 @@ public final class MainController implements AutoCloseable {
         gradebookController.close();
     }
     public boolean canClose() { return gradebookController.canLeave(); }
+    private void refreshDashboard() {
+        long request=++dashboardRevision; Long offering=session.activeOffering().map(value->value.offering().id()).orElse(null);
+        dashboard.loading();
+        dashboardTasks.run(()->dashboardService.load(offering),value->{ if(request==dashboardRevision) { dashboard.show(value); } },message->{ if(request==dashboardRevision) { dashboard.failed(message); } });
+    }
 }

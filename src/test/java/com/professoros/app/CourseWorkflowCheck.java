@@ -2,7 +2,7 @@ package com.professoros.app;
 
 import com.professoros.controller.MainController;
 import com.professoros.database.Database;
-import com.professoros.demo.DemoDashboard;
+
 import com.professoros.model.Course;
 import com.professoros.repository.CourseRepository;
 import com.professoros.service.CourseService;
@@ -142,7 +142,7 @@ final class CourseWorkflowCheck {
         database.initialize();
         fx(() -> {
             root = new MainView();
-            controller = new MainController(root, new DemoDashboard(), new CourseService(new CourseRepository(database)),
+            controller = new MainController(root, new CourseService(new CourseRepository(database)),
                     com.professoros.service.AcademicServices.create(database));
             stage = new Stage();
             Scene scene = new Scene(root, 1360, 900);

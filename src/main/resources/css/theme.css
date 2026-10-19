@@ -169,3 +169,28 @@
 .default-color3.chart-bar, .default-color3.chart-pie { -fx-bar-fill: -app-chart-4; -fx-pie-color: -app-chart-4; }
 
 .content-scroll, .content-scroll > .viewport { -fx-background-color: -app-background; }
+
+/* Phase 10B shell and dashboard. Feature screen layouts remain unchanged. */
+.sidebar { -fx-padding: 20 12 16; -fx-border-color: transparent -app-border transparent transparent; }
+.navigation-scroll, .navigation-scroll > .viewport { -fx-background-color: transparent; -fx-padding: 0; }
+.navigation-group { -fx-font-size: 9px; -fx-font-weight: bold; -fx-text-fill: -app-muted; -fx-padding: 14 12 5; }
+.nav-button { -fx-padding: 9 10; -fx-graphic-text-gap: 12; -fx-border-width: 0 0 0 3; -fx-min-height: 38; }
+.nav-button:selected { -fx-border-color: transparent transparent transparent -app-accent; }
+.nav-button:focused { -fx-border-color: -app-accent; -fx-border-width: 1; }
+.navigation-icon { -fx-fill: transparent; -fx-stroke: -app-muted; -fx-stroke-width: 1.6; -fx-stroke-line-cap: round; -fx-stroke-line-join: round; }
+.nav-button:selected .navigation-icon { -fx-stroke: -app-selection-text; }
+.topbar { -fx-padding: 16 24; }
+.topbar .breadcrumb { -fx-font-size: 17px; -fx-text-fill: -app-text; -fx-font-weight: bold; }
+.context-caption { -fx-font-size: 9px; -fx-font-weight: bold; -fx-text-fill: -app-muted; }
+.dashboard-page { -fx-padding: 28; }
+.dashboard-title { -fx-font-size: 28px; -fx-font-weight: bold; }
+.dashboard-context { -fx-background-color: -app-accent-soft; -fx-padding: 14 16; -fx-background-radius: 8; }
+.dashboard-context .label { -fx-text-fill: -app-accent; }
+.dashboard-metric { -fx-padding: 18; }
+.dashboard-metric .metric-value { -fx-font-size: 34px; }
+.dashboard-metric .metric-label { -fx-font-size: 12px; }
+.dashboard-page .panel { -fx-padding: 22; }
+.dashboard-empty { -fx-padding: 18 0; }
+.progress-headline { -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: -app-accent; }
+.dashboard-activity { -fx-padding: 10 0; -fx-border-color: transparent transparent -app-border transparent; }
+.activity-marker { -fx-text-fill: -app-accent; -fx-font-size: 12px; -fx-font-weight: bold; }

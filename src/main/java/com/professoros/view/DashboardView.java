@@ -1,121 +1,72 @@
 package com.professoros.view;
 
-import com.professoros.demo.DemoDashboard;
+import com.professoros.model.DashboardOverview;
 import javafx.geometry.Pos;
-import javafx.scene.control.Label;
-import javafx.scene.control.ProgressBar;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
-import javafx.scene.layout.VBox;
-
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-/** Dashboard composition with a persisted course count and explicitly separate demo sections. */
+/** Saved academic overview. No sample data or implied audit history. */
 public final class DashboardView extends VBox {
-    private final Label courseCount = label("…", "metric-value");
-    private final Label courseCountDetail = label("Loading saved courses…", "small-muted");
-    private final Label activeOffering = label("Active offering: none selected. Choose one in the top bar.", "muted");
-    public DashboardView(DemoDashboard data) {
-        super(20);
-        setId("dashboard");
-        getStyleClass().add("page");
-        Label eyebrow = label("YOUR TEACHING WORKSPACE", "eyebrow");
-        Label title = label("A clear view of your semester.", "page-title");
-        Label subtitle = label("Courses, commitments and progress — together in one place.", "muted");
-        VBox heading = new VBox(7, eyebrow, title, subtitle);
-        Label demoNotice = label("Courses shows your saved records. Student, exam, grading and activity sections are DEMO data.", "demo-notice");
-        demoNotice.setWrapText(true);
-        demoNotice.setMaxWidth(Double.MAX_VALUE);
-
-        GridPane metrics = grid(4);
-        courseCount.setId("dashboard-course-count");
-        VBox realCard = new VBox(9, label("Courses · saved", "metric-label"), courseCount, courseCountDetail);
-        realCard.getStyleClass().add("metric-card");
-        metrics.add(realCard, 0, 0);
-        int column = 1;
-        for (var metric : data.metrics()) {
-            VBox card = new VBox(9, label(metric.label() + " · demo", "metric-label"),
-                    label(metric.value(), "metric-value"), label(metric.detail(), "small-muted"));
-            card.getStyleClass().add("metric-card");
-            metrics.add(card, column++, 0);
-        }
-
-        GridPane panels = grid(2);
-        panels.setVgap(18);
-        panels.add(entryPanel("Today's Schedule", "A sample teaching day", data.schedule()), 0, 0);
-        panels.add(entryPanel("Upcoming Deadlines", "Example dates · not live reminders", data.deadlines()), 1, 0);
-        panels.add(progressPanel(data), 0, 1);
-        panels.add(entryPanel("Recent Activity", "Illustrative activity only", data.activity()), 1, 1);
+    private final Label courseCount=label("…","metric-value");
+    private final Label courseCountDetail=label("Loading saved courses…","small-muted");
+    private final Label students=label("…","metric-value"),offerings=label("…","metric-value"),enrolled=label("—","metric-value");
+    private final Label activeOffering=label("Active offering: none selected. Choose one in the top bar.","muted");
+    private final Label state=label("Loading your workspace…","small-muted");
+    private final VBox progress=panel("Teaching progress","Lecture completion · active offering");
+    private final VBox upcoming=panel("Coming up","Planned lectures and exams · active offering");
+    private final VBox recent=panel("Recently updated","Saved lectures and exams · not an activity log");
+    public final Button refresh=AcademicControls.button("Refresh overview","refresh-dashboard","secondary-button");
+    public DashboardView() {
+        super(22); setId("dashboard"); getStyleClass().addAll("page","dashboard-page");
+        var title=new VBox(6,label("YOUR WORKSPACE, AT A GLANCE","eyebrow"),label("Ready for your next class.","dashboard-title"),label("A focused view of your teaching, built from your saved records.","muted"));
+        var spacer=new Region(); HBox.setHgrow(spacer,Priority.ALWAYS);
+        var heading=new HBox(16,title,spacer,refresh); heading.setAlignment(Pos.CENTER_LEFT); title.setMinWidth(0);
         activeOffering.setId("dashboard-active-offering");
-        getChildren().addAll(heading, activeOffering, demoNotice, metrics, panels);
+        var context=new HBox(10,NavigationIcon.create("Courses"),activeOffering); context.setAlignment(Pos.CENTER_LEFT); context.getStyleClass().add("dashboard-context");
+        var metrics=grid(4); courseCount.setId("dashboard-course-count"); students.setId("dashboard-student-count"); offerings.setId("dashboard-offering-count"); enrolled.setId("dashboard-enrollment-count");
+        metrics.add(card("Catalog courses",courseCount,courseCountDetail,"Courses"),0,0);
+        metrics.add(card("Students",students,label("Saved student directory","small-muted"),"Students"),1,0);
+        metrics.add(card("Course offerings",offerings,label("All terms and sections","small-muted"),"Timeline"),2,0);
+        metrics.add(card("Active enrollments",enrolled,label("Selected offering only","small-muted"),"Attendance"),3,0);
+        var panels=grid(2); panels.add(progress,0,0); panels.add(upcoming,1,0);
+        state.setId("dashboard-load-status"); getChildren().addAll(heading,context,metrics,panels,recent,state);
+        clearDetails("Select a course offering in the top bar to see its teaching overview.");
     }
-
-    public void setCourseCount(Integer value) {
-        courseCount.setText(value == null ? "—" : value.toString());
-        courseCountDetail.setText(value == null ? "Saved courses unavailable" : "Persisted on this device");
+    private static VBox card(String title,Label value,Label detail,String icon) {
+        var space=new Region(); HBox.setHgrow(space,Priority.ALWAYS);
+        var header=new HBox(8,label(title,"metric-label"),space,NavigationIcon.create(icon)); header.setAlignment(Pos.CENTER_LEFT);
+        var card=new VBox(12,header,value,detail); card.setMinWidth(0); card.getStyleClass().addAll("metric-card","dashboard-metric"); return card;
     }
-
-    public void setActiveOffering(String label) {
-        activeOffering.setText(label == null ? "Active offering: none selected. Choose one in the top bar." : "Active offering: " + label);
-    }
-
-    private static GridPane grid(int columns) {
-        GridPane grid = new GridPane();
-        grid.setHgap(18);
-        for (int i = 0; i < columns; i++) {
-            ColumnConstraints constraint = new ColumnConstraints();
-            constraint.setPercentWidth(100.0 / columns);
-            constraint.setMinWidth(0);
-            constraint.setHgrow(Priority.ALWAYS);
-            grid.getColumnConstraints().add(constraint);
+    public void setCourseCount(Integer value) { courseCount.setText(value==null?"—":value.toString()); courseCountDetail.setText(value==null?"Saved courses unavailable":"Reusable course definitions"); }
+    public void setActiveOffering(String value) { activeOffering.setText(value==null?"Active offering: none selected. Choose one in the top bar.":"Active offering: "+value); }
+    public void loading() { state.setText("Refreshing saved records…"); refresh.setDisable(true); }
+    public void failed(String message) { students.setText("—"); offerings.setText("—"); enrolled.setText("—"); clearDetails("Saved overview unavailable. Refresh to try again."); AcademicControls.status(state,message,true); refresh.setDisable(false); }
+    public void show(DashboardOverview value) {
+        students.setText(Integer.toString(value.students())); offerings.setText(Integer.toString(value.offerings())); enrolled.setText(value.activeEnrollments()==null?"—":value.activeEnrollments().toString());
+        clearDetails("Select a course offering in the top bar to see its teaching overview.");
+        if(value.progress()!=null) {
+            reset(progress); var p=value.progress();
+            var percent=label(String.format(java.util.Locale.ROOT,"%.0f%%",p.completionPercent()),"progress-headline");
+            var bar=new ProgressBar(p.completionPercent()/100); bar.setMaxWidth(Double.MAX_VALUE);
+            progress.getChildren().addAll(percent,bar,label(p.completed()+" completed · "+p.partial()+" partial · "+p.scheduledTotal()+" scheduled","entry-title"),label(p.scheduleStatus(),"muted"),label("Cancelled lectures excluded. Partial lectures are not counted as completed.","small-muted"));
+            entries(upcoming,value.upcoming(),"No upcoming lectures or exams.",false);
+            entries(recent,value.recentlyUpdated(),"No saved lecture or exam updates yet.",true);
         }
-        return grid;
+        AcademicControls.status(state,"Saved records · as of "+value.asOf()+" · Refresh to pick up changes. No demo data.",false); refresh.setDisable(false);
     }
-
-    private static VBox panel(String title, String description) {
-        VBox panel = new VBox(16);
-        panel.getStyleClass().add("panel");
-        panel.getChildren().add(new VBox(5, label(title, "section-title"), label(description, "small-muted")));
-        return panel;
-    }
-
-    private static VBox entryPanel(String title, String description, List<DemoDashboard.Entry> entries) {
-        VBox panel = panel(title, description);
-        for (var entry : entries) {
-            Label marker = label(entry.marker(), "entry-marker");
-            marker.setMinWidth(54);
-            VBox text = new VBox(5, label(entry.title(), "entry-title"), label(entry.detail(), "small-muted"));
-            text.setMinWidth(0);
-            HBox row = new HBox(14, marker, text);
-            row.setAlignment(Pos.CENTER_LEFT);
-            row.getStyleClass().add("entry-row");
-            HBox.setHgrow(text, Priority.ALWAYS);
-            panel.getChildren().add(row);
+    private void clearDetails(String message) { for(var panel:List.of(progress,upcoming,recent)) { reset(panel); var empty=label(message,"muted"); empty.getStyleClass().add("dashboard-empty"); panel.getChildren().add(empty); } }
+    private static void reset(VBox panel) { panel.getChildren().remove(1,panel.getChildren().size()); }
+    private static void entries(VBox panel,List<DashboardOverview.Activity> activities,String empty,boolean updated) {
+        reset(panel); if(activities.isEmpty()) { panel.getChildren().add(label(empty,"muted")); return; }
+        for(var activity:activities) {
+            var date=label(updated?activity.kind():activity.date().format(DateTimeFormatter.ofPattern("dd MMM",java.util.Locale.ENGLISH)),"activity-marker"); date.setMinWidth(64);
+            var text=new VBox(5,label(activity.title(),"entry-title"),label(activity.detail()+(updated?" · Updated "+activity.updatedAt().atZone(java.time.ZoneId.systemDefault()).toLocalDate():""),"small-muted")); text.setMinWidth(0); HBox.setHgrow(text,Priority.ALWAYS);
+            var row=new HBox(14,date,text); row.setAlignment(Pos.CENTER_LEFT); row.getStyleClass().add("dashboard-activity"); panel.getChildren().add(row);
         }
-        return panel;
     }
-
-    private static VBox progressPanel(DemoDashboard data) {
-        VBox panel = panel("Course Progress", "Sample lecture completion");
-        for (var progress : data.progress()) {
-            Region spacer = new Region();
-            HBox.setHgrow(spacer, Priority.ALWAYS);
-            HBox line = new HBox(8, label(progress.course(), "entry-title"), spacer,
-                    label(Math.round(progress.fraction() * 100) + "%", "progress-value"));
-            ProgressBar bar = new ProgressBar(progress.fraction());
-            bar.setMaxWidth(Double.MAX_VALUE);
-            panel.getChildren().add(new VBox(6, line, bar, label(progress.detail(), "small-muted")));
-        }
-        return panel;
-    }
-
-    static Label label(String text, String styleClass) {
-        Label label = new Label(text);
-        label.getStyleClass().add(styleClass);
-        label.setWrapText(true);
-        return label;
-    }
+    private static GridPane grid(int count) { var grid=new GridPane(); grid.setHgap(16); grid.setVgap(16); for(int i=0;i<count;i++) { var col=new ColumnConstraints(); col.setPercentWidth(100.0/count); col.setMinWidth(0); col.setHgrow(Priority.ALWAYS); grid.getColumnConstraints().add(col); } return grid; }
+    private static VBox panel(String title,String description) { var panel=new VBox(16,new VBox(5,label(title,"section-title"),label(description,"small-muted"))); panel.setMinWidth(0); panel.getStyleClass().add("panel"); return panel; }
+    static Label label(String text,String styleClass) { var label=new Label(text); label.getStyleClass().add(styleClass); label.setWrapText(true); return label; }
 }

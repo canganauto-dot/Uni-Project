@@ -1,6 +1,6 @@
 package com.professoros.app;
 import com.professoros.controller.MainController;
-import com.professoros.demo.DemoDashboard;
+
 import com.professoros.model.*;
 import com.professoros.repository.CourseRepository;
 import com.professoros.service.*;
@@ -31,7 +31,7 @@ final class ExcelWorkflowCheck {
         }
         try {
             fx(()->{
-                root=new MainView(); controller=new MainController(root,new DemoDashboard(),new CourseService(new CourseRepository(f.database())),f.academic());
+                root=new MainView(); controller=new MainController(root,new CourseService(new CourseRepository(f.database())),f.academic());
                 stage=new Stage(); var scene=new Scene(root,1360,900); scene.getStylesheets().add(getClass().getResource("/css/theme.css").toExternalForm()); stage.setScene(scene); stage.show();
                 ((ToggleButton)root.lookup("#nav-students")).fire(); return null;
             });

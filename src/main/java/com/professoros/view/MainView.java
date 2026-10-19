@@ -4,7 +4,8 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.control.TextField;
+import javafx.scene.control.ContentDisplay;
+import javafx.scene.control.Tooltip;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.BorderPane;
@@ -30,6 +31,10 @@ public final class MainView extends BorderPane {
     private final Label sectionLabel = DashboardView.label("Dashboard", "breadcrumb");
     private final javafx.scene.control.ComboBox<com.professoros.model.OfferingSummary> offering = new javafx.scene.control.ComboBox<>();
     private boolean updatingOffering;
+    private boolean collapsed;
+    private VBox sidebarNode;
+    private final java.util.List<Node> sidebarLabels=new java.util.ArrayList<>();
+    private final javafx.scene.control.Button collapseToggle=AcademicControls.button("", "sidebar-toggle", "secondary-button");
     private final javafx.scene.control.Button openOffering = AcademicControls.button("Open", "open-active-offering", "secondary-button");
 
     public MainView() {
@@ -57,33 +62,54 @@ public final class MainView extends BorderPane {
         Label logo = DashboardView.label("P", "brand-mark");
         VBox brandText = new VBox(3, DashboardView.label("Professor OS", "brand-title"),
                 DashboardView.label("TEACHING WORKSPACE", "brand-caption"));
+        sidebarLabels.add(brandText);
         HBox brand = new HBox(10, logo, brandText);
         brand.setAlignment(Pos.CENTER_LEFT);
         brand.getStyleClass().add("brand");
         VBox links = new VBox(5);
         ToggleGroup group = new ToggleGroup();
-        for (String section : SECTIONS) {
-            ToggleButton button = new ToggleButton(section);
+        String lastGroup="";
+        for (String section : List.of("Dashboard","Courses","Students","Lectures","Timeline","Exam Bank","Exams","Grades","Attendance","Analytics","Settings")) {
+            String category=switch(section) {
+                case "Dashboard","Courses","Students" -> "WORKSPACE";
+                case "Lectures","Timeline" -> "TEACHING";
+                case "Exam Bank","Exams","Grades" -> "ASSESSMENT";
+                case "Settings" -> "PREFERENCES";
+                default -> "INSIGHTS";
+            };
+            if(!category.equals(lastGroup)) {
+                Label heading=DashboardView.label(category,"navigation-group");
+                sidebarLabels.add(heading); links.getChildren().add(heading); lastGroup=category;
+            }
+            ToggleButton button = new ToggleButton(section, NavigationIcon.create(section));
             button.setId("nav-" + section.toLowerCase(java.util.Locale.ROOT).replace(' ', '-'));
+            button.setAccessibleText(section); button.setTooltip(new Tooltip(section));
             button.setToggleGroup(group);
             button.setMaxWidth(Double.MAX_VALUE);
             button.getStyleClass().add("nav-button");
             navigation.put(section, button);
             links.getChildren().add(button);
         }
-        Region space = new Region();
-        VBox.setVgrow(space, Priority.ALWAYS);
         VBox footer = new VBox(7, DashboardView.label("OFFLINE WORKSPACE", "sidebar-caption"),
                 DashboardView.label("Made for your semester", "sidebar-detail"));
-        VBox sidebar = new VBox(22, brand, DashboardView.label("WORKSPACE", "sidebar-caption"), links, space, footer);
+        sidebarLabels.add(footer);
+        ScrollPane scroll=new ScrollPane(links); scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER); scroll.getStyleClass().add("navigation-scroll");
+        VBox.setVgrow(scroll,Priority.ALWAYS);
+        VBox sidebar = new VBox(12, brand, scroll, footer);
+        sidebarNode=sidebar;
         sidebar.getStyleClass().add("sidebar");
-        sidebar.setPrefWidth(228);
-        sidebar.setMinWidth(228);
+        sidebar.setPrefWidth(236);
+        sidebar.setMinWidth(236);
         return sidebar;
     }
 
     private HBox topBar() {
-        VBox location = new VBox(4, DashboardView.label("Professor OS", "topbar-title"), sectionLabel);
+        collapseToggle.setGraphic(NavigationIcon.create("Collapse"));
+        collapseToggle.setOnAction(e->setSidebarCollapsed(!collapsed));
+        collapseToggle.setAccessibleText("Collapse sidebar"); collapseToggle.setTooltip(new Tooltip("Collapse sidebar"));
+        VBox location = new VBox(4, DashboardView.label("WORKSPACE", "eyebrow"), sectionLabel);
+        location.setMinWidth(95);
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
         offering.setId("active-offering");
@@ -91,21 +117,28 @@ public final class MainView extends BorderPane {
         offering.setPrefWidth(330);
         offering.setAccessibleText("Active teaching offering");
         offering.setTooltip(new javafx.scene.control.Tooltip("Select an offering to open its overview and students."));
-        TextField search = new TextField();
-        search.setPromptText("Search · planned");
-        search.setAccessibleText("Search is planned and unavailable in this foundation");
-        search.setDisable(true);
-        search.setPrefWidth(150);
-        search.setMinWidth(80);
-        search.getStyleClass().add("search-field");
         openOffering.disableProperty().bind(offering.valueProperty().isNull());
         HBox context = new HBox(8, offering, openOffering);
         context.setAlignment(Pos.CENTER_LEFT);
         offering.setMinWidth(150);
-        HBox bar = new HBox(12, location, spacer, context, search, themeToggle);
+        VBox teaching=new VBox(4,DashboardView.label("ACTIVE COURSE OFFERING","context-caption"),context);
+        HBox bar = new HBox(16, collapseToggle, location, spacer, teaching, themeToggle);
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().add("topbar");
         return bar;
+    }
+
+    public boolean isSidebarCollapsed() { return collapsed; }
+    public void setSidebarCollapsed(boolean value) {
+        collapsed=value;
+        sidebarNode.setPrefWidth(value?76:236); sidebarNode.setMinWidth(value?76:236);
+        sidebarLabels.forEach(node->{node.setVisible(!value);node.setManaged(!value);});
+        navigation.values().forEach(button->{
+            button.setContentDisplay(value?ContentDisplay.GRAPHIC_ONLY:ContentDisplay.LEFT);
+            button.setAlignment(value?Pos.CENTER:Pos.CENTER_LEFT);
+        });
+        collapseToggle.setAccessibleText(value?"Expand sidebar":"Collapse sidebar");
+        collapseToggle.setTooltip(new Tooltip(collapseToggle.getAccessibleText()));
     }
 
     public void onNavigate(Consumer<String> handler) {
@@ -125,7 +158,7 @@ public final class MainView extends BorderPane {
         title.setId("placeholder-title");
         VBox page = new VBox(16, DashboardView.label("PLANNED WORKSPACE", "eyebrow"), title,
                 DashboardView.label("This workspace is planned. Its features are not implemented yet.", "muted"),
-                DashboardView.label("Use Dashboard to return to the sample overview.", "small-muted"));
+                DashboardView.label("Use Dashboard to return to your saved teaching overview.", "small-muted"));
         page.getStyleClass().add("page");
         showPage(section, page);
     }
@@ -141,7 +174,7 @@ public final class MainView extends BorderPane {
         updatingOffering = true;
         try { offering.getItems().setAll(choices); offering.setValue(active); }
         finally { updatingOffering = false; }
-        offering.setTooltip(new javafx.scene.control.Tooltip("Select an offering to open its overview and students."));
+        offering.setTooltip(new Tooltip(active == null ? "Select an offering to open its overview and students." : active.label()));
     }
 
     public void offeringError(String message) { offering.setTooltip(new javafx.scene.control.Tooltip(message)); }
