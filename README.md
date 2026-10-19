@@ -157,3 +157,8 @@ target/                      Build output and test reports (ignored)
 ```
 
 Read [AGENTS.md](AGENTS.md) before changing code and record significant decisions in [PROJECT_NOTES.md](PROJECT_NOTES.md). Future teaching features should attach to CourseOffering or Enrollment as appropriate.
+
+
+## Migration startup troubleshooting
+
+If startup reports an applied migration checksum mismatch, preserve the database and investigate the stored history and actual schema; do not delete the database or reset checksums. The known pre-commit V009 assessment-date issue has an explicit, guarded repair procedure: [V009 investigation and repair](docs/V009_REPAIR.md). The affected local database has been repaired and its records verified; this command is not needed for new databases or already repaired databases.

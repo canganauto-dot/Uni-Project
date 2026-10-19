@@ -25,6 +25,8 @@ public final class Database {
                 throw new SQLException("Database connection validation failed: " + file);
             }
             new MigrationRunner().migrate(connection);
+        } catch (SQLException failure) {
+            throw new SQLException("Database initialization failed at " + file + ": " + failure.getMessage(), failure);
         }
         LOGGER.info(() -> "Database initialized at " + file);
     }

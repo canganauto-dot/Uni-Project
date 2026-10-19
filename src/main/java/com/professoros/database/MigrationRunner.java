@@ -15,8 +15,7 @@ import java.util.List;
 public final class MigrationRunner {
     private final List<String> resources;
 
-    public MigrationRunner() {
-        this(List.of("/db/migrations/V001__create_courses.sql",
+    static final List<String> RESOURCES = List.of("/db/migrations/V001__create_courses.sql",
                 "/db/migrations/V002__academic_terms.sql",
                 "/db/migrations/V003__course_offerings.sql",
                 "/db/migrations/V004__students.sql",
@@ -24,8 +23,9 @@ public final class MigrationRunner {
                 "/db/migrations/V006__lectures.sql",
                 "/db/migrations/V007__question_bank.sql",
                 "/db/migrations/V008__exam_builder.sql",
-                "/db/migrations/V009__grade_management.sql"));
-    }
+                "/db/migrations/V009__grade_management.sql");
+
+    public MigrationRunner() { this(RESOURCES); }
 
     MigrationRunner(List<String> resources) {
         this.resources = List.copyOf(resources);
@@ -61,7 +61,12 @@ public final class MigrationRunner {
                         }
                         if (!resources.get(version - 1).equals(history.getString("resource"))
                                 || !checksum(scripts.get(version - 1)).equals(history.getString("checksum"))) {
-                            throw new SQLException("Applied migration has changed: version " + version);
+                            throw new SQLException("Applied migration has changed: version " + version
+                                    + "; stored resource=" + history.getString("resource")
+                                    + "; expected resource=" + resources.get(version - 1)
+                                    + "; stored SHA-256=" + history.getString("checksum")
+                                    + "; computed SHA-256=" + checksum(scripts.get(version - 1))
+                                    + ". Preserve the database and investigate before repairing migration history.");
                         }
                         currentVersion = version;
                     }
@@ -94,7 +99,7 @@ public final class MigrationRunner {
         }
     }
 
-    private static String readScript(String resource) throws SQLException {
+    static String readScript(String resource) throws SQLException {
         try (var stream = MigrationRunner.class.getResourceAsStream(resource)) {
             if (stream == null) {
                 throw new SQLException("Missing migration resource: " + resource);
@@ -106,7 +111,7 @@ public final class MigrationRunner {
         }
     }
 
-    private static String checksum(String script) {
+    static String checksum(String script) {
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
                     .digest(script.getBytes(StandardCharsets.UTF_8)));
