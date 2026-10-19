@@ -19,6 +19,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 public final class MainView extends BorderPane {
+    private final com.professoros.theme.ThemeManager themes;
+    private final javafx.scene.control.Button themeToggle=AcademicControls.button("Theme", "theme-toggle", "secondary-button");
+    public com.professoros.theme.ThemeManager themes() { return themes; }
     public static final List<String> SECTIONS = List.of("Dashboard", "Courses", "Students", "Lectures",
             "Exam Bank", "Exams", "Grades", "Attendance", "Analytics", "Timeline", "Settings");
 
@@ -30,6 +33,16 @@ public final class MainView extends BorderPane {
     private final javafx.scene.control.Button openOffering = AcademicControls.button("Open", "open-active-offering", "secondary-button");
 
     public MainView() {
+        this(new com.professoros.service.ThemePreferences(com.professoros.app.AppPaths.databaseFile().resolveSibling("appearance.properties")));
+    }
+    public MainView(com.professoros.service.ThemePreferences preferences) {
+        themes=new com.professoros.theme.ThemeManager(this,preferences);
+        themeToggle.textProperty().bind(themes.modeProperty().map(mode->"◐ " + mode));
+        themeToggle.setAccessibleText("Cycle appearance: Light, Dark, System");
+        themeToggle.setOnAction(e->themes.select(themes.mode().next()));
+        var themeTip=new javafx.scene.control.Tooltip();
+        themeTip.textProperty().bind(themes.messageProperty().map(message->message.isEmpty()?"Cycle Light, Dark and System appearance. Also available in Settings.":message));
+        themeToggle.setTooltip(themeTip);
         getStyleClass().add("workspace");
         setLeft(sidebar());
         content.setFitToWidth(true);
@@ -61,7 +74,7 @@ public final class MainView extends BorderPane {
         Region space = new Region();
         VBox.setVgrow(space, Priority.ALWAYS);
         VBox footer = new VBox(7, DashboardView.label("OFFLINE WORKSPACE", "sidebar-caption"),
-                DashboardView.label("Teaching workspace · Phase 9", "sidebar-detail"));
+                DashboardView.label("Made for your semester", "sidebar-detail"));
         VBox sidebar = new VBox(22, brand, DashboardView.label("WORKSPACE", "sidebar-caption"), links, space, footer);
         sidebar.getStyleClass().add("sidebar");
         sidebar.setPrefWidth(228);
@@ -82,12 +95,14 @@ public final class MainView extends BorderPane {
         search.setPromptText("Search · planned");
         search.setAccessibleText("Search is planned and unavailable in this foundation");
         search.setDisable(true);
-        search.setPrefWidth(195);
+        search.setPrefWidth(150);
+        search.setMinWidth(80);
         search.getStyleClass().add("search-field");
         openOffering.disableProperty().bind(offering.valueProperty().isNull());
         HBox context = new HBox(8, offering, openOffering);
         context.setAlignment(Pos.CENTER_LEFT);
-        HBox bar = new HBox(22, location, spacer, context, search);
+        offering.setMinWidth(150);
+        HBox bar = new HBox(12, location, spacer, context, search, themeToggle);
         bar.setAlignment(Pos.CENTER_LEFT);
         bar.getStyleClass().add("topbar");
         return bar;

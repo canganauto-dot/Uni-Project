@@ -27,6 +27,7 @@ public final class MainController implements AutoCloseable {
 
     public MainController(MainView view, DemoDashboard data, CourseService service, AcademicServices academic) {
         this.view = view;
+        terms.appearance(view.themes());
         dashboard = new DashboardView(data);
         offeringController = new OfferingController(academic, service, view, this::openOffering, this::updateChoices);
         courseController = new CourseController(service, courses, count -> {
@@ -98,6 +99,7 @@ public final class MainController implements AutoCloseable {
     private void showExams() { view.showPage("Exams", examController.show(session.activeOffering().orElse(null))); }
 
     @Override public void close() {
+        view.themes().close();
         courseController.close(); studentController.close(); termController.close();
         offeringController.close(); enrollmentController.close();
         lectureController.close();

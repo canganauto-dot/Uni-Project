@@ -49,7 +49,14 @@ final class GradeWorkflowCheck {
             // Cancel navigation must preserve the invalid draft and the active context.
             Platform.runLater(()->((ToggleButton)root.lookup("#nav-courses")).fire()); await(()->!noDialog());
             fx(()->{ ((Button)dialog().lookupButton(ButtonType.CANCEL)).fire(); assertEquals("Grades",root.currentSection()); return null; });
-            fx(()->{ text(root,cell().substring(1),"17"); return null; });
+            fx(()->{
+                text(root,cell().substring(1),"17"); var field=root.lookup(cell());
+                root.themes().select(ThemeMode.DARK); root.applyCss(); root.layout();
+                assertSame(field,root.lookup(cell())); assertEquals("17",((TextField)field).getText());
+                assertFalse(button(root,"save-grades").isDisabled()); assertEquals("Grades",root.currentSection());
+                ApplicationSmokeTest.saveSnapshot(root.snapshot(null,null),"theme-unsaved-gradebook-dark.png");
+                root.themes().select(ThemeMode.LIGHT); return null;
+            });
             Platform.runLater(()->selector().getSelectionModel().selectLast()); await(()->!noDialog());
             fx(()->{ ((Button)dialog().lookupButton(ButtonType.CANCEL)).fire(); return null; });
             await(()->selector().getValue().offering().id()==f.first().id());

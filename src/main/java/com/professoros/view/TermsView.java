@@ -27,4 +27,15 @@ public final class TermsView extends VBox {
                 DashboardView.label("Settings · Fall, spring and summer sessions share the same term model.", "muted"),
                 new HBox(10, create, edit, delete, refresh), table, status);
     }
+    public void appearance(com.professoros.theme.ThemeManager themes) {
+        var selector=new ComboBox<com.professoros.model.ThemeMode>(); selector.getItems().setAll(com.professoros.model.ThemeMode.values());
+        selector.setId("appearance-mode"); selector.setValue(themes.mode()); selector.setAccessibleText("Appearance mode");
+        selector.setOnAction(e->{ themes.select(selector.getValue()); selector.setValue(themes.mode()); });
+        themes.modeProperty().addListener((o,a,b)->selector.setValue(b));
+        var error=DashboardView.label("","error-message"); error.textProperty().bind(themes.messageProperty());
+        error.managedProperty().bind(error.textProperty().isNotEmpty()); error.visibleProperty().bind(error.managedProperty());
+        var appearance=new VBox(8,DashboardView.label("Appearance","section-title"),
+                DashboardView.label("Choose Light, Dark or follow your system. Saved on this device; your current work stays in place.","muted"),selector,error);
+        appearance.getStyleClass().add("panel"); getChildren().addFirst(appearance);
+    }
 }

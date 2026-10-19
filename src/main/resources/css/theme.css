@@ -1,40 +1,38 @@
-/* Theme tokens live here so later themes can replace colors without controller changes. */
+@import "palette.css";
+/* Geometry scale: 4/8/12/16/20/24/30 px. Controls 35px+, radius 6/8/10.
+   Typography: Segoe UI 13 body, 11 supporting, 15 section, 28 page, 32 metric.
+   Shared component rules are the geometry tokens; no per-theme sizing or animation. */
 .root {
-    -fx-font-family: "Segoe UI", "Noto Sans", sans-serif;
-    -fx-font-size: 13px;
+    -fx-font-family: "Segoe UI", "Noto Sans", sans-serif; -fx-font-size: 13px;
     -fx-background-color: -app-background;
-    -app-background: #f4f6fa;
-    -app-surface: #ffffff;
-    -app-text: #202d43;
-    -app-muted: #6f7c91;
-    -app-accent: #4b60bc;
-    -app-accent-soft: #edf0fc;
-    -app-border: #e3e8f0;
-    -app-sidebar: #17243b;
-    -app-sidebar-text: #c3cddd;
-    -fx-focus-color: -app-accent;
-    -fx-faint-focus-color: transparent;
+    -fx-base: -app-surface; -fx-background: -app-background; -fx-control-inner-background: -app-surface;
+    -fx-control-inner-background-alt: -app-surface;
+    -fx-text-base-color: -app-text; -fx-text-background-color: -app-text;
+    -fx-accent: -app-accent; -fx-focus-color: -app-accent; -fx-faint-focus-color: transparent;
+    -fx-selection-bar: -app-selection; -fx-selection-bar-non-focused: -app-accent-soft;
+    -fx-selection-bar-text: -app-selection-text;
+    -fx-default-button: -app-accent;
 }
 .label { -fx-text-fill: -app-text; }
 .sidebar { -fx-background-color: -app-sidebar; -fx-padding: 28 18 24 18; }
 .brand { -fx-padding: 0 0 10 0; }
 .brand-mark {
-    -fx-background-color: #dce3ff; -fx-text-fill: #263964;
+    -fx-background-color: -app-accent-soft; -fx-text-fill: -app-accent;
     -fx-font-size: 23px; -fx-font-weight: bold; -fx-padding: 6 13;
     -fx-background-radius: 10;
 }
-.brand-title { -fx-text-fill: white; -fx-font-size: 18px; -fx-font-weight: bold; }
-.brand-caption { -fx-text-fill: #94a6c2; -fx-font-size: 8px; }
-.sidebar-caption { -fx-text-fill: #91a4c0; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 0 12; }
+.brand-title { -fx-text-fill: -app-text; -fx-font-size: 18px; -fx-font-weight: bold; }
+.brand-caption { -fx-text-fill: -app-muted; -fx-font-size: 8px; }
+.sidebar-caption { -fx-text-fill: -app-muted; -fx-font-size: 10px; -fx-font-weight: bold; -fx-padding: 0 12; }
 .sidebar-detail { -fx-text-fill: -app-sidebar-text; -fx-font-size: 11px; -fx-padding: 0 12; }
 .nav-button {
     -fx-background-color: transparent; -fx-text-fill: -app-sidebar-text;
     -fx-alignment: center-left; -fx-padding: 11 16; -fx-font-size: 13px;
     -fx-background-radius: 7; -fx-cursor: hand;
 }
-.nav-button:hover { -fx-background-color: #22334f; -fx-text-fill: white; }
-.nav-button:selected { -fx-background-color: #344d7a; -fx-text-fill: white; -fx-font-weight: bold; }
-.nav-button:focused { -fx-border-color: #9eb5df; -fx-border-radius: 7; }
+.nav-button:hover { -fx-background-color: -app-hover; -fx-text-fill: -app-text; }
+.nav-button:selected { -fx-background-color: -app-selection; -fx-text-fill: -app-text; -fx-font-weight: bold; }
+.nav-button:focused { -fx-border-color: -app-accent; -fx-border-radius: 7; }
 .topbar { -fx-background-color: -app-surface; -fx-padding: 20 30; -fx-border-color: transparent transparent -app-border transparent; }
 .topbar-title { -fx-font-size: 15px; -fx-font-weight: bold; }
 .breadcrumb { -fx-font-size: 11px; -fx-text-fill: -app-muted; }
@@ -49,7 +47,7 @@
 .muted { -fx-text-fill: -app-muted; -fx-font-size: 13px; }
 .small-muted { -fx-text-fill: -app-muted; -fx-font-size: 11px; }
 .demo-notice {
-    -fx-background-color: -app-accent-soft; -fx-text-fill: #43568b;
+    -fx-background-color: -app-accent-soft; -fx-text-fill: -app-accent;
     -fx-font-size: 11px; -fx-padding: 12 15; -fx-background-radius: 7;
 }
 .metric-card, .panel {
@@ -68,37 +66,37 @@
 }
 .progress-value { -fx-text-fill: -app-accent; -fx-font-size: 11px; -fx-font-weight: bold; }
 .progress-bar { -fx-pref-height: 6; -fx-min-height: 6; }
-.progress-bar > .track { -fx-background-color: #e9edf5; -fx-background-radius: 4; -fx-background-insets: 0; }
-.progress-bar > .bar { -fx-background-color: #6f81c9; -fx-background-radius: 4; -fx-background-insets: 0; -fx-padding: 3; }
+.progress-bar > .track { -fx-background-color: -app-track; -fx-background-radius: 4; -fx-background-insets: 0; }
+.progress-bar > .bar { -fx-background-color: -app-accent; -fx-background-radius: 4; -fx-background-insets: 0; -fx-padding: 3; }
 .scroll-bar:vertical { -fx-background-color: transparent; -fx-pref-width: 10; }
 .scroll-bar:vertical .track { -fx-background-color: transparent; }
-.scroll-bar:vertical .thumb { -fx-background-color: #c9d2e1; -fx-background-radius: 5; }
+.scroll-bar:vertical .thumb { -fx-background-color: -app-scroll; -fx-background-radius: 5; }
 
 /* Course workspace and dialogs share the existing theme tokens. */
 .button { -fx-padding: 9 16; -fx-background-radius: 6; -fx-cursor: hand; }
-.primary-button { -fx-background-color: -app-accent; -fx-text-fill: white; -fx-font-weight: bold; }
-.primary-button:hover { -fx-background-color: #3e509d; }
+.primary-button { -fx-background-color: -app-accent; -fx-text-fill: -app-on-accent; -fx-font-weight: bold; }
+.primary-button:hover { -fx-background-color: -app-accent-hover; }
 .secondary-button { -fx-background-color: -app-surface; -fx-text-fill: -app-text; -fx-border-color: -app-border; -fx-border-radius: 6; }
 .secondary-button:hover { -fx-background-color: -app-accent-soft; }
-.danger-button { -fx-background-color: #fbebeb; -fx-text-fill: #9f3030; }
-.danger-button:hover { -fx-background-color: #f3d4d4; }
+.danger-button { -fx-background-color: -app-danger-soft; -fx-text-fill: -app-danger; }
+.danger-button:hover { -fx-background-color: -app-danger-hover; }
 .button:focused { -fx-border-color: -app-accent; -fx-border-width: 2; -fx-border-radius: 6; -fx-border-insets: -2; }
 .button:disabled { -fx-opacity: 0.5; }
-.text-field, .text-area { -fx-background-color: -app-surface; -fx-border-color: #bac5d6; -fx-border-radius: 5; -fx-background-radius: 5; -fx-padding: 8 10; }
+.text-field, .text-area { -fx-background-color: -app-surface; -fx-border-color: -app-input-border; -fx-border-radius: 5; -fx-background-radius: 5; -fx-padding: 8 10; }
 .text-field:focused, .text-area:focused { -fx-border-color: -app-accent; }
 .text-area .content { -fx-background-color: -app-surface; }
 .table-view { -fx-background-color: -app-surface; -fx-border-color: -app-border; -fx-border-radius: 8; -fx-background-radius: 8; -fx-padding: 1; }
-.table-view .column-header-background, .table-view .column-header, .table-view .filler { -fx-background-color: #eaf0f8; }
+.table-view .column-header-background, .table-view .column-header, .table-view .filler { -fx-background-color: -app-background; }
 .table-view .column-header { -fx-padding: 11 6; -fx-border-color: transparent; }
-.table-view .column-header .label { -fx-alignment: CENTER-LEFT; -fx-font-weight: bold; -fx-text-fill: #425573; }
+.table-view .column-header .label { -fx-alignment: CENTER-LEFT; -fx-font-weight: bold; -fx-text-fill: -app-muted; }
 .table-row-cell { -fx-cell-size: 46; -fx-background-color: -app-surface; -fx-border-color: transparent transparent -app-border transparent; }
 .table-cell { -fx-border-color: transparent; -fx-padding: 12 10; -fx-text-fill: -app-text; }
-.table-row-cell:filled:hover { -fx-background-color: #f5f7fd; }
-.table-row-cell:filled:selected { -fx-background-color: #dfe6fa; }
-.table-row-cell:filled:selected .table-cell { -fx-text-fill: #213b70; }
+.table-row-cell:filled:hover { -fx-background-color: -app-hover; }
+.table-row-cell:filled:selected { -fx-background-color: -app-selection; }
+.table-row-cell:filled:selected .table-cell { -fx-text-fill: -app-selection-text; }
 .table-row-cell:empty { -fx-border-color: transparent; }
 .empty-state { -fx-padding: 35; }
-.error-message { -fx-text-fill: #a33131; -fx-font-size: 13px; }
+.error-message { -fx-text-fill: -app-danger; -fx-font-size: 13px; }
 .form-label { -fx-font-weight: bold; -fx-font-size: 12px; }
 .course-dialog { -fx-background-color: -app-surface; -fx-padding: 18; }
 .course-dialog:header .header-panel { -fx-background-color: -app-surface; -fx-padding: 0 0 18 0; }
@@ -106,7 +104,7 @@
 
 /* Academic selection controls and offering tabs. */
 .combo-box-base, .date-picker {
-    -fx-background-color: -app-surface; -fx-border-color: #bac5d6;
+    -fx-background-color: -app-surface; -fx-border-color: -app-input-border;
     -fx-border-radius: 5; -fx-background-radius: 5; -fx-min-height: 35;
 }
 .combo-box-base:focused, .date-picker:focused { -fx-border-color: -app-accent; }
@@ -129,3 +127,45 @@
 #lecture-timeline .list-cell:filled:selected { -fx-background-color: -app-accent-soft; }
 #lecture-timeline .list-cell:filled:selected .lecture-timeline-entry { -fx-background-color: -app-accent-soft; }
 .question-details-body { -fx-padding: 14; }
+/* Shared baseline for controls not assigned a feature-specific style class. */
+.button, .toggle-button { -fx-background-color: -app-surface; -fx-text-fill: -app-text; -fx-border-color: -app-border; -fx-border-radius: 6; }
+.button:hover, .toggle-button:hover { -fx-background-color: -app-hover; }
+.primary-button { -fx-background-color: -app-accent; -fx-text-fill: -app-on-accent; -fx-border-color: transparent; }
+.primary-button:hover { -fx-background-color: -app-accent-hover; }
+.danger-button { -fx-background-color: -app-danger-soft; -fx-text-fill: -app-danger; }
+.danger-button:hover { -fx-background-color: -app-danger-hover; }
+.nav-button { -fx-background-color: transparent; -fx-border-color: transparent; -fx-text-fill: -app-sidebar-text; }
+.nav-button:hover { -fx-background-color: -app-hover; }
+.nav-button:selected { -fx-background-color: -app-selection; -fx-text-fill: -app-selection-text; }
+.button:focused, .toggle-button:focused { -fx-border-color: -app-accent; }
+.text-input { -fx-text-fill: -app-text; -fx-prompt-text-fill: -app-muted; -fx-highlight-fill: -app-selection; -fx-highlight-text-fill: -app-selection-text; }
+.list-view, .list-cell, .scroll-pane > .viewport, .dialog-pane, .dialog-pane > .button-bar { -fx-background-color: -app-surface; }
+.list-cell { -fx-text-fill: -app-text; }
+.list-cell:filled:selected, .list-cell:filled:hover { -fx-background-color: -app-selection; -fx-text-fill: -app-selection-text; }
+.tooltip { -fx-background-color: -app-surface; -fx-text-fill: -app-text; -fx-border-color: -app-input-border; -fx-padding: 8 12; -fx-background-radius: 6; -fx-border-radius: 6; -fx-font-size: 12px; }
+.context-menu { -fx-background-color: -app-surface; -fx-border-color: -app-border; -fx-padding: 4; }
+.menu-item:focused { -fx-background-color: -app-selection; }
+.menu-item:focused .label { -fx-text-fill: -app-selection-text; }
+.scroll-bar, .scroll-bar .track { -fx-background-color: transparent; }
+.scroll-bar .thumb { -fx-background-color: -app-scroll; -fx-background-radius: 5; }
+.check-box .box, .radio-button .radio, .spinner { -fx-background-color: -app-surface; -fx-border-color: -app-input-border; }
+.check-box:selected .mark, .radio-button:selected .dot { -fx-background-color: -app-accent; }
+.check-box:focused .box, .radio-button:focused .radio { -fx-border-color: -app-accent; }
+.date-picker-popup { -fx-background-color: -app-surface; -fx-border-color: -app-border; }
+.date-picker-popup .month-year-pane, .date-picker-popup .day-cell { -fx-background-color: -app-surface; -fx-text-fill: -app-text; }
+.date-picker-popup .day-cell:hover, .date-picker-popup .selected { -fx-background-color: -app-selection; }
+.chart { -fx-padding: 16; -fx-background-color: -app-surface; }
+.chart-plot-background { -fx-background-color: -app-background; }
+.chart-legend { -fx-background-color: -app-surface; }
+.axis { -fx-tick-label-fill: -app-muted; }
+.chart-vertical-grid-lines, .chart-horizontal-grid-lines { -fx-stroke: -app-border; }
+.default-color0.chart-series-line { -fx-stroke: -app-chart-1; }
+.default-color1.chart-series-line { -fx-stroke: -app-chart-2; }
+.default-color2.chart-series-line { -fx-stroke: -app-chart-3; }
+.default-color3.chart-series-line { -fx-stroke: -app-chart-4; }
+.default-color0.chart-bar, .default-color0.chart-pie, .default-color0.chart-line-symbol { -fx-bar-fill: -app-chart-1; -fx-pie-color: -app-chart-1; -fx-background-color: -app-chart-1; }
+.default-color1.chart-bar, .default-color1.chart-pie, .default-color1.chart-line-symbol { -fx-bar-fill: -app-chart-2; -fx-pie-color: -app-chart-2; -fx-background-color: -app-chart-2; }
+.default-color2.chart-bar, .default-color2.chart-pie { -fx-bar-fill: -app-chart-3; -fx-pie-color: -app-chart-3; }
+.default-color3.chart-bar, .default-color3.chart-pie { -fx-bar-fill: -app-chart-4; -fx-pie-color: -app-chart-4; }
+
+.content-scroll, .content-scroll > .viewport { -fx-background-color: -app-background; }

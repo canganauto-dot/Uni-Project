@@ -1,0 +1,22 @@
+/* Professor OS palette. Semantic looked-up colors also reach popup/dialog roots.
+   Geometry/typography are centralized in theme.css (JavaFX does not support CSS var()). */
+.root, .theme-light {
+    -app-background: #f6f5f2; -app-surface: #ffffff; -app-text: #242630;
+    -app-muted: #626675; -app-accent: #5145a6; -app-accent-hover: #41358e;
+    -app-accent-soft: #eeecfa; -app-border: #dedee5; -app-input-border: #a2a5b3;
+    -app-sidebar: #eeedf1; -app-sidebar-text: #4f5262; -app-hover: #e5e3eb;
+    -app-selection: #ded9f4; -app-selection-text: #342878;
+    -app-danger: #a12e3b; -app-danger-soft: #fbeaed; -app-danger-hover: #f2d4da;
+    -app-on-accent: #ffffff; -app-track: #e4e2ec; -app-scroll: #aaa9b7;
+    -app-chart-1: #5145a6; -app-chart-2: #26776a; -app-chart-3: #ad6420; -app-chart-4: #b54467;
+}
+.theme-dark {
+    -app-background: #18191e; -app-surface: #22232b; -app-text: #eeeef4;
+    -app-muted: #b0b0c0; -app-accent: #b3a6ff; -app-accent-hover: #c7bdff;
+    -app-accent-soft: #323047; -app-border: #41424f; -app-input-border: #6c6d80;
+    -app-sidebar: #1e1f26; -app-sidebar-text: #c5c5d3; -app-hover: #30313d;
+    -app-selection: #45405f; -app-selection-text: #f4f0ff;
+    -app-danger: #ffadb8; -app-danger-soft: #462a33; -app-danger-hover: #57323e;
+    -app-on-accent: #201b3d; -app-track: #383946; -app-scroll: #656576;
+    -app-chart-1: #b3a6ff; -app-chart-2: #80cfbd; -app-chart-3: #e8b279; -app-chart-4: #f09bb5;
+}

@@ -111,8 +111,10 @@ class ApplicationSmokeTest {
             new ExamWorkflowCheck(temporaryDirectory.resolve("exams.db")).verify();
             new GradeWorkflowCheck(temporaryDirectory.resolve("grades.db")).verify();
             new ExcelWorkflowCheck(temporaryDirectory.resolve("excel")).verify();
+            ThemeWorkflowCheck.verify(temporaryDirectory.resolve("themes"));
         } finally {
-            application.stop();
+            var stopped=new java.util.concurrent.FutureTask<Void>(()->{ application.stop(); return null; });
+            Platform.runLater(stopped); stopped.get(10,TimeUnit.SECONDS);
             Platform.exit();
         }
     }
