@@ -171,6 +171,60 @@ class ExcelIntegrationTest {
             assertEquals(1,w.getSheet("Statistics").getRow(13).getCell(1).getNumericCellValue());
         }
     }
+    @Test void realisticBilingualRosterImportsAndExportsWithoutLosingNamesZerosOrMissingGrades() throws Exception {
+        List<String[]> data=new ArrayList<>(); data.add(new String[]{"College of Engineering — Fall roster"});
+        data.add(new String[]{"الرقم الجامعي","اسم الطالب","البريد الإلكتروني","الشعبة"});
+        for(int i=1;i<=36;i++) { data.add(new String[]{String.format(Locale.ROOT,"%06d",i),i%2==0?"سارة عبد الرحمن":"Ahmed Ali Hassan",i%3==0?"":"student"+i+"@example.edu","A"}); }
+        data.add(new String[]{"009999","أحمد علي","","A"}); data.add(new String[]{"009999","أحمد علي","","A"});
+        data.add(new String[]{"","Missing Identifier","","A"}); data.add(new String[]{"","","",""});
+        Path file=workbook("realistic-roster.xlsx",data.toArray(String[][]::new));
+        var p=preview(file,f.first().id()); assertEquals(39,p.rows().size());
+        var result=f.academic().imports().confirm(p); assertEquals(36,result.created()); assertEquals(36,result.enrolled()); assertEquals(3,result.failed());
+        var roster=f.academic().enrollments().findStudentsForOffering(f.first().id());
+        var grades=f.academic().grades(); long offering=f.first().id();
+        var category=grades.saveCategory(offering,null,"Assignments",new BigDecimal("100"));
+        var assessment=grades.saveAssessment(offering,null,category.id(),"مشروع البرمجة",new BigDecimal("20"),LocalDate.of(2026,11,1));
+        grades.saveGrades(offering,Map.of(new GradeKey(roster.getFirst().enrollment().id(),assessment.id()),"0"));
+        byte[] bytes=new ExcelExportService(grades,f.academic().offerings()).render(offering);
+        try(var w=new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+            var s=w.getSheet("Grades"); assertEquals(41,s.getLastRowNum()); int blanks=0,zeros=0,arabic=0;
+            for(int i=6;i<=s.getLastRowNum();i++) {
+                var row=s.getRow(i); assertTrue(row.getCell(0).getStringCellValue().matches("0000[0-9]{2}"));
+                if(row.getCell(1).getStringCellValue().contains("سارة")) { arabic++; }
+                if(row.getCell(3).getCellType()==CellType.BLANK) { blanks++; assertEquals(CellType.BLANK,row.getCell(5).getCellType()); }
+                else { zeros++; assertEquals(0,row.getCell(3).getNumericCellValue()); }
+            }
+            assertEquals(35,blanks); assertEquals(1,zeros); assertEquals(18,arabic);
+        }
+        Path qa=Path.of("target","excel-qa"); Files.createDirectories(qa.resolve("qa-data"));
+        Files.copy(file,qa.resolve("realistic-roster.xlsx"),StandardCopyOption.REPLACE_EXISTING);
+        Files.write(qa.resolve("realistic-gradebook.xlsx"),bytes);
+        Files.copy(directory.resolve("app.db"),qa.resolve("qa-data/professor-os.db"),StandardCopyOption.REPLACE_EXISTING);
+    }
+    @Test void scaledNumericFormatsCannotSilentlyChangeStudentIds() throws Exception {
+        Path file=directory.resolve("scaled.xlsx");
+        try(var w=new XSSFWorkbook()) {
+            var s=w.createSheet("Roster"); var h=s.createRow(0); h.createCell(0).setCellValue("ID"); h.createCell(1).setCellValue("Name");
+            var row=s.createRow(1); row.createCell(0).setCellValue(123000); row.createCell(1).setCellValue("أحمد علي");
+            var style=w.createCellStyle(); style.setDataFormat(w.createDataFormat().getFormat("0,")); row.getCell(0).setCellStyle(style);
+            try(var out=Files.newOutputStream(file)) { w.write(out); }
+        }
+        var p=preview(file,null);
+        assertEquals(StudentImportRow.Action.ERROR,p.rows().getFirst().action(),"123000 must not silently become ID 123");
+        assertTrue(p.rows().getFirst().message().contains("Text"));
+    }
+    @Test void rootPathsProduceActionableValidationInsteadOfNullPointer() {
+        Path root=directory.toAbsolutePath().getRoot();
+        assertThrows(DomainValidationException.class,()->new StudentWorkbookReader().read(root));
+        assertThrows(DomainValidationException.class,()->new ExcelExportService(f.academic().grades(),f.academic().offerings()).save(new byte[0],root));
+    }
+    @Test void missingWorkbookAndFolderNamedXlsxExplainHowToRecover() throws Exception {
+        var reader=new StudentWorkbookReader();
+        var missing=assertThrows(DomainValidationException.class,()->reader.read(directory.resolve("missing.xlsx")));
+        assertTrue(missing.getMessage().contains("Browse"));
+        Path folder=Files.createDirectory(directory.resolve("folder.xlsx"));
+        assertTrue(assertThrows(DomainValidationException.class,()->reader.read(folder)).getMessage().contains("folder"));
+    }
     @Test void oversizedAndMacroDisguisedFilesAreRejectedBeforeParsing() throws Exception {
         Path big=directory.resolve("large.xlsx");
         try(var file=new java.io.RandomAccessFile(big.toFile(),"rw")) { file.setLength(21L*1024*1024); }

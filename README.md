@@ -2,7 +2,7 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 9 Excel integration.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
+**Status: Phase 9.1 Excel integration QA and hardening.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard course count and active offering are real; remaining dashboard metrics and activities are clearly labelled demo data.
 
 ## Implemented
 
@@ -39,7 +39,7 @@ For PDFs, select a saved exam and choose **Preview / PDF**. Enter university, de
 
 For grades, select an offering and open **Grades**. Create weighted categories under **Categories & Scale**, then dated assessments under **Assessments**. Enter scores directly or use **Bulk Entry** (student number, TAB, score per line), then **Save Grades**. Blank means ungraded; zero is a real score. Final results require weights totaling 100% and complete scores in all positive-weight categories. The default scale is A ≥90, B ≥80, C ≥70, D ≥60, F below 60, pass ≥60; configure thresholds per offering. Deleting an assessment also deletes its grades after confirmation.
 
-For Excel, choose **Import from Excel** in Students or an offering's Students tab. Load an `.xlsx`, select its sheet/header, review automatic Arabic/English column mapping (or map manually), then preview and confirm valid rows. Existing profiles are never overwritten. Repeated IDs and conflicting profiles are errors; matching students can be enrolled without duplication. Section must match the selected offering when supplied. Store student IDs as text to preserve leading zeros; numeric cells can only preserve digits still present in Excel.
+For Excel, choose **Import from Excel** in Students or an offering's Students tab. Load an `.xlsx`, select its sheet/header, review automatic Arabic/English column mapping (or map manually), then preview and confirm valid rows. Existing profiles are never overwritten. Repeated IDs and conflicting profiles are errors; matching students can be enrolled without duplication. Section must match the selected offering when supplied. Set student ID columns to Text before entering values. For existing numeric IDs, re-enter the original ID after formatting; formatting alone cannot restore lost zeros or rounded digits. Numeric formats that scale or abbreviate IDs are rejected. See [Excel QA and manual verification](docs/EXCEL_QA.md) for realistic fixtures and pending native checks.
 
 In Grades, save or discard pending edits, then choose **Export to Excel** and a new filename. Grades, Assessment Breakdown and Statistics contain a saved report, not recalculating formulas. Missing scores remain blank and zero stays numeric zero. Attendance is omitted until that module exists. Imports do not evaluate formulas; replace formula cells with reviewed values first. `.xls`, `.xlsm`, CSV and grade import are not supported. No Microsoft Excel installation is required.
 

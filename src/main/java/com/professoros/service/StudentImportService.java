@@ -65,7 +65,7 @@ public final class StudentImportService {
                     action=offeringId!=null && !enrolled.contains(old.id())?StudentImportRow.Action.ENROLL:StudentImportRow.Action.SKIP;
                     message+=action==StudentImportRow.Action.ENROLL?"Enroll existing student; profile unchanged.":"Already exists/enrolled; no changes.";
                 } else { message+=offeringId==null?"Create student.":"Create student and enroll."; }
-                if(row.cell(mapping.get(ID)).numeric()) { message+=" Numeric ID: verify leading zeros; only Excel's displayed digits can be recovered."; }
+                if(row.cell(mapping.get(ID)).numeric()) { message+=" Numeric ID: verify against the original roster, including leading zeros. Prefer Text cells; formatting alone cannot restore digits Excel already lost."; }
                 if(offeringId==null && !rowSection.isBlank()) { message+=" Section retained in new student's notes."; }
             } catch(DomainValidationException failure) { action=StudentImportRow.Action.ERROR; message=failure.getMessage(); }
             result.add(new StudentImportRow(row.number(),input,rowSection,action,message,old));

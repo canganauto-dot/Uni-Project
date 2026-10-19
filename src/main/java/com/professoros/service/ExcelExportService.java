@@ -14,6 +14,7 @@ public final class ExcelExportService {
         catch(IOException failure) { throw new StorageException("Could not generate the Excel grade report.",failure); }
     }
     public void save(byte[] bytes,Path destination) {
+        if(destination==null || destination.toAbsolutePath().normalize().getFileName()==null) { throw new DomainValidationException("Choose a filename ending in .xlsx, not a drive or folder."); }
         Path target=destination.toAbsolutePath().normalize(),staging=null;
         if(!target.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".xlsx")) { throw new DomainValidationException("Choose a filename ending in .xlsx."); }
         if(Files.exists(target,LinkOption.NOFOLLOW_LINKS)) { throw new DomainValidationException("File already exists. Choose a new filename; nothing will be overwritten."); }

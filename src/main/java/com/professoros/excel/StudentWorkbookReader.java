@@ -12,7 +12,8 @@ import java.util.zip.ZipFile;
 /** Bounded .xlsx reader; does not execute formulas, macros or resolve external links. */
 public final class StudentWorkbookReader {
     public StudentWorkbook read(Path file) {
-        if(!file.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".xlsx")) { throw new DomainValidationException("Choose an .xlsx workbook (not .xls or .xlsm)."); }
+        if(file==null || file.getFileName()==null || !file.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(".xlsx")) { throw new DomainValidationException("Choose an .xlsx file, not a folder, .xls or .xlsm file."); }
+        if(!Files.isRegularFile(file)) { throw new DomainValidationException("Workbook not found or is a folder. Browse to an existing .xlsx file."); }
         try {
             if(Files.size(file)>20L*1024*1024) { throw new DomainValidationException("Workbook exceeds the 20 MB limit."); }
             // Inspect actual expanded bytes before POI allocates XML objects. Retain POI's own ZIP protections too.
@@ -45,7 +46,9 @@ public final class StudentWorkbookReader {
                                     case NUMERIC -> {
                                         numeric=true; double value=cell.getNumericCellValue(); text=formatter.formatCellValue(cell);
                                         if(DateUtil.isCellDateFormatted(cell) || !Double.isFinite(value) || value<0 || value!=Math.rint(value) || value>=1e15) {
-                                            error="Numeric identifiers must be nonnegative whole numbers with at most 15 digits. Store IDs as text.";
+                                            error="Numeric identifiers must be nonnegative whole numbers with at most 15 digits. Set the Excel column to Text, then re-enter the original ID; formatting alone cannot restore lost digits.";
+                                        } else if(!text.matches("[0-9]+") || new java.math.BigInteger(text).compareTo(java.math.BigDecimal.valueOf(value).toBigIntegerExact())!=0) {
+                                            error="Numeric cell format changes or abbreviates the value. Set the Excel column to Text, then re-enter the complete original ID (including leading zeros).";
                                         }
                                     }
                                     case BOOLEAN -> { text=formatter.formatCellValue(cell); error="Boolean cells cannot be student fields."; }

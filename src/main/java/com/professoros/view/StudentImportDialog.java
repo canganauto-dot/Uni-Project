@@ -51,6 +51,7 @@ public final class StudentImportDialog extends Dialog<Void> {
         rows.setPlaceholder(new Label("Load a workbook, check the column mapping, then preview rows."));
         body.getChildren().addAll(new HBox(8,file,browse,load),new HBox(10,new Label("Sheet"),sheet,new Label("Header row"),header),mapping,
                 DashboardView.label("Map ID and full name OR first/last name. Full names split at the first space. Arabic digits normalize to 0–9. Formula cells are rejected.","small-muted"),
+                DashboardView.label("IDs: set the Excel column to Text before entering IDs. For existing numbers, re-enter the original ID after formatting; lost zeros or digits cannot be restored automatically. Review every Numeric ID warning.","small-muted"),
                 new HBox(10,preview,confirm),rows,detail,status);
         getDialogPane().setContent(body);
         file.textProperty().addListener((o,a,b)->{ loaded=false; invalidate(); });
