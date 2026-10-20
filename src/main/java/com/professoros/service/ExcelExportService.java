@@ -5,12 +5,14 @@ import com.professoros.repository.StorageException;
 import java.io.IOException;
 import java.nio.file.*;
 public final class ExcelExportService {
+    private final AttendanceService attendance;
     private final GradebookService grades;
     private final CourseOfferingService offerings;
-    public ExcelExportService(GradebookService grades,CourseOfferingService offerings) { this.grades=grades; this.offerings=offerings; }
+    public ExcelExportService(GradebookService grades,CourseOfferingService offerings) { this(grades,offerings,null); }
+    public ExcelExportService(GradebookService grades,CourseOfferingService offerings,AttendanceService attendance) { this.grades=grades; this.offerings=offerings;this.attendance=attendance; }
     public byte[] render(long offering) {
         var book=grades.load(offering); var label=offerings.summary(offering).label();
-        try { return new GradeWorkbookWriter().write(book,label); }
+        try { return new GradeWorkbookWriter().write(book,label,attendance==null?null:attendance.load(offering)); }
         catch(IOException failure) { throw new StorageException("Could not generate the Excel grade report.",failure); }
     }
     public void save(byte[] bytes,Path destination) {

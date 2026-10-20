@@ -68,6 +68,8 @@ class ApplicationSmokeTest {
                         assertNotNull(root.lookup("#questions-page"));
                     } else if ("Exams".equals(section)) {
                         assertNotNull(root.lookup("#exams-page"));
+                    } else if ("Attendance".equals(section)) {
+                        assertNotNull(root.lookup("#attendance-page"));
                     } else if ("Grades".equals(section)) {
                         assertNotNull(root.lookup("#grades-page"));
                     } else if (!"Dashboard".equals(section)) {
@@ -115,6 +117,7 @@ class ApplicationSmokeTest {
             new ExcelWorkflowCheck(temporaryDirectory.resolve("excel")).verify();
             ThemeWorkflowCheck.verify(temporaryDirectory.resolve("themes"));
             FeatureScreenWorkflowCheck.verify(temporaryDirectory.resolve("features"));
+            new AttendanceWorkflowCheck().verify(temporaryDirectory.resolve("attendance.db"));
             assertNull(uncaught.get(),()->"Uncaught desktop error: "+uncaught.get());
         } finally {
             var stopped=new java.util.concurrent.FutureTask<Void>(()->{ application.stop(); return null; });

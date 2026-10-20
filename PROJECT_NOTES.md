@@ -38,7 +38,7 @@ Local development database files live in ignored `data/`. Future generated PDFs/
 
 ## Database Design
 
-**Courses, academic terms, offerings, students, enrollments, lectures, the question bank and exams are implemented.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
+**Courses, academic terms, offerings, students, enrollments, lectures, the question bank, exams, grades and attendance are implemented.** Initialization creates the parent directory, opens/validates SQLite and applies missing migrations. It never resets the database or inserts sample records.
 
 - Every connection enables and verifies `PRAGMA foreign_keys = ON` and sets a five-second busy timeout.
 - All variable SQL values use prepared statements.
@@ -123,7 +123,7 @@ Students has its own controller/view and an in-memory filtered/sorted list. Sett
 
 New controllers use `UiTaskRunner` for the established JavaFX Task/background-worker pattern. Shared form code only handles layout, busy/error state and Save/Cancel behavior; each entity form explicitly declares its fields. These small helpers remove actual duplication without introducing generic CRUD frameworks. No new third-party dependencies were added.
 
-Lectures, Exams and Assessments reference CourseOffering. Grades relate Enrollment and Assessment within that same offering; future attendance should reference offering/enrollment.
+Lectures, Exams and Assessments reference CourseOffering. Grades relate Enrollment and Assessment within that same offering; attendance relates Enrollment and Lecture within the same offering.
 
 ### Phase 4 lecture organizer and timeline
 
@@ -273,6 +273,8 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 
 ## Implemented Features
 
+- Lecture-linked attendance with enrollment/offering validation, individual/bulk marking, saved history/summaries and Excel export.
+
 - Main window with Dashboard, Courses, Students, Lectures, Exam Bank, Exams, Grades, Attendance, Analytics, Timeline and Settings navigation.
 - Header with application title, session offering selector, Open action and disabled global search placeholder.
 - Persisted course count on the dashboard, labelled “Courses · saved”; other cards explicitly remain demo values (126 students, 2 upcoming exams, 18 pending grading items). An unavailable count is shown as unknown, not zero.
@@ -296,12 +298,12 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 - Advanced generation constraints and multiple exam versions.
 - Further PDF layout customization.
 - Required Excel grade export.
-- Attendance, learning outcomes, question quality analysis, student performance analysis and course analytics.
+- Learning outcomes, question quality analysis, student performance analysis and course analytics.
 - Backup and restore.
 
 ## Known Limitations
 
-- No attendance or advanced analytics yet. Global header search remains a placeholder. Excel supports student import and saved grade export only; see Phase 9 limits.
+- No advanced analytics yet. Global header search remains a placeholder. Excel supports student import and saved grade/attendance export; see Phase 9 and Phase 11 limits.
 - Question usage counts finalized exams, not draft selections or previews. Image paths are external references and are not bundled, previewed or checked for existence. Topic labels are free text rather than managed entities.
 - Exam generation has explicit count/bank/search limits and no exact-mark optimization. Version variants remain future work. Snapshot locks are enforced by the application repository/service workflows, not protection against arbitrary external SQL edits.
 - Course codes, student numbers and sections use the documented ASCII identifier format. Localized identifier formats need an explicit future decision and migration.
@@ -535,3 +537,21 @@ The expanded desktop workflow seeds isolated academic data, visits all six scree
 Verification uses the documented Windows cmd /d /c, -DforkCount=0 and -Pui-smoke clean verify workflow. Feature screenshots were inspected in Light and Dark, including normal/minimum page sizes, editable forms, bank selection, composition and gradebook. Physical keyboard, screen-reader, high-DPI/multi-monitor and native file-picker audits remain manual checks. Programmatic JavaFX focus/control tests and snapshots do not claim those checks. Production database contents and historical migrations were not changed.
 
 Final Phase 10C result: 192 tests passed (191 normal tests plus the expanded desktop workflow), zero failures/errors/skips, BUILD SUCCESS. The final composition screenshot confirms visible question numbers and both builder tabs show their action buttons and persistent totals.
+
+### 2026-10-20 — Phase 11: attendance management
+
+Attendance links an Enrollment to a Lecture within one CourseOffering. V010__attendance.sql adds the attendance table and supporting indexes without changing V001–V009. Its composite primary key (enrollment_id, lecture_id) prevents duplicates. Composite foreign keys (enrollment_id, course_offering_id) and (lecture_id, course_offering_id), backed by unique parent indexes, enforce matching offering relationships even for direct SQL. Both deletion and relationship updates are RESTRICT, preserving history. Status is constrained to PRESENT, ABSENT, LATE or EXCUSED; timestamps are ISO Instant text. Unmarked has no row. Clearing a mark explicitly deletes that one attendance row; bulk saves use one transaction and roll back on failure.
+
+AttendanceRepository uses existing JdbcOperations, prepared statements and transactional upserts. AttendanceService validates offering, lecture and enrollment relationships and rejects editing cancelled lectures. AttendanceDraft holds only changed cells until Save, including explicit null clears. AttendanceCalculator is independent of JavaFX and provides the same student/course calculations used by UI and Excel. AttendanceBook contains immutable saved records, lectures and the roster. The small AttendanceController coordinates existing background tasks; AttendanceView uses shared controls and Light/Dark/System styling.
+
+Percentage = 100 × (PRESENT + LATE) / (PRESENT + LATE + ABSENT), rounded HALF_UP to two decimals. LATE receives full credit but is counted separately. EXCUSED, unmarked and CANCELLED lectures do not contribute to the denominator. A zero denominator displays Not yet rated (blank in Excel), not 0%. Counts of absence and lateness are always separate. Course statistics aggregate student-lecture observations for ACTIVE/COMPLETED enrollments; withdrawn students remain available for historical editing and individual history but are excluded from course statistics. Unmarked coverage includes all non-cancelled lectures, including future planned lectures: enrollment timing is not inferred from a record's creation timestamp. The UI makes saved summaries distinct from unsaved edits.
+
+Attendance navigation follows the active offering. The lecture selector shows date, number and title; roster rows show student identifiers, names, enrollment status, editable attendance and saved percentage. Search, confirmed bulk marking (including hidden/withdrawn rows), individual corrections, clear-to-unmarked, student history and course summaries are supported. Changing lecture/offering/page or closing the main window requires discarding or retaining pending changes. Save disables editing until completion; errors retain the draft. Cancelled lecture history remains visible and read-only. No new dependencies were introduced.
+
+Excel export from Gradebook now supplies AttendanceBook to the existing POI writer, adding an Attendance matrix alongside the three existing sheets. It preserves string student IDs, Arabic names, blank unmarked cells, explicit statuses and numeric percentages/counts. Cancelled columns retain history but do not affect totals. The sheet uses existing header/number/date styles, filters, frozen identifiers, print settings and clear calculation notes. Attendance exports are limited to 1,000 lectures and 200,000 cells. Existing grading logic, blank-vs-zero semantics, static reports and non-overwrite safeguards remain unchanged.
+
+The legacy V009 repair command's independently migrated reference and final verification are now explicitly pinned to V001–V009. The repair still accepts exactly the known nine-version legacy state and does not apply V010 itself; ordinary startup applies later migrations. This prevents future schema additions from expanding that narrowly guarded repair. No repair was run and no production database was modified during this phase.
+
+Added isolated tests for V009→V010 upgrade/history preservation/idempotence; save/edit/clear/restart; cross-offering and cancelled-lecture rejection; transactional rollback; uniqueness/status constraints and restricted deletion/parent moves; percentage/excused/late/unmarked/withdrawn policies; draft isolation/reversion; and four-sheet Excel content with Arabic names, leading-zero IDs, missing attendance and actual zero grades. The desktop workflow covers individual/bulk/save, cancelled navigation/lecture changes, theme preservation, saved history and close/reopen persistence, plus Light/Dark normal/minimum screenshots. Physical keyboard, screen-reader, high-DPI and Microsoft Excel rendering remain manual checks. Attendance has no session time beyond its lecture date, automatic absence marking, configurable late penalties or attendance import in this phase.
+
+Final Phase 11 verification: documented Windows cmd /d /c workflow with -DforkCount=0 -Pui-smoke clean verify passed 199 tests (198 normal plus the expanded desktop workflow), zero failures/errors/skips. Reviewed attendance-Light/Dark-1360/1100 snapshots. UI tests also cancel offering switches and window close while retaining edits, and verify bulk marking includes filtered-out rows. Persistence was verified by rebuilding services and closing/reopening JavaFX windows on isolated databases. All V001–V009 files are unchanged; no production database was modified.

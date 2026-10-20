@@ -149,7 +149,7 @@ public final class MainView extends BorderPane {
         sectionLabel.setText(section);
         navigation.get(section).setSelected(true);
         content.setContent(page);
-        content.setFitToHeight(java.util.Set.of("Courses", "Students", "Settings", "Lectures", "Timeline", "Exam Bank", "Exams", "Grades").contains(section));
+        content.setFitToHeight(java.util.Set.of("Courses", "Students", "Settings", "Lectures", "Timeline", "Exam Bank", "Exams", "Grades", "Attendance").contains(section));
         content.setVvalue(0);
     }
 

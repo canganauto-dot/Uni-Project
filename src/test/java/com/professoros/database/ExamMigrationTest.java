@@ -32,7 +32,7 @@ class ExamMigrationTest {
     }
     private static String history(Database db) throws Exception {
         try(var c=db.openConnection();var s=c.createStatement();var r=s.executeQuery("SELECT group_concat(version || ':' || checksum || ':' || applied_at) FROM schema_version")) {
-            assertTrue(r.next()); var result=r.getString(1); assertEquals(9,result.split(",").length); return result;
+            assertTrue(r.next()); var result=r.getString(1); assertEquals(10,result.split(",").length); return result;
         }
     }
 }

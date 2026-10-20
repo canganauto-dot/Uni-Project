@@ -18,7 +18,7 @@ class GradeMigrationTest {
         db.initialize(); db.initialize();
         assertEquals(course,new com.professoros.repository.CourseRepository(db).findById(course.id()).orElseThrow());
         try(var c=db.openConnection();var s=c.createStatement()) {
-            try(var r=s.executeQuery("SELECT count(*),max(version) FROM schema_version")) { assertTrue(r.next()); assertEquals(9,r.getInt(1)); assertEquals(9,r.getInt(2)); }
+            try(var r=s.executeQuery("SELECT count(*),max(version) FROM schema_version")) { assertTrue(r.next()); assertEquals(10,r.getInt(1)); assertEquals(10,r.getInt(2)); }
             try(var r=s.executeQuery("PRAGMA foreign_key_check")) { assertFalse(r.next()); }
         }
     }

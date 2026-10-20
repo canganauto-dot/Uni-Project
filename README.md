@@ -2,9 +2,11 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 10C feature screen redesign.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard counts, lecture progress and upcoming lectures/exams use saved records; no demo metrics are displayed.
+**Status: Phase 11 attendance management.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard counts, lecture progress and upcoming lectures/exams use saved records; no demo metrics are displayed.
 
 ## Implemented
+
+- Lecture attendance for enrolled students, individual/bulk marking, saved history, offering summaries and an Attendance Excel sheet.
 
 - Excel student import with Arabic/English mapping, validation preview and optional offering enrollment; formatted gradebook export with saved calculations.
 - Student Exam and Answer Key PDF preview/export from saved snapshots, with A4 pagination, embedded fonts and basic Arabic/RTL support.
@@ -22,7 +24,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Planned
 
-Broader semester planning, advanced generation constraints, multiple exam versions, attendance, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
+Broader semester planning, advanced generation constraints, multiple exam versions, learning outcomes, question quality/performance analytics, forecasting, backup and restore.
 
 ## Academic workflow
 
@@ -42,11 +44,13 @@ For grades, select an offering and open **Grades**. Create weighted categories u
 
 For Excel, choose **Import from Excel** in Students or an offering's Students tab. Load an `.xlsx`, select its sheet/header, review automatic Arabic/English column mapping (or map manually), then preview and confirm valid rows. Existing profiles are never overwritten. Repeated IDs and conflicting profiles are errors; matching students can be enrolled without duplication. Section must match the selected offering when supplied. Set student ID columns to Text before entering values. For existing numeric IDs, re-enter the original ID after formatting; formatting alone cannot restore lost zeros or rounded digits. Numeric formats that scale or abbreviate IDs are rejected. See [Excel QA and manual verification](docs/EXCEL_QA.md) for realistic fixtures and pending native checks.
 
-In Grades, save or discard pending edits, then choose **Export to Excel** and a new filename. Grades, Assessment Breakdown and Statistics contain a saved report, not recalculating formulas. Missing scores remain blank and zero stays numeric zero. Attendance is omitted until that module exists. Imports do not evaluate formulas; replace formula cells with reviewed values first. `.xls`, `.xlsm`, CSV and grade import are not supported. No Microsoft Excel installation is required.
+In Grades, save or discard pending edits, then choose **Export to Excel** and a new filename. Grades, Assessment Breakdown, Attendance and Statistics contain a saved report, not recalculating formulas. Missing scores remain blank and zero stays numeric zero. Attendance includes saved lecture marks and percentages; blank attendance cells mean unmarked. Imports do not evaluate formulas; replace formula cells with reviewed values first. `.xls`, `.xlsm`, CSV and grade import are not supported. No Microsoft Excel installation is required.
 
 Use the top-bar appearance button to cycle Light, Dark and System, or select a mode in **Settings → Appearance**. Your choice is saved beside the local database and applies without resetting open forms or unsaved grades. System follows the OS appearance reported by JavaFX. See [theme architecture and verification](docs/THEMES.md).
 
 On searchable feature pages, Ctrl+F focuses search (Command+F on macOS). With a record table focused, Enter opens its selected edit/build action; in the exam bank selector, Enter adds selected questions. Forms retain Save/Cancel behavior and scroll when their content exceeds the available height.
+
+For attendance, select an offering and open **Attendance**. Choose a lecture/date, mark individual students or confirm **Mark roster**, then **Save attendance**. **Unmarked** clears a saved mark; it never means Absent. Search filters the display, but bulk marking explicitly applies to the entire roster. Navigation, lecture/offering changes and window close protect unsaved edits. Select a student for saved history. Present and Late count fully; Absent counts against attendance; Excused and unmarked are excluded. Cancelled lectures are read-only and excluded from percentages. Course summaries exclude withdrawn enrollments; their history remains available. Export the saved Attendance sheet from Grades → Export to Excel.
 
 ## Technology stack
 

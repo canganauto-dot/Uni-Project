@@ -79,7 +79,7 @@ final class GradeWorkflowCheck {
             fx(()->{ dialog().applyCss(); dialog().layout(); ApplicationSmokeTest.saveSnapshot(dialog().snapshot(null,null),"excel-export-dialog.png"); return null; });
             fx(()->{ text(dialog(),"excel-export-path",report.toString()); button(dialog(),"save-academic").fire(); return null; }); await(this::noDialog);
             assertTrue(java.nio.file.Files.isRegularFile(report));
-            try(var input=java.nio.file.Files.newInputStream(report);var workbook=new org.apache.poi.xssf.usermodel.XSSFWorkbook(input)) { assertEquals(3,workbook.getNumberOfSheets()); }
+            try(var input=java.nio.file.Files.newInputStream(report);var workbook=new org.apache.poi.xssf.usermodel.XSSFWorkbook(input)) { assertEquals(4,workbook.getNumberOfSheets()); assertNotNull(workbook.getSheet("Attendance")); }
             fx(()->{
                 text(root,"grade-search","sara"); assertEquals(1,table().getItems().size()); text(root,"grade-search","");
                 table().getColumns().get(0).setSortType(TableColumn.SortType.DESCENDING);

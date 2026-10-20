@@ -12,7 +12,8 @@ import java.util.*;
 /** Read-only report snapshots. All grading decisions come from the existing calculator, never Excel formulas. */
 public final class GradeWorkbookWriter {
     private CellStyle body,number,integer,percent,header,title,note,date;
-    public byte[] write(Gradebook book,String offering) throws IOException {
+    public byte[] write(Gradebook book,String offering) throws IOException { return write(book,offering,null); }
+    public byte[] write(Gradebook book,String offering,AttendanceBook attendance) throws IOException {
         if(book.assessments().size()>1000 || book.students().size()>10000 || (long)(book.assessments().size()+8)*book.students().size()>200000) { throw new DomainValidationException("Excel export supports up to 1,000 assessments, 10,000 students and 200,000 gradebook cells."); }
         try(var workbook=new XSSFWorkbook();var output=new ByteArrayOutputStream()) {
             styles(workbook);
@@ -52,7 +53,7 @@ public final class GradeWorkbookWriter {
             }
             finish(breakdown,7,rowIndex);
             Sheet statistics=sheet(workbook,"Statistics",offering,List.of("Metric","Value","Meaning"),
-                    "Attendance is not implemented; no Attendance sheet is exported.");
+                    "Saved grade statistics. Attendance, when supplied, is reported separately.");
             var stats=GradeCalculator.classStatistics(book,scores); int index=6;
             metric(statistics,index++,"Complete results",BigDecimal.valueOf(stats.complete()),"ACTIVE and COMPLETED enrollments",integer);
             metric(statistics,index++,"Incomplete results",BigDecimal.valueOf(stats.incomplete()),"Excluded from mean and pass/fail rate",integer);
@@ -69,8 +70,29 @@ public final class GradeWorkbookWriter {
             }
             text(statistics.createRow(index++),0,"F is below D. Missing grades are not zeros. Within categories, assessments are weighted by maximum marks.");
             statistics.setColumnWidth(0,38*256); statistics.setColumnWidth(1,20*256); statistics.setColumnWidth(2,64*256); finish(statistics,3,index);
+            if(attendance!=null) attendance(workbook,offering,attendance);
             workbook.write(output); return output.toByteArray();
         }
+    }
+    private void attendance(XSSFWorkbook workbook,String offering,AttendanceBook book) {
+        if(book.lectures().size()>1000 || (long)(book.lectures().size()+9)*book.students().size()>200000)
+            throw new DomainValidationException("Attendance export supports up to 1,000 lectures and 200,000 cells.");
+        List<String> columns=new ArrayList<>(List.of("Student ID","Student name","Enrollment"));
+        book.lectures().forEach(l->columns.add(l.plannedDate()+" · "+l.lectureNumber()+". "+l.title()+(l.status()==LectureStatus.CANCELLED?" (cancelled)":"")));
+        columns.addAll(List.of("Present","Absent","Late","Excused","Unmarked","Attendance %"));
+        Sheet sheet=sheet(workbook,"Attendance",offering,columns,com.professoros.service.AttendanceCalculator.POLICY);
+        sheet.getRow(4).getCell(0).setCellValue("Blank = unmarked, never Absent. Cancelled columns preserve history but do not affect totals. Withdrawn students remain visible; course summary excludes them.");
+        int index=6;
+        for(var student:book.students()) {
+            Row row=sheet.createRow(index++);int col=0;long enrollment=student.enrollment().id();
+            text(row,col++,student.student().studentNumber());text(row,col++,student.student().fullName());text(row,col++,student.enrollment().status().name());
+            for(var lecture:book.lectures()) {var status=book.status(enrollment,lecture.id());text(row,col++,status==null?"":status.name());}
+            var total=com.professoros.service.AttendanceCalculator.student(book,enrollment);
+            for(int count:new int[]{total.present(),total.absent(),total.late(),total.excused(),total.unmarked()}) decimal(row,col++,BigDecimal.valueOf(count),integer);
+            decimal(row,col,total.percentage()==null?null:total.percentage().movePointLeft(2),percent);
+        }
+        finish(sheet,columns.size(),index);sheet.createFreezePane(2,6);
+        text(sheet.createRow(index+1),0,"Course summary (withdrawn excluded): "+com.professoros.service.AttendanceCalculator.course(book).display());
     }
     private void metric(Sheet sheet,int index,String label,BigDecimal value,String meaning,CellStyle style) {
         Row row=sheet.createRow(index); row.setHeightInPoints(32); text(row,0,label); decimal(row,1,value,style); text(row,2,meaning);

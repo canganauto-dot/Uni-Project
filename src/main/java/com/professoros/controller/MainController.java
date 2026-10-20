@@ -25,6 +25,7 @@ public final class MainController implements AutoCloseable {
     private final QuestionController questionController;
     private final ExamController examController;
     private final GradebookController gradebookController;
+    private final AttendanceController attendanceController;
     private final SessionContext session = new SessionContext();
     private List<OfferingSummary> offeringChoices = List.of();
 
@@ -46,7 +47,8 @@ public final class MainController implements AutoCloseable {
         lectureController = new LectureController(academic.lectures());
         questionController = new QuestionController(academic.questions(), service);
         examController = new ExamController(academic.exams(), new ExamPdfService(academic.exams(), academic.offerings(), service));
-        gradebookController = new GradebookController(academic.grades(),new ExcelExportService(academic.grades(),academic.offerings()));
+        gradebookController = new GradebookController(academic.grades(),new ExcelExportService(academic.grades(),academic.offerings(),academic.attendance()));
+        attendanceController=new AttendanceController(academic.attendance());
         courses.onDetails(() -> offeringController.courseDetails(courses.selectedCourse()));
         courses.onCreateOffering(() -> offeringController.createForCourse(courses.selectedCourse()));
         courses.onOfferings(() -> view.showPage("Courses", offeringController.createView(null)));
@@ -60,6 +62,7 @@ public final class MainController implements AutoCloseable {
 
     private void navigate(String section) {
         if (view.currentSection().equals("Grades") && !gradebookController.canLeave()) { view.selectSection("Grades"); return; }
+        if (view.currentSection().equals("Attendance") && !attendanceController.canLeave()) { view.selectSection("Attendance"); return; }
         switch (section) {
             case "Dashboard" -> { view.showPage(section, dashboard); courseController.refresh(); refreshDashboard(); }
             case "Courses" -> { view.showPage(section, courses); courseController.refresh(); }
@@ -68,6 +71,7 @@ public final class MainController implements AutoCloseable {
             case "Lectures", "Timeline" -> showLectures(section);
             case "Exam Bank" -> view.showPage(section, questionController.show());
             case "Exams" -> showExams();
+            case "Attendance" -> view.showPage(section,attendanceController.show(session.activeOffering().orElse(null)));
             case "Grades" -> view.showPage(section,gradebookController.show(session.activeOffering().orElse(null)));
             default -> view.showPlaceholder(section);
         }
@@ -76,6 +80,7 @@ public final class MainController implements AutoCloseable {
 
     private void openOffering(OfferingSummary offering) {
         if (view.currentSection().equals("Grades") && !gradebookController.canLeave()) { view.offeringChoices(offeringChoices,session.activeOffering().orElse(null)); return; }
+        if (view.currentSection().equals("Attendance") && !attendanceController.canLeave()) { view.offeringChoices(offeringChoices,session.activeOffering().orElse(null)); return; }
         session.select(offering);
         view.offeringChoices(offeringChoices, offering);
         dashboard.setActiveOffering(offering.label());
@@ -83,6 +88,7 @@ public final class MainController implements AutoCloseable {
             showLectures(view.currentSection());
         } else if (view.currentSection().equals("Exams")) { showExams(); }
         else if (view.currentSection().equals("Grades")) { view.showPage("Grades",gradebookController.show(offering)); }
+        else if (view.currentSection().equals("Attendance")) { view.showPage("Attendance",attendanceController.show(offering)); }
         else { view.showPage("Courses", enrollmentController.createView(offering)); }
     }
 
@@ -118,9 +124,9 @@ public final class MainController implements AutoCloseable {
         lectureController.close();
         questionController.close();
         examController.close();
-        gradebookController.close();
+        gradebookController.close(); attendanceController.close();
     }
-    public boolean canClose() { return gradebookController.canLeave(); }
+    public boolean canClose() { return gradebookController.canLeave() && attendanceController.canLeave(); }
     private void refreshDashboard() {
         long request=++dashboardRevision; Long offering=session.activeOffering().map(value->value.offering().id()).orElse(null);
         dashboard.loading();

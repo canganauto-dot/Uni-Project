@@ -7,7 +7,7 @@ public final class ExcelExportDialog extends AcademicFormDialog {
     private final TextField path=text("excel-export-path","");
     public ExcelExportDialog(Window owner,String warning) {
         super(owner,"Export saved Gradebook to Excel");
-        field("Report",description("Grades, Assessment Breakdown and Statistics. Attendance is not available."));
+        field("Report",description("Grades, Assessment Breakdown, Attendance and Statistics. Blank attendance cells mean unmarked."));
         field("Calculation",description(warning));
         field("Destination *",path);
         var browse=AcademicControls.button("Choose destination…","choose-excel-export","secondary-button");

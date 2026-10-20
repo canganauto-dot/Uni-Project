@@ -30,7 +30,7 @@ public final class LegacyGradeMigrationRepair {
             String oldScript=script.replace(DATE_GUARD,"");
             require(CURRENT_HASH.equals(MigrationRunner.checksum(script)) && LEGACY_HASH.equals(MigrationRunner.checksum(oldScript)),
                     "Repair does not recognize the bundled V009 SQL; no changes made");
-            new MigrationRunner().migrate(reference);
+            new MigrationRunner(MigrationRunner.RESOURCES.subList(0,9)).migrate(reference);
             new MigrationRunner(MigrationRunner.RESOURCES.subList(0,8)).migrate(legacy);
             try(var statement=legacy.createStatement()) {
                 for(String sql:oldScript.split("(?m)^-- @statement\\s*$")) if(!sql.isBlank()) statement.execute(sql);
@@ -79,7 +79,7 @@ public final class LegacyGradeMigrationRepair {
                     throw failure;
                 } finally { statement.execute("PRAGMA foreign_keys=ON"); }
             }
-            new MigrationRunner().migrate(connection); // Normal strict startup verification, unchanged policy.
+            new MigrationRunner(MigrationRunner.RESOURCES.subList(0,9)).migrate(connection); // Verify repaired V001-V009 only; normal startup applies later versions.
         }
     }
 
