@@ -27,7 +27,7 @@ public final class CourseFormDialog extends Dialog<Void> {
     private boolean busy;
 
     public CourseFormDialog(Window owner, Course existing) {
-        initOwner(owner);
+        initOwner(owner); setResizable(true);
         setTitle(existing == null ? "New Course" : "Edit Course");
         setHeaderText(existing == null ? "Create a course" : "Edit " + existing.courseCode());
         CourseDialogs.style(getDialogPane());
@@ -40,6 +40,7 @@ public final class CourseFormDialog extends Dialog<Void> {
         save.setDefaultButton(true);
         cancel = (Button) getDialogPane().lookupButton(ButtonType.CANCEL);
         cancel.setCancelButton(true);
+        fields.getStyleClass().add("form-grid");
         fields.setHgap(16);
         fields.setVgap(14);
         ColumnConstraints labels = new ColumnConstraints(110);

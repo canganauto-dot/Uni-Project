@@ -16,7 +16,7 @@ public class AcademicFormDialog extends Dialog<Void> {
     private int row;
 
     protected AcademicFormDialog(Window owner, String title) {
-        initOwner(owner);
+        initOwner(owner); setResizable(true);
         setTitle(title);
         setHeaderText(title);
         CourseDialogs.style(getDialogPane());
@@ -38,7 +38,10 @@ public class AcademicFormDialog extends Dialog<Void> {
         error.setVisible(false);
         error.managedProperty().bind(error.visibleProperty());
         error.setMaxWidth(510);
-        getDialogPane().setContent(new VBox(14, DashboardView.label("* Required fields", "small-muted"), fields, error));
+        var scroll=new ScrollPane(fields); scroll.setFitToWidth(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER); scroll.setMaxHeight(490); scroll.setMinHeight(100);
+        scroll.getStyleClass().add("form-scroll"); fields.getStyleClass().add("form-grid");
+        getDialogPane().setContent(new VBox(14, DashboardView.label("* Required fields · Changes are saved only when you choose Save.", "small-muted"), scroll, error));
         setOnCloseRequest(event -> { if (busy) { event.consume(); } });
     }
     protected void field(String label, Control control) {
@@ -48,6 +51,14 @@ public class AcademicFormDialog extends Dialog<Void> {
         GridPane.setHgrow(control, Priority.ALWAYS);
         fields.addRow(row++, caption, control);
         if (row == 1) { setOnShown(event -> Platform.runLater(control::requestFocus)); }
+    }
+    /** Full-width workspace for richer forms, sharing the same save/busy lifecycle. */
+    protected void section(javafx.scene.Node control) {
+        if(control instanceof Region region) region.setMaxWidth(Double.MAX_VALUE); GridPane.setHgrow(control,Priority.ALWAYS);
+        fields.add(control,0,row++,2,1);
+    }
+    protected void footer(javafx.scene.Node node) {
+        VBox content=(VBox)getDialogPane().getContent(); content.getChildren().add(content.getChildren().size()-1,node);
     }
     protected static TextField text(String id, String value) {
         TextField field = new TextField(value);

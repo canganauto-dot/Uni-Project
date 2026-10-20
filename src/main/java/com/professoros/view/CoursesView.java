@@ -41,7 +41,7 @@ public final class CoursesView extends VBox {
     public CoursesView() {
         super(18);
         setId("courses-page");
-        getStyleClass().add("page");
+        getStyleClass().addAll("page","feature-page");
         search.setId("course-search");
         search.setPromptText("Search code, name or department");
         search.setAccessibleText("Search courses by code, name or department");
@@ -50,10 +50,9 @@ public final class CoursesView extends VBox {
             filtered.setPredicate(course -> course.matches(newValue));
             updatePlaceholder();
         });
-        Region spacer = new Region();
-        HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox toolbar = new HBox(12, DashboardView.label("Courses", "page-title"), spacer, search, create);
-        toolbar.setAlignment(Pos.CENTER_LEFT);
+        var toolbar=AcademicControls.heading("Courses","Your reusable course catalog. Open an offering to manage a teaching section.",create);
+        AcademicControls.searchShortcut(this,search); AcademicControls.activateOnEnter(table,edit);
+        table.getStyleClass().add("record-table");
         table.setId("courses-table");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.getColumns().add(column("Course Code", Course::courseCode, 115));
@@ -83,9 +82,9 @@ public final class CoursesView extends VBox {
         VBox.setVgrow(table, Priority.ALWAYS);
         table.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> updateActions());
         status.setId("courses-status");
-        HBox actions = new HBox(10, edit, details, delete, refresh, createOffering, offerings);
-        getChildren().addAll(toolbar, DashboardView.label("Saved locally · Manage the courses you teach.", "muted"),
-                actions, table, count, status);
+        var actions=AcademicControls.toolbar(edit,details,createOffering,offerings,refresh,delete);
+        createOffering.getStyleClass().remove("primary-button"); createOffering.getStyleClass().add("secondary-button");
+        getChildren().addAll(toolbar,AcademicControls.filter("Find a course",search),actions,table,count,status);
         updateActions();
     }
 

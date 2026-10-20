@@ -19,15 +19,15 @@ public final class ExamsView extends VBox {
     private final Label context=DashboardView.label("","muted");
     private boolean hasOffering,busy;
     public ExamsView() {
-        super(16); setId("exams-page"); getStyleClass().add("page");
-        Region space=new Region(); HBox.setHgrow(space,Priority.ALWAYS);
+        super(16); setId("exams-page"); getStyleClass().addAll("page","feature-page");
+        context.getStyleClass().add("context-strip"); AcademicControls.activateOnEnter(table,edit);
         AcademicControls.column(table,"Exam",Exam::title,260); AcademicControls.column(table,"Date",e -> e.date().toString(),110);
         AcademicControls.column(table,"Status",e -> e.status().toString(),110);
         AcademicControls.column(table,"Marks",e -> e.calculatedMarks()+" / "+e.intendedMarks()+(e.marksDiffer()?" ⚠":""),140);
         AcademicControls.column(table,"Questions",e -> Integer.toString(e.questions().size()),80);
         table.getSelectionModel().selectedItemProperty().addListener((o,a,b)->actions());
-        getChildren().addAll(new HBox(10,DashboardView.label("Exams","page-title"),space,create),context,
-                new FlowPane(8,8,edit,details,export,delete,finalizeExam,archive,refresh),table,message);
+        getChildren().addAll(AcademicControls.heading("Exams","Compose, review and publish exams for this offering.",create),context,
+                AcademicControls.toolbar(edit,details,export,finalizeExam,archive,refresh,delete),table,message);
         noOffering();
     }
     public Exam selected() { return table.getSelectionModel().getSelectedItem(); }

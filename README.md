@@ -2,7 +2,7 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 10B dashboard and navigation redesign.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard counts, lecture progress and upcoming lectures/exams use saved records; no demo metrics are displayed.
+**Status: Phase 10C feature screen redesign.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard counts, lecture progress and upcoming lectures/exams use saved records; no demo metrics are displayed.
 
 ## Implemented
 
@@ -16,6 +16,7 @@ An offline-first desktop workspace for university professors, built as an academ
 - Manual exam building, ordered question snapshots, mark-total warnings and deterministic generation with exact count/distribution constraints. Finalization locks content and records bank usage; archived exams preserve history.
 - Grouped, collapsible icon sidebar; real dashboard counts and active-offering lecture progress, upcoming activities and recently updated records. Refresh overview reloads saved data.
 - Persistent Light, Dark and System appearance modes, shared CSS component styling, keyboard focus and scrollable content.
+- Consistent feature headers, labelled filters, wrapping action bars, resizable forms, exam composition panels and spreadsheet-style grade cells with a visible unsaved state.
 - Versioned SQLite migrations, unique identifiers, foreign-key deletion restrictions and configurable storage. Application startup never seeds demo records.
 - Maven wrapper, JUnit tests, optional desktop smoke test and permanent AI development rules.
 
@@ -31,7 +32,7 @@ Broader semester planning, advanced generation constraints, multiple exam versio
 4. Open an offering through Course Details, All Offerings or the top-bar selector; use its **Students** tab to enroll existing students.
 5. Select **Lectures** to organize the active offering's lectures, or **Timeline** to see them chronologically. Switching the top-bar offering updates either page. Progress covers all lectures in that offering, independent of search.
 6. Use **Exam Bank** to create reusable questions for a catalog course. No term or active offering is required. Choose 2–10 distinct choices and one correct answer for MCQs, or a True/False answer when applicable. Optional image files are referenced by absolute local path, not copied into the database.
-7. Select an offering and open **Exams**. Create a draft, add questions from its course's bank, and use the Selected tab to remove/reorder them. Generate Selection supports exact difficulty/type/topic counts; leaving a whole distribution blank makes it unrestricted. Review calculated versus intended marks, then Save. Finalize only when content is ready: finalized exams cannot be edited or deleted.
+7. Select an offering and open **Exams**. Create a draft, add questions from its course's bank, and use the Composition tab to remove/reorder them. Generate Selection supports exact difficulty/type/topic counts; leaving a whole distribution blank makes it unrestricted. Review calculated versus intended marks, then Save. Finalize only when content is ready: finalized exams cannot be edited or deleted.
 
 Course is a reusable catalog definition. Enrollment links a student to a specific offering, never directly to the catalog course. Records with dependent academic history cannot be deleted. Active offering selection lasts for the current application session.
 
@@ -44,6 +45,8 @@ For Excel, choose **Import from Excel** in Students or an offering's Students ta
 In Grades, save or discard pending edits, then choose **Export to Excel** and a new filename. Grades, Assessment Breakdown and Statistics contain a saved report, not recalculating formulas. Missing scores remain blank and zero stays numeric zero. Attendance is omitted until that module exists. Imports do not evaluate formulas; replace formula cells with reviewed values first. `.xls`, `.xlsm`, CSV and grade import are not supported. No Microsoft Excel installation is required.
 
 Use the top-bar appearance button to cycle Light, Dark and System, or select a mode in **Settings → Appearance**. Your choice is saved beside the local database and applies without resetting open forms or unsaved grades. System follows the OS appearance reported by JavaFX. See [theme architecture and verification](docs/THEMES.md).
+
+On searchable feature pages, Ctrl+F focuses search (Command+F on macOS). With a record table focused, Enter opens its selected edit/build action; in the exam bank selector, Enter adds selected questions. Forms retain Save/Cancel behavior and scroll when their content exceeds the available height.
 
 ## Technology stack
 

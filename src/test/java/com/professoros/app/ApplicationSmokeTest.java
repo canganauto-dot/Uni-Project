@@ -34,7 +34,9 @@ class ApplicationSmokeTest {
         ProfessorOsApplication application = new ProfessorOsApplication();
         application.init();
         CompletableFuture<Void> completed = new CompletableFuture<>();
+        var uncaught=new java.util.concurrent.atomic.AtomicReference<Throwable>();
         Platform.startup(() -> {
+            Thread.currentThread().setUncaughtExceptionHandler((thread,failure)->uncaught.compareAndSet(null,failure));
             Platform.setImplicitExit(false);
             Stage stage = new Stage();
             try {
@@ -112,6 +114,8 @@ class ApplicationSmokeTest {
             new GradeWorkflowCheck(temporaryDirectory.resolve("grades.db")).verify();
             new ExcelWorkflowCheck(temporaryDirectory.resolve("excel")).verify();
             ThemeWorkflowCheck.verify(temporaryDirectory.resolve("themes"));
+            FeatureScreenWorkflowCheck.verify(temporaryDirectory.resolve("features"));
+            assertNull(uncaught.get(),()->"Uncaught desktop error: "+uncaught.get());
         } finally {
             var stopped=new java.util.concurrent.FutureTask<Void>(()->{ application.stop(); return null; });
             Platform.runLater(stopped); stopped.get(10,TimeUnit.SECONDS);

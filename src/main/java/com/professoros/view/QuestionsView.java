@@ -27,7 +27,7 @@ public final class QuestionsView extends VBox {
     private boolean failed;
 
     public QuestionsView() {
-        super(16); setId("questions-page"); getStyleClass().add("page");
+        super(16); setId("questions-page"); getStyleClass().addAll("page","feature-page");
         search.setId("question-search"); search.setPromptText("Search question, topic or answer"); search.setPrefWidth(300);
         course.setId("filter-question-course"); course.setPrefWidth(290);
         type.setId("filter-question-type"); type.setPromptText("All types"); type.getItems().addAll(QuestionType.values());
@@ -52,11 +52,12 @@ public final class QuestionsView extends VBox {
         table.getColumns().add(marks);
         edit.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
         details.disableProperty().bind(edit.disableProperty()); delete.disableProperty().bind(edit.disableProperty());
-        Region space = new Region(); HBox.setHgrow(space, Priority.ALWAYS);
-        getChildren().addAll(new HBox(12, DashboardView.label("Exam Question Bank", "page-title"), space, create),
-                DashboardView.label("Reusable catalog questions · Independent of the active teaching offering.", "muted"),
-                search, new FlowPane(10, 10, course, type, difficulty, reset),
-                new HBox(10, edit, details, delete, refresh), table, status);
+        AcademicControls.searchShortcut(this,search); AcademicControls.activateOnEnter(table,edit);
+        getChildren().addAll(AcademicControls.heading("Exam Question Bank","Reusable questions for your catalog courses.",create),
+                AcademicControls.filter("Search question text, topics or answers",search),
+                AcademicControls.toolbar(AcademicControls.filter("Course",course),AcademicControls.filter("Question type",type),
+                        AcademicControls.filter("Difficulty",difficulty),reset),
+                AcademicControls.toolbar(edit,details,refresh,delete),table,status);
         placeholder();
     }
     public List<Course> courses() { return courses; }
@@ -78,7 +79,7 @@ public final class QuestionsView extends VBox {
             rows.stream().filter(q -> q.id() == selectedId).findFirst().ifPresent(q -> { table.getSelectionModel().select(q); table.scrollTo(q); });
         }
         filter();
-        AcademicControls.status(status, questions.size() + " saved questions · Usage is recorded only by future exam workflows.", false);
+        AcademicControls.status(status, questions.size() + " saved questions · Usage is recorded when an exam is finalized.", false);
     }
     public void loadError(String message) {
         failed = true; rows.clear(); placeholder(); AcademicControls.status(status, message + " Use Refresh to retry.", true);

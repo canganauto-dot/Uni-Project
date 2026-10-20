@@ -24,13 +24,17 @@ public final class ExamBuilderDialog extends AcademicFormDialog {
 
     public ExamBuilderDialog(Window owner,String offering,List<Question> bank,Exam existing) {
         super(owner,existing==null?"New Exam":"Edit Draft Exam");
-        getDialogPane().setPrefWidth(960); setHeaderText((existing==null?"New Exam":"Edit Draft")+" · "+offering);
+        getDialogPane().setPrefWidth(1000); getDialogPane().getStyleClass().add("exam-builder"); setHeaderText((existing==null?"New Exam":"Edit Draft")+" · "+offering);
         title=text("exam-title",existing==null?"":existing.title());
         date=text("exam-date",existing==null?"":existing.date().toString()); date.setPromptText("yyyy-MM-dd");
         duration=text("exam-duration",existing==null?"60":Integer.toString(existing.durationMinutes()));
         intended=text("exam-intended",existing==null?"100":existing.intendedMarks().toPlainString());
         instructions=notes("exam-instructions",existing==null?"":existing.instructions()); instructions.setPrefRowCount(8);
-        field("Title *",title); field("Date *",date); field("Duration (min) *",duration); field("Intended marks *",intended);
+        var metadata=new GridPane(); metadata.setHgap(12);
+        for(int width:new int[]{40,24,18,18}) { var column=new ColumnConstraints();column.setPercentWidth(width);column.setMinWidth(0);metadata.getColumnConstraints().add(column); }
+        metadata.addRow(0,AcademicControls.filter("Exam title *",title),AcademicControls.filter("Date *",date),
+                AcademicControls.filter("Minutes *",duration),AcademicControls.filter("Intended marks *",intended));
+        section(metadata);
         TableView<Question> available=AcademicControls.table("exam-bank-questions"); available.setPrefHeight(190); available.setMinHeight(100);
         available.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         AcademicControls.column(available,"Question",Question::text,400);
@@ -60,23 +64,39 @@ public final class ExamBuilderDialog extends AcademicFormDialog {
             }
             updateTotals();
         });
-        VBox bankPane=new VBox(8,new FlowPane(8,8,type,difficulty,topic,clear),search,available,new HBox(10,add,generate));
+        AcademicControls.activateOnEnter(available,add);
+        search.setPrefWidth(210);
+        available.setTooltip(new Tooltip("Select rows with Ctrl/Shift, then Add selected. Enter adds the selected rows."));
+        var bankPane=new VBox(10,
+                AcademicControls.toolbar(AcademicControls.filter("Search questions",search),AcademicControls.filter("Type",type),
+                        AcademicControls.filter("Difficulty",difficulty),AcademicControls.filter("Topic",topic),clear),
+                available,AcademicControls.toolbar(add,generate));
+        bankPane.getStyleClass().add("builder-panel");
+        AcademicControls.searchShortcut(bankPane,search);
         selection.setItems(selected); selection.setPrefHeight(200); selection.setMinHeight(100);
+        AcademicControls.column(selection,"No.",q->Integer.toString(selected.indexOf(q)+1),50);
+        selection.getColumns().getFirst().setMinWidth(55);
+        selection.getColumns().getFirst().setMaxWidth(55);
         AcademicControls.column(selection,"Question",ExamQuestion::text,450);
         AcademicControls.column(selection,"Type",q -> q.type().toString(),120);
         AcademicControls.column(selection,"Marks",q -> q.marks().toPlainString(),70);
         selection.getColumns().forEach(c -> c.setSortable(false));
-        selection.setPlaceholder(new Label("No questions selected. Use the Bank tab or generate a selection."));
+        selection.setPlaceholder(AcademicControls.empty("Your exam starts here","Add questions from the bank, or generate a selection with constraints.",null));
         Button remove=AcademicControls.button("Remove","remove-exam-question","danger-button");
         Button up=AcademicControls.button("Move up","exam-question-up","secondary-button");
         Button down=AcademicControls.button("Move down","exam-question-down","secondary-button");
         for(Button button:List.of(remove,up,down)) { button.disableProperty().bind(selection.getSelectionModel().selectedItemProperty().isNull()); }
         remove.setOnAction(e -> { selected.remove(selection.getSelectionModel().getSelectedItem()); updateTotals(); });
         up.setOnAction(e -> move(-1)); down.setOnAction(e -> move(1));
-        tabs=new TabPane(new Tab("Bank · this course only",bankPane),new Tab("Selected · ordered",new VBox(8,selection,new HBox(10,remove,up,down))),new Tab("Instructions",instructions));
-        tabs.setId("exam-builder-tabs"); tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE); tabs.setPrefHeight(290);
+        var composition=new VBox(10,DashboardView.label("Compose your exam","section-title"),
+                DashboardView.label("The order below is the order on the exam. Saved questions retain their exam snapshots.","small-muted"),
+                selection,AcademicControls.toolbar(up,down,remove)); composition.getStyleClass().add("builder-panel");
+        var selectedTab=new Tab("Composition",composition);
+        selectedTab.textProperty().bind(javafx.beans.binding.Bindings.size(selected).asString("Composition · %d questions"));
+        tabs=new TabPane(new Tab("Question bank",bankPane),selectedTab,new Tab("Instructions",instructions));
+        tabs.setId("exam-builder-tabs"); tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE); tabs.setPrefHeight(365);
         totals.setId("exam-mark-totals");
-        field("Questions",tabs); field("Totals",totals);
+        section(tabs); footer(totals);
         intended.textProperty().addListener((o,a,b)->updateTotals());
         if(existing!=null) {
             existing.questions().forEach(q -> savedSnapshots.put(q.questionId(),q));

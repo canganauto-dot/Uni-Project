@@ -10,10 +10,44 @@ import java.util.function.Function;
 /** Small visual helpers shared by the academic screens. No persistence or business rules. */
 public final class AcademicControls {
     private AcademicControls() { }
+    public static HBox heading(String title,String description,Button primary) {
+        var copy=new VBox(5,DashboardView.label(title,"page-title"),DashboardView.label(description,"muted"));
+        copy.setMinWidth(0); HBox.setHgrow(copy,Priority.ALWAYS);
+        primary.setMinWidth(Region.USE_PREF_SIZE);
+        var header=new HBox(20,copy,primary); header.setAlignment(javafx.geometry.Pos.CENTER_LEFT);
+        header.getStyleClass().add("feature-heading"); return header;
+    }
+    public static FlowPane toolbar(javafx.scene.Node... controls) {
+        var bar=new FlowPane(8,8,controls); bar.getStyleClass().add("feature-toolbar"); return bar;
+    }
+    public static VBox filter(String caption,Control control) {
+        var label=DashboardView.label(caption,"filter-caption"); label.setLabelFor(control);
+        control.setAccessibleText(caption); control.setMaxWidth(Double.MAX_VALUE);
+        return new VBox(5,label,control);
+    }
+    public static void searchShortcut(Parent page,TextField search) {
+        search.setAccessibleText(search.getPromptText());
+        search.setTooltip(new Tooltip("Search this page · Ctrl+F (Command+F on macOS)"));
+        page.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED,event->{
+            if(event.isShortcutDown() && event.getCode()==javafx.scene.input.KeyCode.F) {
+                search.requestFocus(); search.selectAll(); event.consume();
+            }
+        });
+    }
+    public static void activateOnEnter(TableView<?> table,Button action) {
+        table.setAccessibleHelp("Use arrow keys to select a row; Enter opens the selected action.");
+        table.addEventFilter(javafx.scene.input.KeyEvent.KEY_PRESSED,event->{
+            if(event.getCode()==javafx.scene.input.KeyCode.ENTER && table.isFocused()
+                    && table.getSelectionModel().getSelectedItem()!=null && !action.isDisabled()) {
+                action.fire(); event.consume();
+            }
+        });
+    }
     public static Button button(String text, String id, String style) { return CoursesView.button(text, id, style); }
     public static <T> TableView<T> table(String id) {
         TableView<T> table = new TableView<>();
         table.setId(id);
+        table.getStyleClass().add("record-table");
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         table.setMinHeight(180);
         table.setPrefHeight(400);
@@ -24,6 +58,12 @@ public final class AcademicControls {
         TableColumn<T, String> column = new TableColumn<>(title);
         column.setCellValueFactory(row -> new ReadOnlyStringWrapper(value.apply(row.getValue())));
         column.setPrefWidth(width);
+        column.setCellFactory(ignored->new TableCell<>() {
+            @Override protected void updateItem(String text,boolean empty) {
+                super.updateItem(text,empty); setText(empty?null:text);
+                setTooltip(empty || text==null || text.isBlank()?null:new Tooltip(text));
+            }
+        });
         table.getColumns().add(column);
     }
     public static VBox empty(String title, String detail, Button action) {

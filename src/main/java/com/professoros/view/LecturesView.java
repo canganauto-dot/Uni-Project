@@ -31,7 +31,7 @@ public final class LecturesView extends VBox {
     public LecturesView(boolean chronological) {
         super(16);
         this.chronological = chronological;
-        setId(chronological ? "timeline-page" : "lectures-page"); getStyleClass().add("page");
+        setId(chronological ? "timeline-page" : "lectures-page"); getStyleClass().addAll("page","feature-page");
         context.setId("lecture-context"); progress.setId("lecture-progress"); schedule.setId("lecture-schedule");
         status.setId("lecture-message"); timeline.setId("lecture-timeline");
         search.setId("lecture-search"); search.setPromptText("Search number, title or lecture text"); search.setPrefWidth(285);
@@ -73,12 +73,14 @@ public final class LecturesView extends VBox {
             return row;
         });
         timeline.setOnMouseClicked(event -> { if (event.getClickCount() == 2 && selected() != null) { edit.fire(); } });
-        Region space = new Region(); HBox.setHgrow(space, Priority.ALWAYS);
-        HBox heading = new HBox(12, DashboardView.label(chronological ? "Lecture Timeline" : "Lectures", "page-title"), space, search, create);
-        heading.setAlignment(Pos.CENTER_LEFT); bar.setMaxWidth(Double.MAX_VALUE);
-        getChildren().addAll(heading, context, progress, bar, schedule,
-                DashboardView.label("Completion = fully completed / non-cancelled lectures. Partial lectures are counted separately.", "small-muted"),
-                new HBox(10, edit, delete, refresh), chronological ? timeline : table, status);
+        AcademicControls.searchShortcut(this,search); AcademicControls.activateOnEnter(table,edit);
+        bar.setMaxWidth(Double.MAX_VALUE); context.getStyleClass().add("context-strip");
+        var summary=new VBox(8,progress,bar,schedule,
+                DashboardView.label("Completed / non-cancelled lectures. Partial lectures are reported separately.","small-muted"));
+        summary.getStyleClass().add("feature-summary");
+        getChildren().addAll(AcademicControls.heading(chronological?"Lecture Timeline":"Lectures","Plan sessions and track delivery for the active offering.",create),
+                context,summary,AcademicControls.filter("Find a lecture",search),
+                AcademicControls.toolbar(edit,refresh,delete),chronological?timeline:table,status);
         noOffering();
     }
     public Lecture selected() { return chronological ? timeline.getSelectionModel().getSelectedItem() : table.getSelectionModel().getSelectedItem(); }

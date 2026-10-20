@@ -20,7 +20,7 @@ public final class StudentsView extends VBox {
     private final ObservableList<Student> rows = FXCollections.observableArrayList();
     private final FilteredList<Student> filtered = new FilteredList<>(rows);
     public StudentsView() {
-        super(18); setId("students-page"); getStyleClass().add("page");
+        super(18); setId("students-page"); getStyleClass().addAll("page","feature-page");
         search.setId("student-search"); search.setPromptText("Search number, name or email"); search.setPrefWidth(300);
         search.textProperty().addListener((obs, old, text) -> { filtered.setPredicate(s -> s.matches(text)); placeholder(); });
         SortedList<Student> sorted = new SortedList<>(filtered); sorted.comparatorProperty().bind(table.comparatorProperty()); table.setItems(sorted);
@@ -30,10 +30,10 @@ public final class StudentsView extends VBox {
         AcademicControls.column(table, "Updated", s -> CoursesView.formatTime(s.updatedAt()), 170);
         edit.disableProperty().bind(table.getSelectionModel().selectedItemProperty().isNull());
         details.disableProperty().bind(edit.disableProperty()); delete.disableProperty().bind(edit.disableProperty());
-        Region space = new Region(); HBox.setHgrow(space, Priority.ALWAYS);
-        getChildren().addAll(new HBox(12, DashboardView.label("Students", "page-title"), space, search, create),
-                DashboardView.label("Student directory · Enrollment belongs to a specific offering.", "muted"),
-                new HBox(10, edit, details, delete, refresh, importExcel), table, status);
+        AcademicControls.searchShortcut(this,search); AcademicControls.activateOnEnter(table,edit);
+        getChildren().addAll(AcademicControls.heading("Students","Your student directory. Enroll students into individual course offerings.",create),
+                AcademicControls.filter("Find a student",search),
+                AcademicControls.toolbar(edit,details,importExcel,refresh,delete),table,status);
         placeholder();
     }
     public void showStudents(List<Student> students, Long selectedId) {

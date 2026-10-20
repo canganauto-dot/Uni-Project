@@ -21,15 +21,19 @@ public final class GradebookView extends VBox {
     private final Label context=DashboardView.label("Select a course offering to manage grades.","muted");
     private final Label status=DashboardView.label("","muted"),weights=DashboardView.label("","muted"),statistics=DashboardView.label("","muted");
     private final TabPane tabs=new TabPane();
+    private final Label draftState=DashboardView.label("Saved","save-state");
     private GradebookDraft draft;
     private final ObservableList<EnrolledStudent> rows=FXCollections.observableArrayList();
     private final Map<Long,ReadOnlyStringWrapper> results=new HashMap<>();
     private final List<Button> buttons;
     private BiConsumer<GradeKey,String> changed=(k,v)->{};
     public GradebookView() {
-        setId("grades-page"); getStyleClass().add("page"); setSpacing(12);
+        setId("grades-page"); getStyleClass().addAll("page","feature-page"); setSpacing(12);
         search.setId("grade-search"); search.setPromptText("Search student number or name"); search.setPrefWidth(260);
         status.setId("grade-status"); weights.setId("grade-weights"); statistics.setId("grade-statistics");
+        table.getStyleClass().add("grade-sheet"); context.getStyleClass().add("context-strip");
+        draftState.setId("grade-draft-state"); statistics.getStyleClass().add("statistics-strip");
+        AcademicControls.searchShortcut(this,search);
         table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         var filtered=new FilteredList<>(rows,s->true); var sorted=new SortedList<>(filtered); sorted.comparatorProperty().bind(table.comparatorProperty()); table.setItems(sorted);
         search.textProperty().addListener((o,a,b)->filtered.setPredicate(s->(s.student().studentNumber()+" "+s.student().firstName()+" "+s.student().lastName()).toLowerCase(Locale.ROOT).contains(b.strip().toLowerCase(Locale.ROOT))));
@@ -41,11 +45,12 @@ public final class GradebookView extends VBox {
         categories.setPlaceholder(new Label("Create categories and assign weights (total 100%)."));
         assessments.setPlaceholder(new Label("Create a category, then add assessments."));
         tabs.setId("grade-tabs");
-        tabs.getTabs().addAll(tab("Gradebook",new VBox(10,new FlowPane(8,8,search,save,discard,bulk,exportExcel),table)),
-                tab("Assessments",new VBox(10,new FlowPane(8,8,newAssessment,editAssessment,deleteAssessment),assessments)),
-                tab("Categories & Scale",new VBox(10,new FlowPane(8,8,newCategory,editCategory,deleteCategory,scale),categories)));
+        tabs.getTabs().addAll(tab("Gradebook",new VBox(10,AcademicControls.toolbar(search,save,discard,bulk,exportExcel,draftState),table)),
+                tab("Assessments",new VBox(10,AcademicControls.toolbar(newAssessment,editAssessment,deleteAssessment),assessments)),
+                tab("Categories & Scale",new VBox(10,AcademicControls.toolbar(newCategory,editCategory,deleteCategory,scale),categories)));
         VBox.setVgrow(tabs,Priority.ALWAYS);
-        getChildren().addAll(DashboardView.label("Grades","page-title"),context,weights,tabs,statistics,status);
+        getChildren().addAll(new VBox(5,DashboardView.label("Gradebook","page-title"),
+                DashboardView.label("Enter scores in the grid. Blank means ungraded; zero is a recorded score.","muted")),context,weights,tabs,statistics,status);
         buttons=List.of(save,discard,bulk,exportExcel,newCategory,editCategory,deleteCategory,newAssessment,editAssessment,deleteAssessment,scale);
         setBusy(true);
     }
@@ -61,12 +66,15 @@ public final class GradebookView extends VBox {
         AcademicControls.column(table,"Enrollment",s->s.enrollment().status().toString(),115);
         for(var assessment:value.book().assessments()) {
             TableColumn<EnrolledStudent,String> column=new TableColumn<>(assessment.title()+" / "+assessment.maximumMarks());
-            column.setPrefWidth(145); column.setMinWidth(120);
+            column.setPrefWidth(170); column.setMinWidth(140);
             column.setCellValueFactory(r->new ReadOnlyStringWrapper(draft.value(new GradeKey(r.getValue().enrollment().id(),assessment.id()))));
             column.setCellFactory(c->new TableCell<>() {
                 private final TextField input=new TextField(); private boolean setting;
                 {
                     input.setPromptText("Ungraded"); input.setMaxWidth(Double.MAX_VALUE);
+                    input.getStyleClass().add("grade-editor");
+                    input.setAccessibleHelp("Enter a score from zero to "+assessment.maximumMarks()+". Leave blank for ungraded. Tab moves to the next control.");
+                    input.textProperty().addListener((o,a,b)->input.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("ungraded"),b.isBlank()));
                     input.textProperty().addListener((o,a,b)->{
                         if(!setting && getTableRow()!=null && getTableRow().getItem()!=null) {
                             var key=new GradeKey(getTableRow().getItem().enrollment().id(),assessment.id());
@@ -78,7 +86,9 @@ public final class GradebookView extends VBox {
                     super.updateItem(item,empty); setting=true;
                     try {
                         if(empty || getTableRow()==null || getTableRow().getItem()==null) { setGraphic(null); }
-                        else { var key=new GradeKey(getTableRow().getItem().enrollment().id(),assessment.id()); input.setId("grade-cell-"+key.enrollmentId()+"-"+key.assessmentId()); input.setText(draft.value(key)); setGraphic(input); }
+                        else { var key=new GradeKey(getTableRow().getItem().enrollment().id(),assessment.id()); input.setId("grade-cell-"+key.enrollmentId()+"-"+key.assessmentId()); input.setAccessibleText(getTableRow().getItem().student().fullName()+" · "+assessment.title()+" · out of "+assessment.maximumMarks());
+                            input.setTooltip(new Tooltip(input.getAccessibleText()+". Blank = ungraded."));
+                            input.setText(draft.value(key)); input.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("ungraded"),input.getText().isBlank()); setGraphic(input); }
                     } finally { setting=false; }
                 }
             });
@@ -104,5 +114,8 @@ public final class GradebookView extends VBox {
     }
     public void status(String message,boolean error) { AcademicControls.status(status,message,error); }
     public void setBusy(boolean busy) { buttons.forEach(b->b.setDisable(busy)); tabs.setDisable(busy); }
-    public void dirty(boolean dirty) { save.setDisable(!dirty); }
+    public void dirty(boolean dirty) {
+        save.setDisable(!dirty); draftState.setText(dirty?"Unsaved changes":"Saved");
+        draftState.pseudoClassStateChanged(javafx.css.PseudoClass.getPseudoClass("dirty"),dirty);
+    }
 }

@@ -12,6 +12,7 @@ public final class MainController implements AutoCloseable {
     private final DashboardService dashboardService;
     private final UiTaskRunner dashboardTasks=new UiTaskRunner();
     private long dashboardRevision;
+    private boolean closed;
     private final CoursesView courses = new CoursesView();
     private final StudentsView students = new StudentsView();
     private final TermsView terms = new TermsView();
@@ -34,6 +35,7 @@ public final class MainController implements AutoCloseable {
         dashboardService=new DashboardService(academic);
         offeringController = new OfferingController(academic, service, view, this::openOffering, this::updateChoices);
         courseController = new CourseController(service, courses, count -> {
+            if (closed) { return; }
             dashboard.setCourseCount(count);
             offeringController.refreshChoices();
         });
@@ -85,6 +87,7 @@ public final class MainController implements AutoCloseable {
     }
 
     private void updateChoices(List<OfferingSummary> choices) {
+        if (closed) { return; }
         offeringChoices = choices;
         OfferingSummary previous = session.activeOffering().orElse(null);
         Long activeId = session.activeOffering().map(value -> value.offering().id()).orElse(null);
@@ -107,6 +110,7 @@ public final class MainController implements AutoCloseable {
     private void showExams() { view.showPage("Exams", examController.show(session.activeOffering().orElse(null))); }
 
     @Override public void close() {
+        closed=true;
         dashboardRevision++; dashboardTasks.close();
         view.themes().close();
         courseController.close(); studentController.close(); termController.close();

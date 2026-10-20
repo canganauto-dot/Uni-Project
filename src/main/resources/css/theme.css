@@ -194,3 +194,39 @@
 .progress-headline { -fx-font-size: 40px; -fx-font-weight: bold; -fx-text-fill: -app-accent; }
 .dashboard-activity { -fx-padding: 10 0; -fx-border-color: transparent transparent -app-border transparent; }
 .activity-marker { -fx-text-fill: -app-accent; -fx-font-size: 12px; -fx-font-weight: bold; }
+
+/* Feature workspaces: shared density and hierarchy, independent of the active palette. */
+.feature-page { -fx-padding: 24 28; -fx-spacing: 14; }
+.feature-heading { -fx-padding: 0 0 6; }
+.feature-heading .page-title { -fx-font-size: 26px; }
+.feature-toolbar { -fx-alignment: bottom-left; -fx-padding: 2 0; }
+.filter-caption { -fx-text-fill: -app-muted; -fx-font-size: 11px; -fx-font-weight: bold; }
+.context-strip { -fx-padding: 10 14; -fx-background-color: -app-accent-soft; -fx-background-radius: 7; -fx-text-fill: -app-accent; }
+.feature-summary { -fx-background-color: -app-surface; -fx-border-color: -app-border; -fx-padding: 14 18; -fx-background-radius: 8; -fx-border-radius: 8; }
+.record-table { -fx-border-radius: 9; -fx-background-radius: 9; }
+.record-table .column-header { -fx-padding: 12 8; -fx-size: 44; }
+.record-table .column-header .label { -fx-font-size: 11px; }
+.record-table .table-row-cell { -fx-cell-size: 48; }
+.record-table .table-row-cell:filled:odd { -fx-background-color: -app-background; }
+.record-table .table-row-cell:filled:hover { -fx-background-color: -app-hover; }
+.record-table .table-row-cell:filled:selected { -fx-background-color: -app-selection; }
+.record-table .table-row-cell:filled:selected .table-cell { -fx-text-fill: -app-selection-text; }
+.record-table:focused { -fx-border-color: -app-accent; }
+.empty-state { -fx-padding: 24; -fx-spacing: 12; -fx-max-width: 560; }
+.empty-state .section-title { -fx-font-size: 18px; }
+.course-dialog { -fx-padding: 22; }
+.course-dialog > .button-bar { -fx-padding: 16 0 0; }
+.form-scroll, .form-scroll > .viewport { -fx-background-color: -app-surface; -fx-padding: 0; -fx-background-insets: 0; }
+.form-grid { -fx-padding: 4 8 8 0; }
+.form-label { -fx-text-fill: -app-muted; -fx-font-size: 12px; }
+.builder-panel { -fx-padding: 12; -fx-background-color: -app-background; -fx-background-radius: 8; }
+.exam-builder .tab { -fx-padding: 9 16; }
+#exam-mark-totals { -fx-padding: 12; -fx-background-color: -app-accent-soft; -fx-background-radius: 7; -fx-font-weight: bold; }
+.grade-sheet .table-row-cell { -fx-cell-size: 56; }
+.grade-sheet .table-cell { -fx-border-color: transparent -app-border -app-border transparent; -fx-padding: 8 10; -fx-alignment: center-left; }
+.grade-sheet .grade-editor { -fx-background-color: -app-surface; -fx-border-color: -app-input-border; -fx-border-radius: 4; -fx-background-radius: 4; -fx-padding: 6 10; -fx-font-size: 14px; -fx-alignment: center-right; }
+.grade-sheet .grade-editor:ungraded { -fx-background-color: -app-background; }
+.grade-sheet .grade-editor:focused { -fx-background-color: -app-surface; -fx-border-color: -app-accent; -fx-border-width: 2; -fx-padding: 5 9; }
+.save-state { -fx-text-fill: -app-muted; -fx-background-color: -app-background; -fx-background-radius: 12; -fx-padding: 7 12; -fx-font-size: 11px; }
+.save-state:dirty { -fx-background-color: -app-accent-soft; -fx-text-fill: -app-accent; -fx-font-weight: bold; }
+.statistics-strip { -fx-padding: 12 16; -fx-background-color: -app-surface; -fx-border-color: -app-border; -fx-border-radius: 7; -fx-background-radius: 7; }

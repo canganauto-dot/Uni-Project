@@ -25,6 +25,10 @@ Use Java 25, JavaFX, Maven, SQLite and JDBC. Apache POI and PDFBox or OpenPDF ar
 - Preserve user data. Never casually delete or recreate a production database.
 - Introduce migrations/schema versioning with the first persistent domain tables.
 - Keep database paths configurable; tests use temporary directories.
+- **Never modify, delete, rename or overwrite an already-applied database migration.** This rule applies to all future development phases.
+- Introduce all database schema changes through new, versioned migrations. Preserve migration history, checksums and existing user data.
+- Never bypass migration checksum verification or alter stored checksums to hide inconsistencies.
+- Before any database repair, create a verified backup and investigate the root cause. Prove the schema and data state before any explicit, documented corrective repair.
 
 ## Testing
 - After meaningful changes, run `./mvnw clean verify` (Windows: `.\mvnw.cmd clean verify`) and relevant tests; fix failures before declaring completion.

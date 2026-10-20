@@ -59,10 +59,10 @@ public final class QuestionFormDialog extends AcademicFormDialog {
             if (file != null) { imagePath.setText(file.getAbsolutePath()); }
         });
         Tab imageTab = new Tab("Image", new VBox(12, new Label("Optional local image path"), imagePath, browse,
-                DashboardView.label("The image is referenced, not copied. Keep it at this path. Preview and export are not implemented.", "muted")));
+                DashboardView.label("The image is referenced, not copied. Keep it at this path for future exam PDF exports.", "muted")));
         TabPane tabs = new TabPane(prompt, choicesTab, answerTab, imageTab);
         tabs.setId("question-tabs"); tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
-        tabs.setPrefHeight(240); field("Content", tabs);
+        tabs.setPrefHeight(260); section(tabs);
         Runnable configure = () -> {
             boolean mcq = type.getValue() == QuestionType.MCQ, tf = type.getValue() == QuestionType.TRUE_FALSE;
             choicesTab.setDisable(!mcq);
