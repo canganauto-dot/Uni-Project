@@ -15,6 +15,7 @@ Build an all-in-one offline desktop workspace for university professors: courses
 | Maven Compiler / Surefire | 3.14.1 / 3.6.0 | Java 25 compilation and JUnit execution |
 | SQLite JDBC | 3.53.4.0 | Local storage engine and JDBC driver |
 | JUnit Jupiter | 5.14.0, test scope | Meaningful foundation tests |
+| Kotlin / Compose Desktop / Gradle | 2.3.20 / 1.10.3 / 9.3.1 | Isolated native dashboard evaluation; JavaFX remains the complete app |
 | Apache POI | 5.5.1 | Excel student import and grade export |
 | Apache PDFBox / ICU4J | 3.0.8 / 78.3 | PDF generation/preview and Arabic shaping/bidi |
 
@@ -24,7 +25,7 @@ Version availability was checked against Maven Central. Setup guidance: [OpenJFX
 
 Intended dependency direction: **UI → services → repositories → database**. Domain models must stay independent of JavaFX and JDBC so future Excel/PDF services can reuse them.
 
-`ProfessorOsApplication` is the composition root: it initializes/migrates the database before showing the window and constructs CourseService plus AcademicServices. MainController wires entity controllers, navigation, the dashboard and session offering context. Views construct layouts; controllers coordinate interactions; services own validation and timestamps; repositories own JDBC and row mapping. `DemoDashboard` supplies only clearly labelled synthetic content.
+`ProfessorOsApplication` is the composition root: it initializes/migrates the database before showing the window and constructs CourseService plus AcademicServices. MainController wires entity controllers, navigation, the dashboard and session offering context. Views construct layouts; controllers coordinate interactions; services own validation and timestamps; repositories own JDBC and row mapping. The production dashboard reads saved data; synthetic fixtures belong only in tests.
 
 Database initialization runs in JavaFX's `init()` lifecycle method, off the JavaFX application thread. Each entity controller submits service operations through a serial background worker; JavaFX Task callbacks update controls on the JavaFX thread. Writes disable the form until completion and close it only after success. Each database operation owns a short-lived connection and closes it with try-with-resources; no pool is needed yet. Expected validation failures have specific exception types; unexpected storage failures retain their causes, are logged and show concise messages.
 
@@ -35,6 +36,8 @@ Standard Maven `src/main/java`, `src/main/resources` and `src/test/java` layouts
 The requested structure gains `view` to keep layout construction out of controllers and `theme` to coordinate appearance. The former synthetic dashboard data was removed in Phase 10B. Reserved packages/resources use `.gitkeep` rather than empty placeholder classes. No FXML dependency is needed until an FXML file is actually introduced.
 
 Local development database files live in ignored `data/`. Future generated PDFs/Excel workbooks belong in ignored `exports/` or `generated/`; build/test output belongs in `target/`. Reference documents, fixtures and SQL migrations remain trackable rather than globally ignoring all PDF/Excel/SQL files.
+
+`prototype-compose/` is an isolated Gradle Kotlin/JVM desktop evaluation. Its `src/main/kotlin` contains the presentation/Java service bridge; bundled licensed fonts live in resources; temporary-data tests live in `src/test/kotlin`. It consumes the existing Maven JAR and runtime libraries. The original JavaFX entry point and Maven architecture remain authoritative for feature screens.
 
 ## Database Design
 
@@ -126,6 +129,8 @@ New controllers use `UiTaskRunner` for the established JavaFX Task/background-wo
 Lectures, Exams and Assessments reference CourseOffering. Grades relate Enrollment and Assessment within that same offering; attendance relates Enrollment and Lecture within the same offering.
 
 ### Phase 4 lecture organizer and timeline
+
+The description below records the Phase 4 design. The separate Timeline view/navigation was subsequently removed during the Compose evaluation; the Lectures table, persisted records, ordering, calculations and migration remain unchanged.
 
 Migration `V006__lectures.sql` adds `CourseOffering 1 → * Lecture`; V001–V005 remain unchanged. The existing transactional migration runner applies it and records its checksum. An upgrade test starts from V005 with academic data and verifies preservation and repeated initialization.
 
@@ -275,14 +280,14 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 
 - Lecture-linked attendance with enrollment/offering validation, individual/bulk marking, saved history/summaries and Excel export.
 
-- Main window with Dashboard, Courses, Students, Lectures, Exam Bank, Exams, Grades, Attendance, Analytics, Timeline and Settings navigation.
+- Main window with Dashboard, Courses, Students, Lectures, Exam Bank, Exams, Grades, Attendance, Analytics and Settings navigation.
 - Header with application title, session offering selector, Open action and disabled global search placeholder.
 - Persisted course count on the dashboard, labelled “Courses · saved”; other cards explicitly remain demo values (126 students, 2 upcoming exams, 18 pending grading items). An unavailable count is shown as unknown, not zero.
 - Course creation, editing, details, confirmed deletion and immediate code/name/department search. Table sorting, empty/no-match/error states, selected saved rows and double-click editing are supported. Create/edit share a form with inline validation, default Save and Escape/Cancel behavior.
 - Sample schedule, deadlines, lecture completion and recent activity. Sample dates are relative illustrative labels, not a live calendar.
 - Students provides directory management; Settings provides academic term management. Courses includes offering creation, course-specific offering lists and access to each offering's roster.
 - Enrollment supports selecting an existing student, duplicate prevention, withdrawal, completion and reactivation while retaining history.
-- Lectures and Timeline provide persisted offering-specific lecture organization, search, chronological ordering, completion counts and basic schedule status.
+- Lectures provides persisted offering-specific lecture organization, search, chronological ordering, completion counts and basic schedule status. The separate Timeline UI was removed during the Compose evaluation.
 - Exam Bank provides reusable Course questions, five types, MCQ choices/correct answer, difficulty, decimal marks, optional topic/image reference, CRUD/details/search and combined filters.
 - Exams provides offering-scoped draft creation/editing, manual ordered selections, saved question snapshots, marks warnings, constrained generation previews, finalization and archiving.
 - Exams exports separate Student Exam and Answer Key PDFs from saved snapshots, with preview and safe file selection.
@@ -294,7 +299,7 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 ## Planned Features
 
 - Excel student import.
-- Broader semester planning beyond the offering-specific lecture timeline.
+- Broader semester planning beyond offering-specific lecture organization.
 - Advanced generation constraints and multiple exam versions.
 - Further PDF layout customization.
 - Required Excel grade export.
@@ -555,3 +560,41 @@ The legacy V009 repair command's independently migrated reference and final veri
 Added isolated tests for V009→V010 upgrade/history preservation/idempotence; save/edit/clear/restart; cross-offering and cancelled-lecture rejection; transactional rollback; uniqueness/status constraints and restricted deletion/parent moves; percentage/excused/late/unmarked/withdrawn policies; draft isolation/reversion; and four-sheet Excel content with Arabic names, leading-zero IDs, missing attendance and actual zero grades. The desktop workflow covers individual/bulk/save, cancelled navigation/lecture changes, theme preservation, saved history and close/reopen persistence, plus Light/Dark normal/minimum screenshots. Physical keyboard, screen-reader, high-DPI and Microsoft Excel rendering remain manual checks. Attendance has no session time beyond its lecture date, automatic absence marking, configurable late penalties or attendance import in this phase.
 
 Final Phase 11 verification: documented Windows cmd /d /c workflow with -DforkCount=0 -Pui-smoke clean verify passed 199 tests (198 normal plus the expanded desktop workflow), zero failures/errors/skips. Reviewed attendance-Light/Dark-1360/1100 snapshots. UI tests also cancel offering switches and window close while retaining edits, and verify bulk marking includes filtered-out rows. Persistence was verified by rebuilding services and closing/reopening JavaFX windows on isolated databases. All V001–V009 files are unchanged; no production database was modified.
+
+### 2026-10-21 — Native Compose dashboard evaluation and Timeline removal
+
+#### Decision and scope
+
+Keep JavaFX as the complete working application and evaluate a separate Compose Multiplatform Desktop frontend under prototype-compose/. Kotlin/compiler plugin 2.3.20, Compose Desktop 1.10.3 and Gradle 9.3.1 are pinned. Gradle is confined to the prototype because it is the supported Compose build path; converting the existing Maven application would add unnecessary risk. The wrapper distribution checksum is pinned. No WebView, Electron, web frontend, backend server or new persistence style was introduced. Existing feature screens remain in JavaFX.
+
+Timeline was removed from JavaFX navigation, routing, icons, the LecturesView variant and its CSS. The retained Lectures table still supports offering context, CRUD, search, date ordering, progress and schedule status. Its desktop regression scenario now tests the table; the shell asserts that Timeline navigation is absent. No lecture records, repository/service rules or historical migrations were removed. Historical Phase 4 notes remain as history rather than being rewritten to imply Timeline never existed.
+
+#### Java integration and state
+
+DashboardBridge calls CourseService, AcademicServices, DashboardService and AttendanceCalculator directly across the JVM language boundary. DashboardSnapshot is a detached presentation value; calculations and data ownership stay in the established Java layers. Initial loading/refresh runs on Dispatchers.IO, with coroutine cancellation propagated rather than shown as a storage error. The bridge uses AppPaths and Database.initialize, preserving strict migration/checksum checks. No database migration was added or changed.
+
+The prototype shows real catalog/student/offering counts, selected-offering progress, recorded attendance and upcoming/recently updated academic records. Empty databases show honest guidance. Synthetic Arabic/English fixtures are test-only. The first available offering is selected initially; session selection can be changed through Teaching context. JavaFX's separate session remains independent. The Open JavaFX action starts the original application in a separate JVM with the same data-directory environment, avoiding mixed toolkit lifecycle ownership. Refresh reads changes made in the complete application; no live synchronization protocol or CRUD replacement was added.
+
+#### Visual identity and accessibility
+
+The custom Foundation/Canvas UI uses midnight navy, charcoal, violet, cyan, layered gradient panels, original geometric icons, consistent rounded surfaces and Manrope typography. No Material widgets, external icon pack or animation library was added. IBM Plex Sans Arabic renders Arabic text with content-based bidi direction. Both font families are bundled unmodified with complete SIL OFL 1.1 licenses and provenance. Visual review caught Manrope selecting its ExtraLight default variable axis; explicit 400/600/700 axes restore readable weights.
+
+Navigation crossfades, hover colors, changed-value counters/progress and an eight-second low-opacity ambient cycle use Compose animation APIs. The ambient value is read in a graphics layer instead of recomposing the whole screen. System/Reduced/Full motion is persisted in Java Preferences independently of academic data. System reads Windows ClientAreaAnimation off the UI thread with a five-second timeout; other platforms/failed detection conservatively reduce motion. The environment override PROFESSOR_OS_REDUCED_MOTION supplies the System value; Full is an explicit override. Unfocused windows reduce motion. Reduced mode removes animated transitions while preserving feedback and current session state.
+
+Responsive breakpoints collapse the sidebar below 1100 logical pixels and stack panels below 1000. Window minimum is 880×660; the content scrolls. Text direction/shaping is supported, but the English shell is not fully localized or mirrored RTL. Semantic text-color pairs on the dark backgrounds meet the tested 4.5:1 contrast threshold. Cyan focus outlines and keyboard activation remain visible.
+
+#### Verification and findings
+
+The verified Windows cmd /d /c and -DforkCount=0 workflow runs all 199 Maven tests including the graphical desktop smoke workflow. The separate Gradle suite has seven tests: persisted Java integration/reconstruction and read-only bytes, empty data, motion policy, bundled fonts/licenses, dark contrast, rendering/interactions/motion, and empty-workspace guidance. UI coverage includes Enter activation, offering selection/navigation, refresh/handoff callbacks, Arabic labels, responsive layout, full-motion pixel changes and exact idle-pixel stability under Reduced. Tests use isolated temporary databases. Test-only internal/experimental Compose rendering APIs are pinned to this Compose version; they are not used by production code.
+
+Reviewed Compose renderer snapshots at 1360×960, 900×720, 864×621 (minimum client-area specimen) and 1700×1050, plus Arabic offering choices and empty state. Corrected the initial test harness's 1024×768 capture surface so larger views are genuinely captured without cropping. Ten warmed full-size screenshot captures took 33 ms in the recorded run; this includes readback/synchronization and is not FPS or sustained performance evidence. Reduced motion stability and bounded animation scope are verified; GPU/frame-time profiling remains an evaluation task.
+
+Launched the actual Compose application against C:\Users\HP\Desktop\Uni Project\data\professor-os.db, inspected the saved counts, captured its native window, and used Open JavaFX to launch and inspect the original dashboard against the same database. Both initialize successfully with migration checks enabled. Native Tab focus and Enter motion activation were checked; Full persisted across process restart, then System was restored. Native maximization resized the content correctly. Captures are in ignored prototype-compose/build/screenshots/: native-dashboard.png, native-dashboard-full-motion.png, native-dashboard-maximized.png and native-javafx.png. JavaFX smoke captures remain under target/ui-smoke/.
+
+The existing database SHA-256 before and after the native checks was unchanged: E749E8C7DE93BB70E771F938BED99AF719B2BD4BE2C319FBFB56D58AB8CD2C52. No repair, seeding, checksum rewrite or production-data modification occurred. V001–V010 are unchanged in Git.
+
+One development-only interruption occurred when Gradle recompiled output files while the prototype was running from that same classpath, causing a missing generated Kotlin class on a later action. Closing, rebuilding and restarting resolved it; the clean native rerun passed. README now requires closing the development window before rebuilding. This is not a hot-reload or packaged distribution setup. The JavaFX handoff also reports its known unnamed-module warning; normal Maven JavaFX launch remains available.
+
+Remaining manual evaluation: Windows edge-drag/minimum-window behavior (renderer minimum-size checks passed; native maximization passed), physical keyboard use beyond injected key checks, high-DPI/multi-monitor behavior, other operating systems, full RTL localization, sustained performance profiling and screen-reader accessibility. Windows UI Automation exposed only the outer Compose window during this check, so no screen-reader compatibility claim is made. No installer, other-screen migration or unrelated feature was added. See prototype-compose/README.md for launch, architecture, fonts and motion details.
+
+Final verification: Maven clean verify with the desktop profile passed 199 tests; the final Gradle test run passed seven tests, both with zero failures/errors/skips. The final warmed capture observation was 25 ms for ten captures (not an FPS benchmark). Native startup/handoff/restart logs and screenshots were inspected. No known build failures remain.

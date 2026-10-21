@@ -46,6 +46,7 @@ class ApplicationSmokeTest {
                 root.applyCss();
                 root.layout();
                 assertNotNull(root.lookup("#dashboard"));
+                assertNull(root.lookup("#nav-timeline"));
                 for (String section : MainView.SECTIONS) {
                     String id = "#nav-" + section.toLowerCase(java.util.Locale.ROOT).replace(' ', '-');
                     ToggleButton button = (ToggleButton) root.lookup(id);
@@ -62,8 +63,7 @@ class ApplicationSmokeTest {
                         assertNotNull(root.lookup("#terms-page"));
                     } else if ("Lectures".equals(section)) {
                         assertNotNull(root.lookup("#lectures-page"));
-                    } else if ("Timeline".equals(section)) {
-                        assertNotNull(root.lookup("#timeline-page"));
+
                     } else if ("Exam Bank".equals(section)) {
                         assertNotNull(root.lookup("#questions-page"));
                     } else if ("Exams".equals(section)) {
@@ -80,6 +80,7 @@ class ApplicationSmokeTest {
                 root.applyCss();
                 root.layout();
                 assertNotNull(root.lookup("#dashboard"));
+                assertNull(root.lookup("#nav-timeline"));
                 saveSnapshot(root.snapshot(null, null), "dashboard.png");
                 stage.setWidth(1100);
                 stage.setHeight(740);

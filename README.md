@@ -2,7 +2,7 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 11 attendance management.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard counts, lecture progress and upcoming lectures/exams use saved records; no demo metrics are displayed.
+**Status: Phase 11 functionality plus a separate Compose desktop evaluation.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard counts, lecture progress and upcoming lectures/exams use saved records; no demo metrics are displayed.
 
 ## Implemented
 
@@ -13,7 +13,7 @@ An offline-first desktop workspace for university professors, built as an academ
 - Offering-scoped gradebook with editable cells, bulk plain-text entry, weighted categories, assessment CRUD, configurable letter/pass thresholds, incomplete results and basic class statistics.
 - JavaFX shell, catalog Course CRUD, term management under Settings and student directory management.
 - Course offerings by term/section, an active offering selector and enrollment rosters with withdrawal/completion/reactivation.
-- Offering-specific lecture CRUD and search, chronological timeline, completion counts and basic schedule status.
+- Offering-specific lecture CRUD and search, completion counts and basic schedule status.
 - Catalog question bank with five question types, MCQ choices, difficulty/marks, optional topic/image path, details, search and course/type/difficulty filters.
 - Manual exam building, ordered question snapshots, mark-total warnings and deterministic generation with exact count/distribution constraints. Finalization locks content and records bank usage; archived exams preserve history.
 - Grouped, collapsible icon sidebar; real dashboard counts and active-offering lecture progress, upcoming activities and recently updated records. Refresh overview reloads saved data.
@@ -21,6 +21,12 @@ An offline-first desktop workspace for university professors, built as an academ
 - Consistent feature headers, labelled filters, wrapping action bars, resizable forms, exam composition panels and spreadsheet-style grade cells with a visible unsaved state.
 - Versioned SQLite migrations, unique identifiers, foreign-key deletion restrictions and configurable storage. Application startup never seeds demo records.
 - Maven wrapper, JUnit tests, optional desktop smoke test and permanent AI development rules.
+
+## Compose dashboard prototype
+
+The optional native Kotlin/JVM prototype reads the existing Java services and database. It adds a midnight/violet dashboard, offering selection, Arabic fonts and persisted reduced-motion preferences. The complete JavaFX application remains available; Timeline navigation/UI has been removed while lecture records and migration history remain intact.
+
+With JDK 25 configured, run from the repository root: `cmd /d /c ".\prototype-compose\gradlew.bat -p prototype-compose run"`. See [prototype setup, verification and limitations](prototype-compose/README.md). Close the prototype before rebuilding. Gradle is isolated to this evaluation; the Maven workflow below is unchanged.
 
 ## Planned
 
@@ -32,7 +38,7 @@ Broader semester planning, advanced generation constraints, multiple exam versio
 2. Create/select a catalog course in **Courses**, then choose **Create Offering** and select a term and section.
 3. Add students in **Students**.
 4. Open an offering through Course Details, All Offerings or the top-bar selector; use its **Students** tab to enroll existing students.
-5. Select **Lectures** to organize the active offering's lectures, or **Timeline** to see them chronologically. Switching the top-bar offering updates either page. Progress covers all lectures in that offering, independent of search.
+5. Select **Lectures** to organize the active offering's lectures. Switching the top-bar offering updates the page. Progress covers all lectures in that offering, independent of search.
 6. Use **Exam Bank** to create reusable questions for a catalog course. No term or active offering is required. Choose 2–10 distinct choices and one correct answer for MCQs, or a True/False answer when applicable. Optional image files are referenced by absolute local path, not copied into the database.
 7. Select an offering and open **Exams**. Create a draft, add questions from its course's bank, and use the Composition tab to remove/reorder them. Generate Selection supports exact difficulty/type/topic counts; leaving a whole distribution blank makes it unrestricted. Review calculated versus intended marks, then Save. Finalize only when content is ready: finalized exams cannot be edited or deleted.
 

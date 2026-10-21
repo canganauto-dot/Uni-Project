@@ -44,3 +44,8 @@ $RECYCLE.BIN/
 # Generated PDF/Excel output belongs in exports/, generated/ or target/.
 # Do not globally ignore *.pdf, *.xlsx, *.sql or databases: reference documents,
 # import fixtures, migrations and required resources must remain trackable.
+
+# Isolated Compose Desktop prototype
+**/.gradle/
+**/build/
+**/.kotlin/

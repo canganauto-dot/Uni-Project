@@ -6,6 +6,12 @@
 *.md text eol=lf
 *.sh text eol=lf
 mvnw text eol=lf
+gradlew text eol=lf
+*.kt text eol=lf
+*.kts text eol=lf
+*.bat text eol=crlf
+*.ttf binary
+*.jar binary
 *.cmd text eol=crlf
 *.png binary
 *.jpg binary

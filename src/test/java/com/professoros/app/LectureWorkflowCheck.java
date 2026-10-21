@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Offering-scoped CRUD/timeline smoke scenario, run within ApplicationSmokeTest's toolkit lifecycle. */
+/** Offering-scoped CRUD smoke scenario, run within ApplicationSmokeTest's toolkit lifecycle. */
 final class LectureWorkflowCheck {
     private final Path file;
     private Stage stage;
@@ -85,29 +85,29 @@ final class LectureWorkflowCheck {
                 button(dialog(),"save-academic").fire(); return null;
             });
             await(() -> noDialog() && !button(root,"new-lecture").isDisabled() && table().getItems().size() == 1);
-            navigate("timeline");
+            navigate("lectures");
             await(() -> !button(root,"new-lecture").isDisabled());
             choose(0);
-            await(() -> !button(root,"new-lecture").isDisabled() && timeline().getItems().size() == 2);
+            await(() -> !button(root,"new-lecture").isDisabled() && table().getItems().size() == 2);
             fx(() -> {
-                assertNotNull(root.lookup("#timeline-page"));
-                assertEquals(1,timeline().getItems().getFirst().lectureNumber());
-                assertEquals(2,timeline().getItems().getLast().lectureNumber());
-                snapshot(root,"lecture-timeline.png");
+                assertNotNull(root.lookup("#lectures-page"));
+                assertEquals(1,table().getItems().getFirst().lectureNumber());
+                assertEquals(2,table().getItems().getLast().lectureNumber());
+                snapshot(root,"lecture-table.png");
                 stage.setWidth(1100); stage.setHeight(740); return null;
             });
-            // Allow native layout to settle, then inspect the minimum-size timeline.
+            // Allow native layout to settle, then inspect the minimum-size lecture table.
             await(() -> stage.getScene().getWidth() < 1101);
-            fx(() -> { snapshot(root,"lecture-timeline-minimum.png"); timeline().getSelectionModel().selectFirst(); return null; });
+            fx(() -> { snapshot(root,"lecture-table-minimum.png"); table().getSelectionModel().selectFirst(); return null; });
             Platform.runLater(() -> button(root,"delete-lecture").fire());
             await(() -> !noDialog());
             fx(() -> { ((Button)dialog().lookupButton(ButtonType.CANCEL)).fire(); return null; });
             await(this::noDialog);
-            fx(() -> { assertEquals(2,timeline().getItems().size()); return null; });
+            fx(() -> { assertEquals(2,table().getItems().size()); return null; });
             Platform.runLater(() -> button(root,"delete-lecture").fire());
             await(() -> !noDialog());
             fx(() -> { button(dialog(),"confirm-academic-action").fire(); return null; });
-            await(() -> noDialog() && !button(root,"new-lecture").isDisabled() && timeline().getItems().size() == 1);
+            await(() -> noDialog() && !button(root,"new-lecture").isDisabled() && table().getItems().size() == 1);
             fx(() -> {
                 assertTrue(((Label)root.lookup("#lecture-progress")).getText().contains("Completion 100%"));
                 return null;
@@ -159,7 +159,6 @@ final class LectureWorkflowCheck {
     @SuppressWarnings("unchecked") private ComboBox<OfferingSummary> selector() { return (ComboBox<OfferingSummary>)root.lookup("#active-offering"); }
     @SuppressWarnings("unchecked") private ComboBox<LectureStatus> comboStatus() { return (ComboBox<LectureStatus>)dialog().lookup("#lecture-status"); }
     @SuppressWarnings("unchecked") private TableView<Lecture> table() { return (TableView<Lecture>)root.lookup("#lectures-table"); }
-    @SuppressWarnings("unchecked") private ListView<Lecture> timeline() { return (ListView<Lecture>)root.lookup("#lecture-timeline"); }
     private DialogPane dialog() {
         return Window.getWindows().stream().filter(w -> w != stage && w.isShowing()).map(w -> w.getScene().getRoot())
                 .filter(DialogPane.class::isInstance).map(DialogPane.class::cast).findFirst().orElseThrow();

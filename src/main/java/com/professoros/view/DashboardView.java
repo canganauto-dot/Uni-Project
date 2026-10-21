@@ -28,7 +28,7 @@ public final class DashboardView extends VBox {
         var metrics=grid(4); courseCount.setId("dashboard-course-count"); students.setId("dashboard-student-count"); offerings.setId("dashboard-offering-count"); enrolled.setId("dashboard-enrollment-count");
         metrics.add(card("Catalog courses",courseCount,courseCountDetail,"Courses"),0,0);
         metrics.add(card("Students",students,label("Saved student directory","small-muted"),"Students"),1,0);
-        metrics.add(card("Course offerings",offerings,label("All terms and sections","small-muted"),"Timeline"),2,0);
+        metrics.add(card("Course offerings",offerings,label("All terms and sections","small-muted"),"Courses"),2,0);
         metrics.add(card("Active enrollments",enrolled,label("Selected offering only","small-muted"),"Attendance"),3,0);
         var panels=grid(2); panels.add(progress,0,0); panels.add(upcoming,1,0);
         state.setId("dashboard-load-status"); getChildren().addAll(heading,context,metrics,panels,recent,state);

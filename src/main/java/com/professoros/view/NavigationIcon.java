@@ -17,7 +17,6 @@ final class NavigationIcon {
             case "Grades" -> "M3 2 H17 V18 H3 Z M6 6 H14 M6 10 H8 M12 10 H14 M6 14 H8 M12 14 H14";
             case "Attendance" -> "M3 4 H17 V18 H3 Z M6 2 V6 M14 2 V6 M3 8 H17 M6 12 L9 15 L14 10";
             case "Analytics" -> "M2 2 V18 H18 M6 14 V10 M10 14 V6 M14 14 V3";
-            case "Timeline" -> "M5 2 V18 M3 4 H7 M3 10 H7 M3 16 H7 M10 4 H18 M10 10 H16 M10 16 H18";
             case "Settings" -> "M2 5 H18 M2 15 H18 M6 2 V8 M14 12 V18";
             case "Collapse" -> "M3 3 H17 V17 H3 Z M8 3 V17 M13 7 L10 10 L13 13";
             default -> throw new IllegalArgumentException("Unknown navigation icon: "+name);

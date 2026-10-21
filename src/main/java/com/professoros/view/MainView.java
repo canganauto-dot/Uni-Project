@@ -24,7 +24,7 @@ public final class MainView extends BorderPane {
     private final javafx.scene.control.Button themeToggle=AcademicControls.button("Theme", "theme-toggle", "secondary-button");
     public com.professoros.theme.ThemeManager themes() { return themes; }
     public static final List<String> SECTIONS = List.of("Dashboard", "Courses", "Students", "Lectures",
-            "Exam Bank", "Exams", "Grades", "Attendance", "Analytics", "Timeline", "Settings");
+            "Exam Bank", "Exams", "Grades", "Attendance", "Analytics", "Settings");
 
     private final Map<String, ToggleButton> navigation = new LinkedHashMap<>();
     private final ScrollPane content = new ScrollPane();
@@ -69,10 +69,10 @@ public final class MainView extends BorderPane {
         VBox links = new VBox(5);
         ToggleGroup group = new ToggleGroup();
         String lastGroup="";
-        for (String section : List.of("Dashboard","Courses","Students","Lectures","Timeline","Exam Bank","Exams","Grades","Attendance","Analytics","Settings")) {
+        for (String section : List.of("Dashboard","Courses","Students","Lectures","Exam Bank","Exams","Grades","Attendance","Analytics","Settings")) {
             String category=switch(section) {
                 case "Dashboard","Courses","Students" -> "WORKSPACE";
-                case "Lectures","Timeline" -> "TEACHING";
+                case "Lectures" -> "TEACHING";
                 case "Exam Bank","Exams","Grades" -> "ASSESSMENT";
                 case "Settings" -> "PREFERENCES";
                 default -> "INSIGHTS";
@@ -149,7 +149,7 @@ public final class MainView extends BorderPane {
         sectionLabel.setText(section);
         navigation.get(section).setSelected(true);
         content.setContent(page);
-        content.setFitToHeight(java.util.Set.of("Courses", "Students", "Settings", "Lectures", "Timeline", "Exam Bank", "Exams", "Grades", "Attendance").contains(section));
+        content.setFitToHeight(java.util.Set.of("Courses", "Students", "Settings", "Lectures", "Exam Bank", "Exams", "Grades", "Attendance").contains(section));
         content.setVvalue(0);
     }
 

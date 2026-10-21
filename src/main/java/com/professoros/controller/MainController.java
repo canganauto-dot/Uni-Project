@@ -68,7 +68,7 @@ public final class MainController implements AutoCloseable {
             case "Courses" -> { view.showPage(section, courses); courseController.refresh(); }
             case "Students" -> { view.showPage(section, students); studentController.refresh(null); }
             case "Settings" -> { view.showPage(section, terms); termController.refresh(); }
-            case "Lectures", "Timeline" -> showLectures(section);
+            case "Lectures" -> showLectures(section);
             case "Exam Bank" -> view.showPage(section, questionController.show());
             case "Exams" -> showExams();
             case "Attendance" -> view.showPage(section,attendanceController.show(session.activeOffering().orElse(null)));
@@ -84,7 +84,7 @@ public final class MainController implements AutoCloseable {
         session.select(offering);
         view.offeringChoices(offeringChoices, offering);
         dashboard.setActiveOffering(offering.label());
-        if (view.currentSection().equals("Lectures") || view.currentSection().equals("Timeline")) {
+        if (view.currentSection().equals("Lectures")) {
             showLectures(view.currentSection());
         } else if (view.currentSection().equals("Exams")) { showExams(); }
         else if (view.currentSection().equals("Grades")) { view.showPage("Grades",gradebookController.show(offering)); }
@@ -104,13 +104,13 @@ public final class MainController implements AutoCloseable {
         if(!java.util.Objects.equals(previous,updated) && view.currentSection().equals("Dashboard")) { refreshDashboard(); }
         if (!java.util.Objects.equals(previous, updated) && view.currentSection().equals("Exams")) { showExams(); }
         if (!java.util.Objects.equals(previous, updated)
-                && (view.currentSection().equals("Lectures") || view.currentSection().equals("Timeline"))) {
+                && (view.currentSection().equals("Lectures"))) {
             showLectures(view.currentSection());
         }
     }
 
     private void showLectures(String section) {
-        view.showPage(section, lectureController.show(session.activeOffering().orElse(null), section.equals("Timeline")));
+        view.showPage(section, lectureController.show(session.activeOffering().orElse(null)));
     }
 
     private void showExams() { view.showPage("Exams", examController.show(session.activeOffering().orElse(null))); }

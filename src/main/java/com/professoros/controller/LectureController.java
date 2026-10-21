@@ -7,8 +7,7 @@ import com.professoros.view.*;
 /** Captures offering identity per operation and ignores stale loads after context changes. */
 public final class LectureController implements AutoCloseable {
     private final LectureService service;
-    private final LecturesView lectures = new LecturesView(false);
-    private final LecturesView timeline = new LecturesView(true);
+    private final LecturesView lectures = new LecturesView();
     private final UiTaskRunner tasks = new UiTaskRunner();
     private OfferingSummary offering;
     private LecturesView activeView;
@@ -16,16 +15,14 @@ public final class LectureController implements AutoCloseable {
 
     public LectureController(LectureService service) {
         this.service = service;
-        for (LecturesView view : java.util.List.of(lectures, timeline)) {
-            view.create.setOnAction(event -> edit(view, null));
-            view.edit.setOnAction(event -> { if (view.selected() != null) { edit(view, view.selected()); } });
-            view.delete.setOnAction(event -> delete(view));
-            view.refresh.setOnAction(event -> load(view, null));
-        }
+        lectures.create.setOnAction(event -> edit(lectures, null));
+        lectures.edit.setOnAction(event -> { if (lectures.selected() != null) { edit(lectures, lectures.selected()); } });
+        lectures.delete.setOnAction(event -> delete(lectures));
+        lectures.refresh.setOnAction(event -> load(lectures, null));
     }
-    public LecturesView show(OfferingSummary selected, boolean chronological) {
+    public LecturesView show(OfferingSummary selected) {
         offering = selected;
-        activeView = chronological ? timeline : lectures;
+        activeView = lectures;
         revision++;
         if (selected == null) { activeView.noOffering(); }
         else { activeView.beginOffering(selected.label()); load(activeView, null); }
