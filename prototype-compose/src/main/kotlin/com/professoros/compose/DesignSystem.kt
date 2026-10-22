@@ -35,6 +35,7 @@ object Ink {
     val accentSurface = Color(0xFF25232C)
     val radius = 14.dp
 }
+internal val LocalControlsEnabled = staticCompositionLocalOf { true }
 internal val manrope = FontFamily(listOf(400, 500, 600, 700).map { weight ->
     Font("fonts/Manrope.ttf", FontWeight(weight), variationSettings = FontVariation.Settings(FontVariation.weight(weight)))
 })
@@ -56,6 +57,7 @@ internal fun <T> motion(reduced: Boolean): FiniteAnimationSpec<T> =
 @Composable internal fun Action(label: String, icon: String = "arrow", active: Boolean = false,
     reduced: Boolean = false, modifier: Modifier = Modifier, quiet: Boolean = false,
     enabled: Boolean = true, onClick: () -> Unit) {
+    val enabled = enabled && LocalControlsEnabled.current
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val focused by interaction.collectIsFocusedAsState()

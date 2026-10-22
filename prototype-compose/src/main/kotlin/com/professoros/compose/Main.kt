@@ -22,6 +22,8 @@ fun main() = application {
     var focused by remember { mutableStateOf(true) }
     var page by remember { mutableStateOf("Overview") }
     val scope = rememberCoroutineScope()
+    val workspace = remember { WorkspaceController(WorkspaceServices(AppPaths.databaseFile()),scope) { revision++ } }
+    LaunchedEffect(state?.selected?.offering()?.id()) { if(state!=null)workspace.select(state?.selected?.offering()?.id()) }
     LaunchedEffect(revision, selected) {
         loading = true; error = null
         try {
@@ -37,7 +39,7 @@ fun main() = application {
     // Optional development capture sizes; normal launches retain the same responsive window.
     val initialWidth = System.getProperty("professoros.preview.width")?.toIntOrNull()?.coerceIn(880, 3840) ?: 1360
     val initialHeight = System.getProperty("professoros.preview.height")?.toIntOrNull()?.coerceIn(660, 2160) ?: 860
-    Window(onCloseRequest = ::exitApplication, title = "Professor OS", icon = painterResource("professor-os.svg"),
+    Window(onCloseRequest = {workspace.guard {exitApplication()}}, title = "Professor OS", icon = painterResource("professor-os.svg"),
         state = rememberWindowState(width = initialWidth.dp, height = initialHeight.dp)) {
         DisposableEffect(window) {
             window.minimumSize = java.awt.Dimension(880, 660)
@@ -48,13 +50,21 @@ fun main() = application {
             window.addWindowFocusListener(listener)
             onDispose { window.removeWindowFocusListener(listener) }
         }
-        ProfessorDashboard(state, loading, error, page, { page = it }, MotionPreferences.reduced(mode, systemReduced) || !focused,
+        ProfessorDashboard(state, loading || workspace.busy, error, page, { next ->workspace.guard {page=next} }, MotionPreferences.reduced(mode, systemReduced) || !focused,
             mode, { next ->
                 mode = next
                 scope.launch { try { withContext(Dispatchers.IO) { MotionPreferences.save(next) } } catch (cancelled: CancellationException) { throw cancelled } catch (failure: Exception) { error = "Motion preference could not be saved: ${failure.message}" } }
-            }, { revision++ }, { selected = it; page = "Overview" }, {
+            }, { workspace.guard {revision++;workspace.refresh()} }, { id ->workspace.guard {selected=id;page="Teaching context"} }, {
                 scope.launch { try { withContext(Dispatchers.IO) { openJavaFx() } } catch (cancelled: CancellationException) { throw cancelled } catch (failure: Exception) { error = "Could not open JavaFX: ${failure.message}" } }
+            },featureContent={ destination ->
+                CompositionLocalProvider(LocalControlsEnabled provides !workspace.busy) {
+                when(destination) {
+                    "Teaching context" -> RosterScreen(workspace)
+                    else -> CatalogScreen(destination,workspace) {id->workspace.guard {selected=id;page="Teaching context"}}
+                }
+                }
             })
+        WorkspaceOverlays(workspace,MotionPreferences.reduced(mode,systemReduced)||!focused)
     }
 }
 private fun openJavaFx() {

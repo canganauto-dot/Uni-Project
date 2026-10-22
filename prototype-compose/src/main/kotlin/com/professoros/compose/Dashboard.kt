@@ -18,10 +18,13 @@ import androidx.compose.ui.window.PopupProperties
 import java.time.format.DateTimeFormatter
 
 private val destinations = listOf("Overview" to "grid", "Teaching context" to "book", "Activity" to "pulse")
+private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "book", "Students" to "people", "Terms" to "clock",
+    "Offerings" to "book", "Teaching context" to "people", "Activity" to "pulse")
 
 @Composable fun ProfessorDashboard(snapshot: DashboardSnapshot?, loading: Boolean, error: String?, page: String,
     navigate: (String) -> Unit, reduced: Boolean, motion: MotionMode, setMotion: (MotionMode) -> Unit,
-    refresh: () -> Unit, selectOffering: (Long) -> Unit, openWorkspace: () -> Unit) {
+    refresh: () -> Unit, selectOffering: (Long) -> Unit, openWorkspace: () -> Unit,
+    featureContent: (@Composable (String) -> Unit)? = null) {
     var picker by remember { mutableStateOf(false) }
     BoxWithConstraints(Modifier.fillMaxSize().background(Ink.background).testTag("dashboard-root")
         .onPreviewKeyEvent {
@@ -33,7 +36,7 @@ private val destinations = listOf("Overview" to "grid", "Teaching context" to "b
         val compact = maxWidth < 1050.dp
         val narrow = maxWidth < 1120.dp
         Row(Modifier.fillMaxSize()) {
-            Sidebar(page,compact,reduced,navigate,openWorkspace)
+            Sidebar(page,compact,reduced,navigate,openWorkspace,featureContent!=null)
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 Row(Modifier.fillMaxWidth().height(64.dp).background(Ink.sidebar.copy(alpha=.75f))
                     .padding(horizontal=24.dp), verticalAlignment=Alignment.CenterVertically,
@@ -67,7 +70,7 @@ private val destinations = listOf("Overview" to "grid", "Teaching context" to "b
                         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Bottom,horizontalArrangement=Arrangement.SpaceBetween) {
                             Column(verticalArrangement=Arrangement.spacedBy(5.dp)) {
                                 Copy(snapshot?.overview?.asOf()?.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")) ?: "Local workspace",12,Ink.muted)
-                                Copy(when(page) {"Teaching context" -> "Your teaching contexts";"Activity" -> "Your academic week";else -> "Your workspace"},28,weight=FontWeight.SemiBold)
+                                Copy(when(page) {"Teaching context" -> "Your teaching context";"Activity" -> "Your academic week";"Overview" -> "Your workspace";else -> page},28,weight=FontWeight.SemiBold)
                             }
                             if(!compact) Copy("مساحتك الأكاديمية",16,Ink.muted,modifier=Modifier.testTag("arabic-welcome"))
                         }
@@ -83,7 +86,8 @@ private val destinations = listOf("Overview" to "grid", "Teaching context" to "b
                                     .togetherWith(fadeOut(tween(if(reduced)0 else 80)))
                                     .using(SizeTransform(clip=false,sizeAnimationSpec={_,_->motion(reduced)}))
                             },label="page-reveal") { destination ->
-                                when(destination) {
+                                if(featureContent!=null && destination !in listOf("Overview","Activity")) featureContent(destination)
+                                else when(destination) {
                                     "Teaching context" -> Panel(Modifier.fillMaxWidth()) {
                                         Copy("Select an offering",16,weight=FontWeight.SemiBold)
                                         Copy("A course, term and section. Your overview follows the selected context.",13,Ink.muted)
@@ -101,7 +105,7 @@ private val destinations = listOf("Overview" to "grid", "Teaching context" to "b
                         }
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                             Copy("Saved locally · available offline",11,Ink.muted)
-                            Copy("Dashboard preview",11,Ink.muted)
+                            Copy(if(featureContent==null)"Dashboard preview" else "JavaFX fallback available",11,Ink.muted)
                         }
                     }
                 }
@@ -110,12 +114,13 @@ private val destinations = listOf("Overview" to "grid", "Teaching context" to "b
     }
 }
 
-@Composable private fun Sidebar(page:String,compact:Boolean,reduced:Boolean,navigate:(String)->Unit,open:()->Unit) {
+@Composable private fun Sidebar(page:String,compact:Boolean,reduced:Boolean,navigate:(String)->Unit,open:()->Unit,features:Boolean=false) {
+    val destinations=if(features)workspaceDestinations else destinations
     Column(Modifier.width(if(compact)68.dp else 210.dp).fillMaxHeight().background(Ink.sidebar)
         .padding(horizontal=if(compact)12.dp else 16.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
         Box(Modifier.height(76.dp),contentAlignment=Alignment.CenterStart){Wordmark(compact)}
         if(!compact) Copy("WORKSPACE",10,Ink.muted,FontWeight.Medium,Modifier.padding(start=10.dp))
-        Box(Modifier.fillMaxWidth()) {
+        Box(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
             val offset by animateDpAsState((destinations.indexOfFirst{it.first==page}.coerceAtLeast(0)*44).dp,
                 motion(reduced),label="navigation-indicator")
             Box(Modifier.offset(y=offset).fillMaxWidth().height(38.dp).clip(RoundedCornerShape(8.dp))
@@ -129,7 +134,6 @@ private val destinations = listOf("Overview" to "grid", "Teaching context" to "b
                 }
             }
         }
-        Spacer(Modifier.weight(1f))
         if(!compact) {
             Rule()
             Copy("One place for your\nacademic work.",12,Ink.muted,modifier=Modifier.padding(horizontal=10.dp))
