@@ -1,6 +1,6 @@
-# Compose desktop evaluation
+# Compose desktop workspace
 
-A separate, native Kotlin/JVM dashboard for evaluating Professor OS's obsidian, charcoal and muted-violet visual direction. The JavaFX workspace remains the complete application. This prototype provides a real saved-data overview, teaching-context selection, recent/upcoming activity and a JavaFX launch action. It does not implement replacement CRUD screens.
+A native Kotlin/JVM workspace using Professor OS's obsidian, charcoal and muted-violet visual direction. Compose now includes Courses, Students, Terms, Course Offerings, enrollment/Teaching Context, Lectures, Question Bank and Exam Builder. JavaFX remains available as the complete fallback, including Gradebook, Attendance and PDF/Excel workflows, which have not been migrated.
 
 ## Launch
 
@@ -25,10 +25,21 @@ Linux/macOS equivalent: `./prototype-compose/gradlew -p prototype-compose run` (
 ## Data and architecture
 
 - `DashboardBridge` directly calls existing Java `CourseService`, `AcademicServices`, `DashboardService` and `AttendanceCalculator`. It contains no SQL or duplicated grading/progress calculations.
-- `Main.kt` owns the window/session, background loading and errors. `Dashboard.kt` coordinates the shell and navigation; `DesignSystem.kt` holds tokens, typography, original icons and controls. `OverviewPanels.kt` renders real-data cards and `OfferingPicker.kt` shares searchable selection between the top bar and Teaching context page.
+- `Main.kt` owns the window/session, background loading and errors. `Dashboard.kt` coordinates the shell and navigation; `DesignSystem.kt` holds tokens, typography, original icons and controls. `OverviewPanels.kt` renders real-data cards and `OfferingPicker.kt` supplies searchable teaching-context selection in the top bar.
+- `WorkspaceServices` composes the existing Java services; `WorkspaceController` schedules IO and coordinates loads, writes, errors and edit/discard state. `WorkspaceControls` supplies sortable tables, searchable selectors and scrollable modal forms. Feature files contain presentation and input conversion only. No SQL, generation solver or academic validation is copied into Kotlin.
 - Default storage is the same root `data/professor-os.db`. `PROFESSOR_OS_DATA_DIR` selects another directory exactly as in JavaFX. Startup uses the existing migration runner with checksum verification; no migrations were introduced or altered.
-- Dashboard reads do not write academic records. Fixtures exist only in tests. The first saved offering is initially selected; selection stays in this prototype session. Refresh reloads saved records. JavaFX has its own existing session selection.
+- Dashboard reads do not write academic records. Feature Save actions do persist through the existing Java services. Fixtures exist only in tests. The first saved offering is initially selected; selection stays in this Compose session. Refresh reloads saved records. JavaFX has its own existing session selection.
 - **Open full workspace** starts the unchanged JavaFX application in a separate JVM so toolkit lifecycle ownership stays independent. It inherits the data-directory environment. This development handoff emits JavaFX's existing unnamed-module warning; the normal Maven JavaFX launcher remains available.
+
+## Migrated workflows
+
+- **Courses / Students / Terms / Offerings:** create, edit, details, search, sorting and confirmed deletion with existing history restrictions. Courses can create offerings. Open an offering to select its teaching context and roster. Students retain enrollment history and leading-zero identifiers.
+- **Teaching Context:** enroll existing students; activate, withdraw or complete enrollments with confirmation. Create new students through Students, then enroll them. The top-bar picker selects the shared session context for lectures and exams.
+- **Lectures:** all fields, statuses, details, search/filtering and CRUD within the selected offering; progress and schedule status come from `LectureService`. Timeline remains removed.
+- **Question Bank:** all five question types, MCQ choice editing with one correct answer, True/False answers, marks, topic, explanation and optional local image path/browse. Search and course/type/difficulty filters, details including usage, and restricted deletion use existing services.
+- **Exam Builder:** local drafts with metadata/instructions, course-scoped question selection, multi-row addition, removal and explicit ordering. Calculated/intended totals stay visible. Saved snapshots are preserved when the bank changes. Exact difficulty/type/topic quotas call the existing deterministic Java generator; failure leaves the selection intact. Finalize and archive retain the established status/usage rules. Saved details show snapshots, not live bank content.
+
+Forms keep edits after validation failures. Closing an edited form or the window asks before discarding; active writes block closing and duplicate submission. Ctrl/Command+Enter saves a form, Escape requests closing, Tab moves focus, and Enter opens a table row (or adds a bank question). Compact navigation has distinct icons and accessible hover/focus hints. Native dialogs and imported spreadsheets/PDF workflows remain in JavaFX except the question image picker.
 
 ## Visuals, fonts and motion
 
@@ -50,10 +61,12 @@ For repeatable native size checks, optional development properties set the initi
 cmd /d /c ".\prototype-compose\gradlew.bat -p prototype-compose test"
 ```
 
-Eight tests cover direct Java persistence/reconstruction, unchanged database bytes on reads, real empty states, motion policy, bundled licenses, text contrast, keyboard activation, searchable offering selection, popup dismissal, responsive rendering, intermediate/settled spring positions and idle pixel stability in both motion modes. Rendering uses the pinned Compose test API; test-only internal/experimental opt-ins are isolated from production code. Synthetic records use temporary databases.
+Thirteen tests cover direct Java persistence/reconstruction, unchanged database bytes on reads, real empty states, motion policy, bundled licenses, text contrast, keyboard activation, searchable offering selection, popup dismissal, responsive rendering, intermediate/settled spring positions and idle pixel stability in both motion modes. Migrated workflows add persisted course/student/enrollment creation, dirty-form guards, lecture duplicates/progress/scoping, all question types, MCQ validation, exam ordering/totals, constrained generation success/failure, cross-course rejection, snapshot preservation and finalization/archive. Every migrated route is rendered at normal and minimum sizes. Rendering uses the pinned Compose test API; test-only internal/experimental opt-ins are isolated from production code. Synthetic records use temporary databases.
 
 Snapshots in ignored `build/screenshots/` include `refined-overview-*` renderer captures at 1360×860, 900×720 and 1700×1050, `refined-minimum-content.png` at 864×621, Arabic context labels and an empty workspace. Actual running Windows captures include `refined-native-1360.png`, `refined-native-880.png`, `refined-native-880-scrolled.png`, `refined-native-maximized.png`, `refined-native-picker.png` and navigation start/settled frames. Native screenshots use the existing database; the blue pointer halo belongs to the capture tool, not the application. `render-observation.txt` measures warmed screenshot/readback time, **not FPS or a GPU benchmark**.
 
 The existing Maven `-DforkCount=0 -Pui-smoke clean verify` workflow also passed all 199 tests. See PROJECT_NOTES for the final native verification and data-integrity evidence.
 
-Remaining evaluation: multi-monitor/high-DPI behavior, other operating systems, comprehensive screen-reader support, fully localized RTL layout, native edge-drag behavior and sustained performance profiling. Native minimum-size launch, scrolling and maximization were checked. The OS controls title-bar appearance. Windows automation exposed only the outer Compose window to UI Automation; semantic tests and injected keyboard checks are not a screen-reader or physical-keyboard certification. No installer or production packaging was added.
+Migration screenshots use the `migration-*` prefix, including integrated normal/minimum shell views, forms, composition and native Windows captures. Native QA uses a separately seeded database under ignored `build/native-migration-qa/`; it never seeds the user's normal database. Launch normally without `PROFESSOR_OS_DATA_DIR` to use your existing saved workspace.
+
+Remaining evaluation: native question-image picker selection/cancellation, multi-monitor/high-DPI behavior, other operating systems, comprehensive screen-reader support, fully localized RTL layout, native edge-drag behavior and sustained performance profiling. Native minimum-size launch, scrolling and maximization were checked. The OS controls title-bar appearance. Windows automation exposed only the outer Compose window to UI Automation; semantic tests and injected keyboard checks are not a screen-reader or physical-keyboard certification. No installer or production packaging was added.

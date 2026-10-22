@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.*
+import androidx.compose.ui.window.Popup
 
 /** Shared presentation tokens. No Material components or platform-specific rendering dependencies. */
 object Ink {
@@ -36,6 +37,7 @@ object Ink {
     val radius = 14.dp
 }
 internal val LocalControlsEnabled = staticCompositionLocalOf { true }
+internal val LocalReducedMotion = staticCompositionLocalOf { false }
 internal val manrope = FontFamily(listOf(400, 500, 600, 700).map { weight ->
     Font("fonts/Manrope.ttf", FontWeight(weight), variationSettings = FontVariation.Settings(FontVariation.weight(weight)))
 })
@@ -55,8 +57,8 @@ internal fun <T> motion(reduced: Boolean): FiniteAnimationSpec<T> =
 @Composable internal fun Rule() = Box(Modifier.fillMaxWidth().height(1.dp).background(Ink.border.copy(alpha = .65f)))
 
 @Composable internal fun Action(label: String, icon: String = "arrow", active: Boolean = false,
-    reduced: Boolean = false, modifier: Modifier = Modifier, quiet: Boolean = false,
-    enabled: Boolean = true, onClick: () -> Unit) {
+    reduced: Boolean = LocalReducedMotion.current, modifier: Modifier = Modifier, quiet: Boolean = false,
+    enabled: Boolean = true, hint: String? = null, onClick: () -> Unit) {
     val enabled = enabled && LocalControlsEnabled.current
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
@@ -65,6 +67,7 @@ internal fun <T> motion(reduced: Boolean): FiniteAnimationSpec<T> =
     val fill by animateColorAsState(
         if (pressed) Ink.selected else if (hovered) Ink.raised else if (active && !quiet) Ink.accentSurface else Color.Transparent,
         motion(reduced), label = "button-surface")
+    Box {
     Row(modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(8.dp)).background(fill)
         .border(1.dp, if (focused) Ink.violet else if (quiet) Color.Transparent else Ink.border, RoundedCornerShape(8.dp))
         .hoverable(interaction).clickable(interactionSource = interaction, indication = null, enabled = enabled,
@@ -73,6 +76,10 @@ internal fun <T> motion(reduced: Boolean): FiniteAnimationSpec<T> =
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
         Mark(icon, if (active) Ink.violet else Ink.muted, 16)
         if (label.isNotEmpty()) Copy(label, 12, if (enabled) Ink.text else Ink.muted, FontWeight.Medium, lines = 1)
+    }
+    if(hint!=null && (hovered||focused)) Popup(alignment=Alignment.TopStart,offset=IntOffset(52,0)) {
+        Box(Modifier.background(Ink.raised,RoundedCornerShape(6.dp)).border(1.dp,Ink.border,RoundedCornerShape(6.dp)).padding(8.dp)){Copy(hint,12)}
+    }
     }
 }
 
@@ -90,6 +97,11 @@ internal fun <T> motion(reduced: Boolean): FiniteAnimationSpec<T> =
         val u = this.size.width / 20f
         fun line(a: Float,b: Float,c: Float,d: Float) = drawLine(color,Offset(a*u,b*u),Offset(c*u,d*u),1.4f*u,StrokeCap.Round)
         when(kind) {
+            "calendar" -> {drawRect(color,Offset(3*u,5*u),androidx.compose.ui.geometry.Size(14*u,12*u),style=Stroke(1.3f*u));line(3f,9f,17f,9f);line(6f,3f,6f,7f);line(14f,3f,14f,7f)}
+            "layers" -> {line(3f,6f,10f,2f);line(10f,2f,17f,6f);line(17f,6f,10f,10f);line(10f,10f,3f,6f);line(3f,11f,10f,15f);line(10f,15f,17f,11f);line(3f,15f,10f,19f);line(10f,19f,17f,15f)}
+            "lecture" -> {drawRect(color,Offset(3*u,3*u),androidx.compose.ui.geometry.Size(14*u,10*u),style=Stroke(1.3f*u));line(10f,13f,10f,17f);line(6f,17f,14f,17f);line(6f,6f,14f,6f);line(6f,9f,12f,9f)}
+            "question" -> {drawCircle(color,7.5f*u,Offset(10*u,10*u),style=Stroke(1.3f*u));drawArc(color,180f,250f,false,Offset(7*u,5*u),androidx.compose.ui.geometry.Size(6*u,6*u),style=Stroke(1.3f*u));line(10f,10f,10f,12f);drawCircle(color,.8f*u,Offset(10*u,15*u))}
+            "exam" -> {drawRect(color,Offset(4*u,2*u),androidx.compose.ui.geometry.Size(12*u,16*u),style=Stroke(1.3f*u));line(7f,6f,13f,6f);line(7f,10f,13f,10f);line(7f,14f,11f,14f)}
             "grid" -> for(x in listOf(3f,11f)) for(y in listOf(3f,11f))
                 drawRoundRect(color,Offset(x*u,y*u),androidx.compose.ui.geometry.Size(6*u,6*u),
                     androidx.compose.ui.geometry.CornerRadius(1.2f*u),style=Stroke(1.3f*u))

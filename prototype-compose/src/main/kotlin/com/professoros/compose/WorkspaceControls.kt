@@ -61,7 +61,8 @@ import androidx.compose.ui.window.*
 @Composable internal fun Toolbar(content:@Composable FlowRowScope.()->Unit) = FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(8.dp),content=content)
 
 data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->String)
-@Composable internal fun <T> RecordTable(rows:List<T>,columns:List<TableColumn<T>>,id:(T)->Long,selected:Long?,select:(T)->Unit,open:(T)->Unit,tag:String,empty:String="No records yet. Create one to get started.") {
+@Composable internal fun <T> RecordTable(rows:List<T>,columns:List<TableColumn<T>>,id:(T)->Long,selected:Long?,select:(T)->Unit,open:(T)->Unit,tag:String,empty:String="No records yet. Create one to get started.",selection:Set<Long>?=null) {
+    val enabled=LocalControlsEnabled.current
     var sort by remember {mutableStateOf(-1)}; var descending by remember {mutableStateOf(false)}
     val sorted=remember(rows,sort,descending) { if(sort<0)rows else rows.sortedWith(compareBy<T>{columns[sort].text(it).lowercase()}.let {if(descending)it.reversed() else it}) }
     Column(Modifier.fillMaxWidth().border(1.dp,Ink.border,RoundedCornerShape(10.dp)).testTag(tag)) {
@@ -75,13 +76,14 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
         if(rows.isEmpty()) Copy(empty,14,Ink.muted,modifier=Modifier.padding(24.dp))
         else LazyColumn(Modifier.fillMaxWidth().heightIn(max=340.dp)) {
             items(sorted,key=id) {row ->
+                val isSelected=selection?.contains(id(row))?: (selected==id(row))
                 val interactions=remember {MutableInteractionSource()}
                 val hovered by interactions.collectIsHoveredAsState();val focused by interactions.collectIsFocusedAsState()
-                Row(Modifier.fillMaxWidth().background(if(selected==id(row))Ink.selected else if(hovered)Ink.raised else Ink.panel)
+                Row(Modifier.fillMaxWidth().background(if(isSelected)Ink.selected else if(hovered)Ink.raised else Ink.panel)
                     .border(1.dp,if(focused)Ink.violet else Ink.panel)
-                    .hoverable(interactions).onPreviewKeyEvent {if(it.type==KeyEventType.KeyDown && it.key==Key.Enter){select(row);open(row);true}else false}
+                    .hoverable(interactions).onPreviewKeyEvent {if(enabled && it.type==KeyEventType.KeyDown && it.key==Key.Enter){select(row);open(row);true}else false}
                     .clickable(interactionSource=interactions,indication=null,enabled=LocalControlsEnabled.current){select(row)}.testTag(tag+"-"+id(row))
-                    .semantics {this.selected=selected==id(row)}.padding(horizontal=8.dp,vertical=13.dp)) {
+                    .semantics {this.selected=isSelected}.padding(horizontal=8.dp,vertical=13.dp)) {
                     columns.forEach {column->Copy(column.text(row),13,modifier=Modifier.weight(column.weight).padding(horizontal=6.dp),lines=2)}
                 }
                 Rule()
@@ -91,14 +93,18 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
 }
 
 /** Focusable modal popup prevents keyboard or pointer actions reaching the editing background. */
-@Composable internal fun Modal(title:String,close:()->Unit,wide:Boolean=false,footer:@Composable ()->Unit,content:@Composable ColumnScope.()->Unit) {
+@Composable internal fun Modal(title:String,close:()->Unit,wide:Boolean=false,submit:(()->Unit)?=null,footer:@Composable ()->Unit,content:@Composable ColumnScope.()->Unit) {
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val width=(maxWidth-48.dp).coerceAtMost(if(wide)1040.dp else 620.dp)
         val height=(maxHeight-48.dp).coerceAtMost(800.dp)
         Popup(alignment=Alignment.Center,onDismissRequest=close,properties=PopupProperties(focusable=true)) {
             Column(Modifier.width(width).heightIn(max=height).background(Ink.panel,RoundedCornerShape(14.dp))
                 .border(1.dp,Ink.border,RoundedCornerShape(14.dp)).padding(22.dp).testTag("editor-modal")
-                .onPreviewKeyEvent {if(it.type==KeyEventType.KeyDown && it.key==Key.Escape){close();true}else false},verticalArrangement=Arrangement.spacedBy(16.dp)) {
+                .onPreviewKeyEvent {
+                    if(it.type!=KeyEventType.KeyDown)false
+                    else if(it.key==Key.Escape){close();true}
+                    else if(it.key==Key.Enter && (it.isCtrlPressed||it.isMetaPressed) && submit!=null){submit();true}else false
+                },verticalArrangement=Arrangement.spacedBy(16.dp)) {
                 Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {
                     Copy(title,20,weight=FontWeight.SemiBold,modifier=Modifier.weight(1f));Action("Close",onClick=close)
                 }
@@ -111,8 +117,10 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
 }
 
 @Composable internal fun WorkspaceOverlays(c:WorkspaceController,reduced:Boolean) {
+    c.questionDraft?.let {QuestionEditor(c,it)}
+    c.examDraft?.let {ExamEditor(c,it)}
     val form=c.form
-    if(form!=null) Modal(form.title,c::closeEditor,footer={
+    if(form!=null) Modal(form.title,c::closeEditor,submit={if(!c.busy)c.saveForm()},footer={
         Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
             c.error?.let {Copy(it,13,Ink.violet,modifier=Modifier.testTag("form-error"))}
             Toolbar {

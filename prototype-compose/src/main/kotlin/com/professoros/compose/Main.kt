@@ -23,7 +23,7 @@ fun main() = application {
     var page by remember { mutableStateOf("Overview") }
     val scope = rememberCoroutineScope()
     val workspace = remember { WorkspaceController(WorkspaceServices(AppPaths.databaseFile()),scope) { revision++ } }
-    LaunchedEffect(state?.selected?.offering()?.id()) { if(state!=null)workspace.select(state?.selected?.offering()?.id()) }
+    LaunchedEffect(state) { if(state!=null)workspace.select(state?.selected?.offering()?.id()) }
     LaunchedEffect(revision, selected) {
         loading = true; error = null
         try {
@@ -50,6 +50,7 @@ fun main() = application {
             window.addWindowFocusListener(listener)
             onDispose { window.removeWindowFocusListener(listener) }
         }
+        CompositionLocalProvider(LocalReducedMotion provides (MotionPreferences.reduced(mode,systemReduced)||!focused)) {
         ProfessorDashboard(state, loading || workspace.busy, error, page, { next ->workspace.guard {page=next} }, MotionPreferences.reduced(mode, systemReduced) || !focused,
             mode, { next ->
                 mode = next
@@ -61,11 +62,14 @@ fun main() = application {
                 when(destination) {
                     "Teaching context" -> RosterScreen(workspace)
                     "Lectures" -> LectureScreen(workspace)
+                    "Question Bank" -> QuestionScreen(workspace)
+                    "Exam Builder" -> ExamScreen(workspace)
                     else -> CatalogScreen(destination,workspace) {id->workspace.guard {selected=id;page="Teaching context"}}
                 }
                 }
             })
         WorkspaceOverlays(workspace,MotionPreferences.reduced(mode,systemReduced)||!focused)
+        }
     }
 }
 private fun openJavaFx() {

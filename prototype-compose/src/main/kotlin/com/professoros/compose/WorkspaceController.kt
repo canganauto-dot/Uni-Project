@@ -37,6 +37,7 @@ class WorkspaceController(val services: WorkspaceServices, private val scope: Co
     var questions by mutableStateOf<List<Question>>(emptyList()); private set
     var exams by mutableStateOf<List<Exam>>(emptyList()); private set
     var examDraft by mutableStateOf<ExamDraft?>(null)
+    var questionDraft by mutableStateOf<QuestionDraft?>(null)
     val active get() = catalog.offerings.firstOrNull { it.offering().id() == offeringId }
 
     fun <T> task(operation: () -> T, success: (T) -> Unit = {}) {
@@ -68,13 +69,22 @@ class WorkspaceController(val services: WorkspaceServices, private val scope: Co
     }
     fun refresh() = task({ services.initialize(); load(offeringId) }, ::apply)
     fun select(id: Long?) { if(busy) return; offeringId=id; refresh() }
-    fun mutate(operation: () -> Unit) = task({ operation(); load(offeringId) }) { apply(it); form=null; examDraft=null; changed() }
+    fun mutate(operation: () -> Unit) = task({
+        operation()
+        // A committed write must never be reported as an unsaved edit if a subsequent read fails.
+        try {load(offeringId)} catch(failure:Exception) {
+            Logger.getLogger("ComposeWorkspace").log(Level.WARNING,"Saved successfully but refresh failed",failure);null
+        }
+    }) {
+        if(it!=null)apply(it) else error="Saved successfully, but the list could not refresh. Use Refresh; do not create the record again."
+        form=null;examDraft=null;questionDraft=null;changed()
+    }
     fun saveForm() { val current=form?.snapshot() ?: return; mutate { current.save() } }
     fun guard(action: () -> Unit) {
         if(busy) return
-        if(form?.dirty==true || examDraft?.dirty==true) confirmation=Confirmation("Discard unsaved changes?", "Your changes have not been saved. Keep editing or discard them to continue.") {
-            form=null; examDraft=null; error=null; action()
-        } else { form=null; examDraft=null; error=null; action() }
+        if(form?.dirty==true || examDraft?.dirty==true || questionDraft?.dirty==true) confirmation=Confirmation("Discard unsaved changes?", "Your changes have not been saved. Keep editing or discard them to continue.") {
+            form=null; examDraft=null; questionDraft=null; error=null; action()
+        } else { form=null; examDraft=null; questionDraft=null; error=null; action() }
     }
     fun closeEditor() = guard { detail=null }
     fun confirm(title: String, message: String, action: () -> Unit) { if(!busy) confirmation=Confirmation(title,message,action) }

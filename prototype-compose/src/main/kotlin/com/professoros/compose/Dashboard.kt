@@ -18,8 +18,8 @@ import androidx.compose.ui.window.PopupProperties
 import java.time.format.DateTimeFormatter
 
 private val destinations = listOf("Overview" to "grid", "Teaching context" to "book", "Activity" to "pulse")
-private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "book", "Students" to "people", "Terms" to "clock",
-    "Offerings" to "book", "Teaching context" to "people", "Lectures" to "book", "Activity" to "pulse")
+private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "book", "Students" to "people", "Terms" to "calendar",
+    "Offerings" to "layers", "Teaching context" to "chevrons", "Lectures" to "lecture", "Question Bank" to "question", "Exam Builder" to "exam", "Activity" to "pulse")
 
 @Composable fun ProfessorDashboard(snapshot: DashboardSnapshot?, loading: Boolean, error: String?, page: String,
     navigate: (String) -> Unit, reduced: Boolean, motion: MotionMode, setMotion: (MotionMode) -> Unit,
@@ -130,7 +130,7 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
                     Action(if(compact)"" else label,icon,page==label,reduced,
                         Modifier.fillMaxWidth().height(38.dp).testTag("nav-"+label).semantics {
                             contentDescription=label;selected=page==label
-                        },quiet=true) {navigate(label)}
+                        },quiet=true,hint=if(compact)label else null) {navigate(label)}
                 }
             }
         }

@@ -2,7 +2,7 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 11 functionality plus a separate Compose desktop evaluation.** Academic records, lectures, reusable questions, offering-specific exams and enrollment grades are persisted locally. Dashboard counts, lecture progress and upcoming lectures/exams use saved records; no demo metrics are displayed.
+**Status: Phase 11 functionality plus a Compose desktop workspace migration.** Courses, students, terms, offerings/enrollment, lectures, Question Bank and Exam Builder now have Compose screens. JavaFX remains the fallback and retains Gradebook, Attendance and PDF/Excel workflows. Academic records are persisted locally; dashboard metrics use saved records.
 
 ## Implemented
 
@@ -24,7 +24,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Compose dashboard prototype
 
-The optional native Kotlin/JVM prototype reads the existing Java services and database. It adds an obsidian/charcoal dashboard with muted violet accents, searchable offering selection, Arabic fonts and persisted reduced-motion preferences. The complete JavaFX application remains available; Timeline navigation/UI has been removed while lecture records and migration history remain intact.
+The native Kotlin/JVM workspace calls the existing Java services for catalog, enrollment, lecture, question and exam workflows. It retains the obsidian/charcoal dashboard, muted violet accents, Arabic fonts and persisted reduced-motion preferences. JavaFX remains available as the complete fallback. Timeline remains removed; lecture records, algorithms and migration history are preserved.
 
 With JDK 25 configured, run from the repository root: `cmd /d /c ".\prototype-compose\gradlew.bat -p prototype-compose run"`. See [prototype setup, verification and limitations](prototype-compose/README.md). Close the prototype before rebuilding. Gradle is isolated to this evaluation; the Maven workflow below is unchanged.
 
