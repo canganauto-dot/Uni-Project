@@ -25,4 +25,8 @@ tasks.test {
     jvmArgs("--enable-native-access=ALL-UNNAMED")
     systemProperty("compose.test.output", layout.buildDirectory.dir("screenshots").get().asFile.absolutePath)
 }
-tasks.withType<JavaExec>().configureEach { workingDir(rootDir.parentFile) }
+tasks.withType<JavaExec>().configureEach {
+    workingDir(rootDir.parentFile)
+    providers.gradleProperty("previewWidth").orNull?.let { systemProperty("professoros.preview.width", it) }
+    providers.gradleProperty("previewHeight").orNull?.let { systemProperty("professoros.preview.height", it) }
+}

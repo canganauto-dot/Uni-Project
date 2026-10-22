@@ -34,8 +34,8 @@ class BridgeTest {
         }
     }
     @Test fun primaryTextColorsHaveReadableDarkContrast() {
-        for (background in listOf(Ink.background,Ink.panel,Ink.raised,Color(0xFF2B2257),Color(0xFF382968))) {
-            for (foreground in listOf(Ink.text,Ink.muted,Ink.cyan,Ink.violet)) {
+        for (background in listOf(Ink.background,Ink.panel,Ink.raised,Ink.accentSurface,Ink.selected)) {
+            for (foreground in listOf(Ink.text,Ink.muted,Ink.positive,Ink.violet)) {
                 val ratio=(foreground.luminance()+0.05f)/(background.luminance()+0.05f)
                 assertTrue(ratio>=4.5f,"Text contrast was $ratio for $foreground on $background")
             }

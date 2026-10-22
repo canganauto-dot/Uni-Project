@@ -24,7 +24,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Compose dashboard prototype
 
-The optional native Kotlin/JVM prototype reads the existing Java services and database. It adds a midnight/violet dashboard, offering selection, Arabic fonts and persisted reduced-motion preferences. The complete JavaFX application remains available; Timeline navigation/UI has been removed while lecture records and migration history remain intact.
+The optional native Kotlin/JVM prototype reads the existing Java services and database. It adds an obsidian/charcoal dashboard with muted violet accents, searchable offering selection, Arabic fonts and persisted reduced-motion preferences. The complete JavaFX application remains available; Timeline navigation/UI has been removed while lecture records and migration history remain intact.
 
 With JDK 25 configured, run from the repository root: `cmd /d /c ".\prototype-compose\gradlew.bat -p prototype-compose run"`. See [prototype setup, verification and limitations](prototype-compose/README.md). Close the prototype before rebuilding. Gradle is isolated to this evaluation; the Maven workflow below is unchanged.
 

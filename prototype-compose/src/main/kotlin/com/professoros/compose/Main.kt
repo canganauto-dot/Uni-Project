@@ -3,6 +3,7 @@ package com.professoros.compose
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
+import androidx.compose.ui.res.painterResource
 import com.professoros.app.AppPaths
 import kotlinx.coroutines.*
 import java.nio.file.Path
@@ -33,7 +34,11 @@ fun main() = application {
         } finally { loading = false }
     }
     LaunchedEffect(mode, focused) { if (focused) systemReduced = withContext(Dispatchers.IO) { MotionPreferences.systemReduced() } }
-    Window(onCloseRequest = ::exitApplication, title = "Professor OS · Compose evaluation", state = rememberWindowState(width = 1440.dp, height = 960.dp)) {
+    // Optional development capture sizes; normal launches retain the same responsive window.
+    val initialWidth = System.getProperty("professoros.preview.width")?.toIntOrNull()?.coerceIn(880, 3840) ?: 1360
+    val initialHeight = System.getProperty("professoros.preview.height")?.toIntOrNull()?.coerceIn(660, 2160) ?: 860
+    Window(onCloseRequest = ::exitApplication, title = "Professor OS", icon = painterResource("professor-os.svg"),
+        state = rememberWindowState(width = initialWidth.dp, height = initialHeight.dp)) {
         DisposableEffect(window) {
             window.minimumSize = java.awt.Dimension(880, 660)
             val listener = object : java.awt.event.WindowFocusListener {
