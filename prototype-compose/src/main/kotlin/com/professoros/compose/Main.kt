@@ -60,6 +60,7 @@ fun main() = application {
                 CompositionLocalProvider(LocalControlsEnabled provides !workspace.busy) {
                 when(destination) {
                     "Teaching context" -> RosterScreen(workspace)
+                    "Lectures" -> LectureScreen(workspace)
                     else -> CatalogScreen(destination,workspace) {id->workspace.guard {selected=id;page="Teaching context"}}
                 }
                 }

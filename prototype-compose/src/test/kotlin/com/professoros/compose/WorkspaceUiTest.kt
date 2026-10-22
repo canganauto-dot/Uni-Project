@@ -18,6 +18,35 @@ import kotlin.test.*
 
 class WorkspaceUiTest {
     @get:Rule val folder=TemporaryFolder()
+    @Test fun lectureFormScopeDuplicateAndProgress() = runSkikoComposeUiTest(size=Size(900f,720f)) {
+        val path=folder.root.toPath().resolve("lectures.db");fixture(path)
+        val services=WorkspaceServices(path);val id=services.academic.offerings().findAll().first().id()
+        lateinit var c:WorkspaceController
+        setContent {
+            val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)}
+            LaunchedEffect(Unit){c.select(id)}
+            Box(Modifier.fillMaxSize()) {LectureScreen(c);WorkspaceOverlays(c,true)}
+        }
+        settled(c);capture("migration-lectures-minimum")
+        onNodeWithTag("new-lecture").performClick()
+        onNodeWithTag("field-number").performTextInput("1")
+        onNodeWithTag("field-title").performTextInput("New lecture")
+        onNodeWithTag("field-date").performTextInput(LocalDate.now().toString())
+        onNodeWithTag("save-form").performClick();settled(c)
+        assertNotNull(c.error);assertNotNull(c.form)
+        onNodeWithTag("field-number").performTextReplacement("6")
+        onNodeWithTag("save-form").performClick();settled(c)
+        assertEquals(6,c.lectures!!.progress().total())
+        val added=c.lectures!!.lectures().single {it.lectureNumber()==6}
+        runOnIdle {c.editLecture(added);c.form!!.values["status"]="COMPLETED";c.saveForm()};settled(c)
+        assertEquals(4,c.lectures!!.progress().completed())
+        onNodeWithTag("lecture-search").performTextInput("New lecture")
+        onNodeWithTag("lectures-table-"+added.id()).assertExists()
+        runOnIdle {c.mutate {services.academic.lectures().delete(id,added.id())}};settled(c)
+        assertEquals(5,c.lectures!!.progress().total())
+        val other=services.academic.offerings().findAll().last().id()
+        runOnIdle {c.select(other)};settled(c);assertTrue(c.lectures!!.lectures().isEmpty())
+    }
     @Test fun catalogEditingValidationDiscardAndPersistence() = runSkikoComposeUiTest(size=Size(1360f,860f)) {
         val services=WorkspaceServices(folder.root.toPath().resolve("catalog.db")); services.initialize()
         lateinit var c:WorkspaceController

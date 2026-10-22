@@ -19,7 +19,7 @@ import java.time.format.DateTimeFormatter
 
 private val destinations = listOf("Overview" to "grid", "Teaching context" to "book", "Activity" to "pulse")
 private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "book", "Students" to "people", "Terms" to "clock",
-    "Offerings" to "book", "Teaching context" to "people", "Activity" to "pulse")
+    "Offerings" to "book", "Teaching context" to "people", "Lectures" to "book", "Activity" to "pulse")
 
 @Composable fun ProfessorDashboard(snapshot: DashboardSnapshot?, loading: Boolean, error: String?, page: String,
     navigate: (String) -> Unit, reduced: Boolean, motion: MotionMode, setMotion: (MotionMode) -> Unit,
