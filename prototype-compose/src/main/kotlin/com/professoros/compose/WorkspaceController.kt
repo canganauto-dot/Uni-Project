@@ -38,6 +38,8 @@ class WorkspaceController(val services: WorkspaceServices, private val scope: Co
     var exams by mutableStateOf<List<Exam>>(emptyList()); private set
     var examDraft by mutableStateOf<ExamDraft?>(null)
     var questionDraft by mutableStateOf<QuestionDraft?>(null)
+    var gradebook by mutableStateOf<GradebookEditor?>(null); private set
+    var gradeBulk by mutableStateOf<GradeBulk?>(null)
     val active get() = catalog.offerings.firstOrNull { it.offering().id() == offeringId }
 
     fun <T> task(operation: () -> T, success: (T) -> Unit = {}) {
@@ -55,38 +57,58 @@ class WorkspaceController(val services: WorkspaceServices, private val scope: Co
             } finally { busy = false }
         }
     }
-    private data class Loaded(val catalog: Catalog, val roster: List<EnrolledStudent>, val lectures: LectureOverview?, val questions: List<Question>, val exams: List<Exam>)
+    private data class Loaded(val catalog: Catalog, val roster: List<EnrolledStudent>, val lectures: LectureOverview?, val questions: List<Question>, val exams: List<Exam>, val grades: Gradebook?)
     private fun load(id: Long?): Loaded {
         val catalog = services.catalog()
         val valid = id?.takeIf { value -> catalog.offerings.any { it.offering().id() == value } }
         val a = services.academic
         return Loaded(catalog, valid?.let { a.enrollments().findStudentsForOffering(it) }.orEmpty(),
-            valid?.let { a.lectures().overview(it) }, a.questions().findAll(), valid?.let { a.exams().findByOffering(it) }.orEmpty())
+            valid?.let { a.lectures().overview(it) }, a.questions().findAll(), valid?.let { a.exams().findByOffering(it) }.orEmpty(),valid?.let {a.grades().load(it)})
     }
     private fun apply(data: Loaded) {
         catalog=data.catalog; roster=data.roster; lectures=data.lectures; questions=data.questions; exams=data.exams
+        if(gradebook?.dirty!=true || gradebook?.book?.offeringId()!=data.grades?.offeringId()) gradebook=data.grades?.let(::GradebookEditor)
         if(catalog.offerings.none { it.offering().id()==offeringId }) offeringId=null
     }
     fun refresh() = task({ services.initialize(); load(offeringId) }, ::apply)
-    fun select(id: Long?) { if(busy) return; offeringId=id; refresh() }
-    fun mutate(operation: () -> Unit) = task({
+    fun select(id: Long?) {
+        if(busy)return
+        if(id!=offeringId) {
+            if(gradebook?.dirty==true) {guard {select(id)};return}
+            // Never show the previous offering's scores under a new context while loading or after a failed read.
+            gradebook=null
+        }
+        offeringId=id;refresh()
+    }
+    fun mutate(committed: () -> Unit = {}, operation: () -> Unit) = task({
         operation()
         // A committed write must never be reported as an unsaved edit if a subsequent read fails.
         try {load(offeringId)} catch(failure:Exception) {
             Logger.getLogger("ComposeWorkspace").log(Level.WARNING,"Saved successfully but refresh failed",failure);null
         }
     }) {
+        committed()
         if(it!=null)apply(it) else error="Saved successfully, but the list could not refresh. Use Refresh; do not create the record again."
         form=null;examDraft=null;questionDraft=null;changed()
     }
     fun saveForm() { val current=form?.snapshot() ?: return; mutate { current.save() } }
-    fun guard(action: () -> Unit) {
+    fun guard(includeGrades:Boolean=true, action: () -> Unit) {
         if(busy) return
-        if(form?.dirty==true || examDraft?.dirty==true || questionDraft?.dirty==true) confirmation=Confirmation("Discard unsaved changes?", "Your changes have not been saved. Keep editing or discard them to continue.") {
-            form=null; examDraft=null; questionDraft=null; error=null; action()
-        } else { form=null; examDraft=null; questionDraft=null; error=null; action() }
+        fun proceed() {
+            form=null; examDraft=null; questionDraft=null; gradeBulk=null; error=null
+            if(includeGrades) gradebook?.discard()
+            action()
+        }
+        if(form?.dirty==true || examDraft?.dirty==true || questionDraft?.dirty==true || gradeBulk?.dirty==true || (includeGrades && gradebook?.dirty==true)) confirmation=Confirmation("Discard unsaved changes?", "Your changes have not been saved. Keep editing or discard them to continue.",::proceed)
+        else proceed()
     }
-    fun closeEditor() = guard { detail=null }
+    fun closeEditor() = guard(false) { detail=null }
+    fun saveGrades() {
+        val editor=gradebook ?: return
+        if(!editor.dirty)return
+        val entries=editor.changes()
+        mutate(committed={gradebook=null}) { services.academic.grades().saveGrades(editor.book.offeringId(),entries) }
+    }
     fun confirm(title: String, message: String, action: () -> Unit) { if(!busy) confirmation=Confirmation(title,message,action) }
     fun inspect(title: String, operation: () -> String) = task(operation) { detail=Detail(title,it) }
 }

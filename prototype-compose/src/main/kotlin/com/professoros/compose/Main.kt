@@ -64,6 +64,7 @@ fun main() = application {
                     "Lectures" -> LectureScreen(workspace)
                     "Question Bank" -> QuestionScreen(workspace)
                     "Exam Builder" -> ExamScreen(workspace)
+                    "Gradebook" -> GradebookScreen(workspace)
                     else -> CatalogScreen(destination,workspace) {id->workspace.guard {selected=id;page="Teaching context"}}
                 }
                 }
