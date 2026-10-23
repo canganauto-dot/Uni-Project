@@ -2,7 +2,7 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 11 functionality plus a Compose desktop workspace migration.** Courses, students, terms, offerings/enrollment, lectures, Question Bank, Exam Builder and Gradebook now have Compose screens. Gradebook Excel export is also available in Compose. JavaFX remains the complete fallback, including Attendance editing, student Excel import and PDF workflows. Academic records are persisted locally; dashboard metrics use saved records.
+**Status: Phase 11 functionality plus a Compose desktop workspace migration.** Courses, students, terms, offerings/enrollment, lectures, Question Bank, Exam Builder, Gradebook and Attendance now have Compose screens. Gradebook Excel export is also available in Compose. JavaFX remains the complete fallback, including student Excel import and PDF workflows. Academic records are persisted locally; dashboard metrics use saved records.
 
 ## Implemented
 
