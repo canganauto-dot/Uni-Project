@@ -42,9 +42,9 @@ class AttendanceUiTest {
         val (services,id)=fixture();val data=DashboardBridge(folder.root.toPath().resolve("attendance.db")).load(id)
         lateinit var c:WorkspaceController;var page by mutableStateOf("Overview");var width by mutableStateOf(1360);var height by mutableStateOf(900)
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.select(id)}
-            CompositionLocalProvider(LocalReducedMotion provides true){Box(Modifier.requiredSize(width.dp,height.dp)) {
-                ProfessorDashboard(data,c.busy,null,page,{p->c.guard {page=p}},true,MotionMode.REDUCED,{},{c.guard {c.refresh()}},{},{},featureContent={AttendanceScreen(c)})
-                WorkspaceOverlays(c,true)
+            CompositionLocalProvider(){Box(Modifier.requiredSize(width.dp,height.dp)) {
+                ProfessorDashboard(data,c.busy,null,page,{p->c.guard {page=p}},{c.guard {c.refresh()}},{},featureContent={AttendanceScreen(c)})
+                WorkspaceOverlays(c)
             }}}
         settled(c);onNodeWithTag("nav-Attendance").performScrollTo().performClick()
         val book=c.attendance!!.book;val first=book.students().single {it.student().studentNumber()=="0001"}.enrollment().id()
@@ -78,7 +78,7 @@ class AttendanceUiTest {
     @Test fun bulkIncludesHiddenRowsGuardsAndCancelledSessionValidation()=runSkikoComposeUiTest(size=Size(1200f,950f)) {
         val (services,id)=fixture();lateinit var c:WorkspaceController
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.select(id)}
-            Box(Modifier.fillMaxSize()){AttendanceScreen(c);WorkspaceOverlays(c,true)}}
+            Box(Modifier.fillMaxSize()){AttendanceScreen(c);WorkspaceOverlays(c)}}
         settled(c);val book=c.attendance!!.book;val lectures=book.lectures();val first=book.students().single {it.student().studentNumber()=="0001"}.enrollment().id()
         onNodeWithTag("attendance-search").performTextInput("0001")
         onNodeWithTag("bulk-attendance").performClick();assertContains(c.confirmation!!.message,"including hidden and withdrawn")
@@ -114,7 +114,7 @@ class AttendanceUiTest {
         for(n in 4..14)a.enrollments().enroll(a.students().create(StudentInput(n.toString().padStart(4,'0'),"Student","$n","","")).id(),id)
         lateinit var c:WorkspaceController
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.select(id)}
-            Box(Modifier.fillMaxSize()){AttendanceScreen(c);WorkspaceOverlays(c,true)}}
+            Box(Modifier.fillMaxSize()){AttendanceScreen(c);WorkspaceOverlays(c)}}
         settled(c);val students=c.attendance!!.book.students().sortedBy {it.student().studentNumber()}
         fun row(n:Int)=onNodeWithTag("attendance-row-${students[n].enrollment().id()}")
         row(0).performClick().performKeyInput {pressKey(Key.E)}

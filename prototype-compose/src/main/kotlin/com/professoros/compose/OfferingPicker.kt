@@ -18,7 +18,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 
-@Composable internal fun OfferingPicker(snapshot:DashboardSnapshot?,reduced:Boolean,dismissible:Boolean=false,select:(Long)->Unit) {
+@Composable internal fun OfferingPicker(snapshot:DashboardSnapshot?,dismissible:Boolean=false,select:(Long)->Unit) {
     var query by remember {mutableStateOf("")}
     var cursor by remember(query) {mutableStateOf(0)}
     val focus=remember {FocusRequester()}
@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.*
                 val hovered by interaction.collectIsHoveredAsState()
                 val focused by interaction.collectIsFocusedAsState()
                 val active=snapshot?.selected?.offering()?.id()==row.offering().id()
-                val surface by animateColorAsState(if(hovered||index==cursor)Ink.raised else Ink.panel,motion(reduced),label="offering-hover")
+                val surface by animateColorAsState(if(hovered||index==cursor)Ink.raised else Ink.panel,motion(),label="offering-hover")
                 Row(Modifier.fillMaxWidth().background(surface,RoundedCornerShape(8.dp))
                     .border(1.dp,if(focused)Ink.violet else Ink.panel,RoundedCornerShape(8.dp))
                     .onFocusChanged {if(it.isFocused)cursor=index}

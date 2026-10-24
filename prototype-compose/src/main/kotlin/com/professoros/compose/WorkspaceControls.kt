@@ -116,7 +116,7 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
     }
 }
 
-@Composable internal fun WorkspaceOverlays(c:WorkspaceController,reduced:Boolean) {
+@Composable internal fun WorkspaceOverlays(c:WorkspaceController) {
     c.studentImport?.let {StudentImportOverlay(c,it)}
     c.pdfExport?.let {PdfExportOverlay(c,it)}
     c.gradeBulk?.let {GradeBulkOverlay(c,it)}
@@ -127,7 +127,7 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
         Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
             c.error?.let {Copy(it,13,Ink.violet,modifier=Modifier.testTag("form-error"))}
             Toolbar {
-                Action(if(c.busy)"Saving…" else "Save","check",reduced=reduced,enabled=!c.busy,modifier=Modifier.testTag("save-form"),onClick=c::saveForm)
+                Action(if(c.busy)"Saving…" else "Save","check",enabled=!c.busy,modifier=Modifier.testTag("save-form"),onClick=c::saveForm)
                 Action("Cancel",enabled=!c.busy,onClick=c::closeEditor)
             }
         }

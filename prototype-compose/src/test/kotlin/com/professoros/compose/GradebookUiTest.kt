@@ -39,10 +39,10 @@ class GradebookUiTest {
         setContent {
             val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)}
             LaunchedEffect(Unit){c.select(id)}
-            CompositionLocalProvider(LocalReducedMotion provides true) {
+            CompositionLocalProvider() {
                 Box(Modifier.requiredSize(width.dp,height.dp)) {
-                    ProfessorDashboard(data,c.busy,null,page,{page=it},true,MotionMode.REDUCED,{},{c.guard{c.refresh()}},{},{},featureContent={GradebookScreen(c)})
-                    WorkspaceOverlays(c,true)
+                    ProfessorDashboard(data,c.busy,null,page,{page=it},{c.guard{c.refresh()}},{},featureContent={GradebookScreen(c)})
+                    WorkspaceOverlays(c)
                 }
             }
         }
@@ -97,7 +97,7 @@ class GradebookUiTest {
     @Test fun configurationCrudWeightRulesAndScopeGuards()=runSkikoComposeUiTest(size=Size(1200f,900f)) {
         val (services,id)=fixture();lateinit var c:WorkspaceController
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.select(id)}
-            Box(Modifier.fillMaxSize()){GradebookScreen(c);WorkspaceOverlays(c,true)}}
+            Box(Modifier.fillMaxSize()){GradebookScreen(c);WorkspaceOverlays(c)}}
         settled(c)
         val initial=c.gradebook!!.book
         runOnIdle {initial.students().forEach {student->initial.assessments().forEach {a->c.gradebook!!.set(GradeKey(student.enrollment().id(),a.id()),a.maximumMarks().toPlainString())}};c.saveGrades()};settled(c)
@@ -145,7 +145,7 @@ class GradebookUiTest {
         for(n in 3..6)a.grades().saveAssessment(id,null,category.id(),"Task $n",BigDecimal("10"),LocalDate.now())
         lateinit var c:WorkspaceController
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.select(id)}
-            CompositionLocalProvider(LocalReducedMotion provides true){Box(Modifier.fillMaxSize()){GradebookScreen(c);WorkspaceOverlays(c,true)}}}
+            CompositionLocalProvider(){Box(Modifier.fillMaxSize()){GradebookScreen(c);WorkspaceOverlays(c)}}}
         settled(c)
         val book=c.gradebook!!.book;val students=book.students().sortedBy {it.student().studentNumber()};val assessments=book.assessments()
         fun cell(row:Int,col:Int)=onNodeWithTag("grade-cell-${students[row].enrollment().id()}-${assessments[col].id()}")

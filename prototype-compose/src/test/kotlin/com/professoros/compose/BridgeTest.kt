@@ -23,10 +23,6 @@ class BridgeTest {
         val bridge=DashboardBridge(folder.root.toPath().resolve("empty.db"));bridge.initialize()
         val value=bridge.load(null);assertEquals(0,value.courses);assertNull(value.selected);assertTrue(value.overview.upcoming().isEmpty())
     }
-    @Test fun motionPolicyHonorsReducedAndSystem() {
-        assertTrue(MotionPreferences.reduced(MotionMode.REDUCED,false));assertTrue(MotionPreferences.reduced(MotionMode.SYSTEM,true))
-        assertFalse(MotionPreferences.reduced(MotionMode.SYSTEM,false));assertFalse(MotionPreferences.reduced(MotionMode.FULL,true))
-    }
     @Test fun bundledLicensesAndFontsExist() {
         for(name in listOf("Manrope.ttf","IBMPlexSansArabic-Regular.ttf","IBMPlexSansArabic-SemiBold.ttf","Manrope-OFL.txt","IBM-Plex-Sans-Arabic-OFL.txt")) {
             val bytes=javaClass.getResourceAsStream("/fonts/$name")!!.use { it.readAllBytes() };assertTrue(bytes.size>1000)
@@ -34,8 +30,8 @@ class BridgeTest {
         }
     }
     @Test fun primaryTextColorsHaveReadableDarkContrast() {
-        for (background in listOf(Ink.background,Ink.panel,Ink.raised,Ink.accentSurface,Ink.selected)) {
-            for (foreground in listOf(Ink.text,Ink.muted,Ink.positive,Ink.violet)) {
+        for (background in listOf(DarkPalette.background,DarkPalette.panel,DarkPalette.raised,DarkPalette.accentSurface,DarkPalette.selected)) {
+            for (foreground in listOf(DarkPalette.text,DarkPalette.muted,DarkPalette.positive,DarkPalette.violet)) {
                 val ratio=(foreground.luminance()+0.05f)/(background.luminance()+0.05f)
                 assertTrue(ratio>=4.5f,"Text contrast was $ratio for $foreground on $background")
             }

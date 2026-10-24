@@ -25,11 +25,11 @@ class DashboardUiTest {
         var data by mutableStateOf(bridge.load(null))
         var page by mutableStateOf("Overview")
         var width by mutableStateOf(1360);var height by mutableStateOf(860)
-        var refreshes=0;var opens=0
+        var refreshes=0
         setContent {
             Box(Modifier.fillMaxSize()) { Box(Modifier.requiredSize(width.dp,height.dp)) {
-                ProfessorDashboard(data,false,null,page,{page=it},true,MotionMode.REDUCED,{},{refreshes++},
-                    {data=bridge.load(it);page="Overview"},{opens++})
+                ProfessorDashboard(data,false,null,page,{page=it},{refreshes++},
+                    {data=bridge.load(it);page="Overview"})
             }}
         }
         onNodeWithTag("arabic-welcome").assertExists()
@@ -68,19 +68,19 @@ class DashboardUiTest {
         onNodeWithText("Your academic week").assertExists()
         onNodeWithTag("nav-Overview").performClick()
         runOnIdle {width=900;height=720};snapshot("refined-overview-900")
-        onNodeWithTag("open-javafx").performClick();assertEquals(1,opens)
+        onNodeWithTag("open-javafx").assertDoesNotExist()
         runOnIdle {width=864;height=621};snapshot("refined-minimum-content")
         onNodeWithTag("refresh").assertIsDisplayed()
-        onNodeWithTag("open-javafx").assertIsDisplayed()
+        onNodeWithTag("motion").assertDoesNotExist()
         runOnIdle {width=1700;height=1050};snapshot("refined-overview-1700")
         val first=pixels();mainClock.advanceTimeBy(2000)
-        assertContentEquals(first,pixels(),"Reduced motion must leave idle pixels unchanged")
+        assertContentEquals(first,pixels(),"Fixed animations must leave idle pixels unchanged")
     }
 
-    @Test fun springIndicatorMovesSettlesAndReducedMotionSnaps() = runSkikoComposeUiTest(size=Size(1360f,860f)) {
+    @Test fun springIndicatorMovesAndSettles() = runSkikoComposeUiTest(size=Size(1360f,860f)) {
         val data=fixture(folder.root.toPath().resolve("motion.db")).load(null)
-        var page by mutableStateOf("Overview");var reduced by mutableStateOf(false)
-        setContent { ProfessorDashboard(data,false,null,page,{page=it},reduced,MotionMode.FULL,{},{},{},{}) }
+        var page by mutableStateOf("Overview")
+        setContent { ProfessorDashboard(data,false,null,page,{page=it},{},{}) }
         mainClock.autoAdvance=false
         val start=onNodeWithTag("navigation-indicator").fetchSemanticsNode().boundsInRoot.top
         runOnIdle {page="Activity"}
@@ -93,8 +93,8 @@ class DashboardUiTest {
         assertEquals(start+88,settled,0.5f)
         val idle=pixels();mainClock.advanceTimeBy(2000)
         assertContentEquals(idle,pixels(),"Full motion must also rest after transitions; no ambient loop")
-        runOnIdle {reduced=true;page="Overview"}
-        mainClock.advanceTimeBy(32)
+        runOnIdle {page="Overview"}
+        mainClock.advanceTimeBy(1600)
         assertEquals(start,onNodeWithTag("navigation-indicator").fetchSemanticsNode().boundsInRoot.top,0.5f)
         onNodeWithText("Your workspace").assertExists()
         onNodeWithText("60%").assertExists()
@@ -107,7 +107,7 @@ class DashboardUiTest {
     @Test fun emptyWorkspaceRendersHonestGuidance() = runSkikoComposeUiTest(size=Size(900f,720f)) {
         val bridge=DashboardBridge(folder.root.toPath().resolve("empty-ui.db"));bridge.initialize()
         val data=bridge.load(null)
-        setContent {ProfessorDashboard(data,false,null,"Overview",{},true,MotionMode.REDUCED,{},{},{},{})}
+        setContent {ProfessorDashboard(data,false,null,"Overview",{},{},{})}
         onNodeWithText("Begin with a course offering").assertExists()
         onNodeWithText("0%").assertDoesNotExist()
         snapshot("refined-empty-workspace")

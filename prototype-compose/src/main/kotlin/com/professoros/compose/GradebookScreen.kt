@@ -108,7 +108,7 @@ import java.nio.file.Path
     })}
     BoxWithConstraints(Modifier.fillMaxWidth()) {
     val horizontal=rememberScrollState();val vertical=rememberLazyListState();val scope=rememberCoroutineScope()
-    val reduced=LocalReducedMotion.current;val density=androidx.compose.ui.platform.LocalDensity.current
+    val density=androidx.compose.ui.platform.LocalDensity.current
     val assessments=book.assessments()
     val cellWidth=((maxWidth-500.dp)/assessments.size.coerceAtLeast(1)).coerceAtLeast(150.dp)
     val width=260.dp+cellWidth*assessments.size+240.dp
@@ -118,7 +118,7 @@ import java.nio.file.Path
         scope.launch {
             vertical.scrollToItem(row)
             val x=with(density){(cellWidth*col).roundToPx()}
-            if(reduced)horizontal.scrollTo(x) else horizontal.animateScrollTo(x)
+            horizontal.animateScrollTo(x)
             // scrollToItem composes the requested lazy row before the focus request.
             focus[rows[row].enrollment().id()]?.get(assessments[col].id())?.requestFocus()
         };return true

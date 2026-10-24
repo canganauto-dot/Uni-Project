@@ -25,7 +25,7 @@ class WorkspaceUiTest {
         setContent {
             val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)}
             LaunchedEffect(Unit){c.select(id)}
-            Box(Modifier.fillMaxSize()) {LectureScreen(c);WorkspaceOverlays(c,true)}
+            Box(Modifier.fillMaxSize()) {LectureScreen(c);WorkspaceOverlays(c)}
         }
         settled(c);capture("migration-lectures-minimum")
         onNodeWithTag("new-lecture").performClick()
@@ -53,7 +53,7 @@ class WorkspaceUiTest {
         setContent {
             val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)}
             LaunchedEffect(Unit){c.refresh()}
-            Box(Modifier.fillMaxSize()) {CatalogScreen("Courses",c){};WorkspaceOverlays(c,true)}
+            Box(Modifier.fillMaxSize()) {CatalogScreen("Courses",c){};WorkspaceOverlays(c)}
         }
         settled(c)
         onNodeWithTag("new-course").performClick()

@@ -22,22 +22,25 @@ import androidx.compose.ui.unit.*
 import androidx.compose.ui.window.Popup
 
 /** Shared presentation tokens. No Material components or platform-specific rendering dependencies. */
+data class Palette(val background: Color, val sidebar: Color, val panel: Color, val raised: Color, val selected: Color, val border: Color, val text: Color, val muted: Color, val violet: Color, val positive: Color, val accentSurface: Color)
+val DarkPalette = Palette(Color(0xFF111214),Color(0xFF17181B),Color(0xFF1B1C20),Color(0xFF24252B),Color(0xFF303039),Color(0xFF34353C),Color(0xFFF0F0F3),Color(0xFFADAEB9),Color(0xFFB9ADD9),Color(0xFFABC2B5),Color(0xFF25232C))
+val LightPalette = Palette(Color(0xFFF5F4F7),Color(0xFFEFEDF2),Color(0xFFFFFFFF),Color(0xFFF0EEF4),Color(0xFFE4DFED),Color(0xFFC9C3D2),Color(0xFF202027),Color(0xFF57515F),Color(0xFF644A83),Color(0xFF35634D),Color(0xFFEDE7F4))
+internal val LocalPalette = staticCompositionLocalOf { DarkPalette }
 object Ink {
-    val background = Color(0xFF111214)
-    val sidebar = Color(0xFF17181B)
-    val panel = Color(0xFF1B1C20)
-    val raised = Color(0xFF24252B)
-    val selected = Color(0xFF303039)
-    val border = Color(0xFF34353C)
-    val text = Color(0xFFF0F0F3)
-    val muted = Color(0xFFADAEB9)
-    val violet = Color(0xFFB9ADD9)
-    val positive = Color(0xFFABC2B5)
-    val accentSurface = Color(0xFF25232C)
+    val background: Color @Composable get() = LocalPalette.current.background
+    val sidebar: Color @Composable get() = LocalPalette.current.sidebar
+    val panel: Color @Composable get() = LocalPalette.current.panel
+    val raised: Color @Composable get() = LocalPalette.current.raised
+    val selected: Color @Composable get() = LocalPalette.current.selected
+    val border: Color @Composable get() = LocalPalette.current.border
+    val text: Color @Composable get() = LocalPalette.current.text
+    val muted: Color @Composable get() = LocalPalette.current.muted
+    val violet: Color @Composable get() = LocalPalette.current.violet
+    val positive: Color @Composable get() = LocalPalette.current.positive
+    val accentSurface: Color @Composable get() = LocalPalette.current.accentSurface
     val radius = 14.dp
 }
 internal val LocalControlsEnabled = staticCompositionLocalOf { true }
-internal val LocalReducedMotion = staticCompositionLocalOf { false }
 internal val manrope = FontFamily(listOf(400, 500, 600, 700).map { weight ->
     Font("fonts/Manrope.ttf", FontWeight(weight), variationSettings = FontVariation.Settings(FontVariation.weight(weight)))
 })
@@ -51,13 +54,12 @@ internal fun fontFor(text: String) = if (ArabicText.containsMatchIn(text)) arabi
         fontFamily = fontFor(text), fontWeight = weight,
         textDirection = TextDirection.Content), maxLines = lines, overflow = TextOverflow.Ellipsis)
 }
-internal fun <T> motion(reduced: Boolean): FiniteAnimationSpec<T> =
-    if (reduced) snap() else spring(dampingRatio = 1f, stiffness = 420f)
+internal fun <T> motion(): FiniteAnimationSpec<T> = spring(dampingRatio = 1f, stiffness = 420f)
 
 @Composable internal fun Rule() = Box(Modifier.fillMaxWidth().height(1.dp).background(Ink.border.copy(alpha = .65f)))
 
 @Composable internal fun Action(label: String, icon: String = "arrow", active: Boolean = false,
-    reduced: Boolean = LocalReducedMotion.current, modifier: Modifier = Modifier, quiet: Boolean = false,
+    modifier: Modifier = Modifier, quiet: Boolean = false,
     enabled: Boolean = true, hint: String? = null, onClick: () -> Unit) {
     val enabled = enabled && LocalControlsEnabled.current
     val interaction = remember { MutableInteractionSource() }
@@ -66,7 +68,7 @@ internal fun <T> motion(reduced: Boolean): FiniteAnimationSpec<T> =
     val pressed by interaction.collectIsPressedAsState()
     val fill by animateColorAsState(
         if (pressed) Ink.selected else if (hovered) Ink.raised else if (active && !quiet) Ink.accentSurface else Color.Transparent,
-        motion(reduced), label = "button-surface")
+        motion(), label = "button-surface")
     Box {
     Row(modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(8.dp)).background(fill)
         .border(1.dp, if (focused) Ink.violet else if (quiet) Color.Transparent else Ink.border, RoundedCornerShape(8.dp))
@@ -113,7 +115,7 @@ internal fun <T> motion(reduced: Boolean): FiniteAnimationSpec<T> =
             "chevrons" -> {line(7f,7f,10f,4f);line(10f,4f,13f,7f);line(7f,13f,10f,16f);line(10f,16f,13f,13f)}
             "search" -> {drawCircle(color,5.5f*u,Offset(8.5f*u,8.5f*u),style=Stroke(1.4f*u));line(13f,13f,17f,17f)}
             "refresh" -> {drawArc(color,40f,290f,false,Offset(3*u,3*u),androidx.compose.ui.geometry.Size(14*u,14*u),style=Stroke(1.4f*u));line(17f,4f,17f,9f);line(12f,9f,17f,9f)}
-            "motion" -> {line(3f,6f,14f,6f);line(6f,10f,17f,10f);line(3f,14f,12f,14f)}
+            "settings" -> {line(3f,6f,17f,6f);line(3f,14f,17f,14f);line(7f,3f,7f,9f);line(13f,11f,13f,17f)}
             "external" -> {line(11f,4f,17f,4f);line(17f,4f,17f,10f);line(9f,12f,17f,4f);line(3f,5f,3f,17f);line(3f,17f,15f,17f)}
             else -> {line(4f,10f,16f,10f);line(12f,6f,16f,10f);line(12f,14f,16f,10f)}
         }
@@ -125,7 +127,7 @@ internal fun <T> motion(reduced: Boolean): FiniteAnimationSpec<T> =
         Box(Modifier.size(30.dp).clip(RoundedCornerShape(8.dp))
             .background(Brush.linearGradient(listOf(Color(0xFF45404F),Color(0xFF2D2B33))))
             .border(1.dp,Color(0xFF625B70),RoundedCornerShape(8.dp)),contentAlignment=Alignment.Center) {
-            Copy("P",18,Ink.text,FontWeight.SemiBold)
+            Copy("P",18,DarkPalette.text,FontWeight.SemiBold)
         }
         if(!compact) Copy("Professor OS",14,weight=FontWeight.SemiBold)
     }

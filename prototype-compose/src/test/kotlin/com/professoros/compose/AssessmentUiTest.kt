@@ -26,7 +26,7 @@ class AssessmentUiTest {
         val services=WorkspaceServices(path);val course=services.courses.findAll().first().id()
         lateinit var c:WorkspaceController
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.refresh()}
-            Box(Modifier.fillMaxSize()){QuestionScreen(c);WorkspaceOverlays(c,true)}}
+            Box(Modifier.fillMaxSize()){QuestionScreen(c);WorkspaceOverlays(c)}}
         settled(c)
         onNodeWithTag("new-question").performClick()
         runOnIdle {c.questionDraft!!.form.values["course"]=course.toString();c.questionDraft!!.form.values["text"]="ما هي الكبسلة؟"}
@@ -62,7 +62,7 @@ class AssessmentUiTest {
         val foreign=services.academic.questions().create(question(services.courses.findAll().last().id(),text="Foreign course"))
         lateinit var c:WorkspaceController
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.select(offering.id())}
-            Box(Modifier.fillMaxSize()){ExamScreen(c);WorkspaceOverlays(c,true)}}
+            Box(Modifier.fillMaxSize()){ExamScreen(c);WorkspaceOverlays(c)}}
         settled(c);onNodeWithTag("new-exam").performClick();settled(c)
         assertEquals(2,c.examDraft!!.bank.size)
         onNodeWithTag("exam-title").performTextInput("Midterm")

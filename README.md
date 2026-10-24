@@ -2,7 +2,7 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Phase 11 functionality plus a Compose desktop workspace migration.** Courses, students, terms, offerings/enrollment, lectures, Question Bank, Exam Builder, Gradebook and Attendance now have Compose screens, including student Excel import, grade/attendance Excel export and exam PDF preview/export. JavaFX remains the complete fallback. Academic records are persisted locally; dashboard metrics use saved records.
+**Status: Phase 11 functionality plus a Compose desktop workspace migration.** Courses, students, terms, offerings/enrollment, lectures, Question Bank, Exam Builder, Gradebook, Attendance and Settings now have Compose screens, including student Excel import, grade/attendance Excel export and exam PDF preview/export. JavaFX remains the complete fallback. Academic records are persisted locally; dashboard metrics use saved records.
 
 ## Implemented
 
@@ -24,7 +24,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Compose dashboard prototype
 
-The native Kotlin/JVM workspace calls the existing Java services for catalog, enrollment, lecture, question, exam and Gradebook workflows. It retains the obsidian/charcoal dashboard, muted violet accents, Arabic fonts and persisted reduced-motion preferences. JavaFX remains available as the complete fallback. Timeline remains removed; lecture records, algorithms and migration history are preserved.
+The native Kotlin/JVM workspace calls the existing Java services for catalog, enrollment, lecture, question, exam and Gradebook workflows. It retains the obsidian/charcoal dashboard, muted violet accents, Arabic fonts and fixed, restrained animations with Light/Dark/System appearance in Settings. JavaFX remains available as the complete fallback. Timeline remains removed; lecture records, algorithms and migration history are preserved.
 
 With JDK 25 configured, run from the repository root: `cmd /d /c ".\prototype-compose\gradlew.bat -p prototype-compose run"`. See [prototype setup, verification and limitations](prototype-compose/README.md). Close the prototype before rebuilding. Gradle is isolated to this evaluation; the Maven workflow below is unchanged.
 
@@ -52,7 +52,7 @@ For Excel, choose **Import from Excel** in Students or an offering's Students ta
 
 In Grades, save or discard pending edits, then choose **Export to Excel** and a new filename. Grades, Assessment Breakdown, Attendance and Statistics contain a saved report, not recalculating formulas. Missing scores remain blank and zero stays numeric zero. Attendance includes saved lecture marks and percentages; blank attendance cells mean unmarked. Imports do not evaluate formulas; replace formula cells with reviewed values first. `.xls`, `.xlsm`, CSV and grade import are not supported. No Microsoft Excel installation is required.
 
-Use the top-bar appearance button to cycle Light, Dark and System, or select a mode in **Settings → Appearance**. Your choice is saved beside the local database and applies without resetting open forms or unsaved grades. System follows the OS appearance reported by JavaFX. See [theme architecture and verification](docs/THEMES.md).
+In Compose, select Light, Dark or System in **Settings → Appearance**. JavaFX also retains its top-bar appearance button. Your choice is saved beside the local database and applies without resetting open forms or unsaved grades. System follows the OS appearance reported by the active UI toolkit. See [theme architecture and verification](docs/THEMES.md).
 
 On searchable feature pages, Ctrl+F focuses search (Command+F on macOS). With a record table focused, Enter opens its selected edit/build action; in the exam bank selector, Enter adds selected questions. Forms retain Save/Cancel behavior and scroll when their content exceeds the available height.
 

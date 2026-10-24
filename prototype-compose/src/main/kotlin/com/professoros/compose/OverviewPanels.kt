@@ -15,22 +15,22 @@ import com.professoros.model.DashboardOverview
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
-@Composable internal fun Overview(data:DashboardSnapshot,reduced:Boolean,narrow:Boolean,open:()->Unit) {
+@Composable internal fun Overview(data:DashboardSnapshot,narrow:Boolean,open:()->Unit) {
     Column(verticalArrangement=Arrangement.spacedBy(18.dp)) {
         if(narrow) {
-            TeachingFocus(data,reduced,Modifier.fillMaxWidth(),open)
-            Library(data,reduced,Modifier.fillMaxWidth())
+            TeachingFocus(data,Modifier.fillMaxWidth(),open)
+            Library(data,Modifier.fillMaxWidth())
         } else Row(horizontalArrangement=Arrangement.spacedBy(18.dp),modifier=Modifier.height(IntrinsicSize.Min)) {
-            TeachingFocus(data,reduced,Modifier.weight(1.65f).fillMaxHeight(),open)
-            Library(data,reduced,Modifier.weight(1f).fillMaxHeight())
+            TeachingFocus(data,Modifier.weight(1.65f).fillMaxHeight(),open)
+            Library(data,Modifier.weight(1f).fillMaxHeight())
         }
         if(narrow) {
             ActivityPanel("Coming up",data.overview.upcoming(),"Nothing scheduled yet",
-                "Add planned lectures or an exam in the full workspace. They will appear here.")
+                "Add planned lectures or an exam using the sidebar. They will appear here.")
             Attendance(data,Modifier.fillMaxWidth())
         } else Row(horizontalArrangement=Arrangement.spacedBy(18.dp)) {
             ActivityPanel("Coming up",data.overview.upcoming(),"Nothing scheduled yet",
-                "Add planned lectures or an exam in the full workspace. They will appear here.",Modifier.weight(1.65f))
+                "Add planned lectures or an exam using the sidebar. They will appear here.",Modifier.weight(1.65f))
             Attendance(data,Modifier.weight(1f))
         }
         ActivityPanel("Recently updated",data.overview.recentlyUpdated(),"No recent updates",
@@ -38,10 +38,10 @@ import kotlin.math.roundToInt
     }
 }
 
-@Composable private fun TeachingFocus(data:DashboardSnapshot,reduced:Boolean,modifier:Modifier,open:()->Unit) {
+@Composable private fun TeachingFocus(data:DashboardSnapshot,modifier:Modifier,open:()->Unit) {
     val progress=data.overview.progress()
     val hasLectures=progress!=null && progress.scheduledTotal()>0
-    val completion by animateFloatAsState((progress?.completionPercent()?:0.0).toFloat(),motion(reduced),label="lecture-completion")
+    val completion by animateFloatAsState((progress?.completionPercent()?:0.0).toFloat(),motion(),label="lecture-completion")
     Panel(modifier,tinted=true) {
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
             Row(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=Alignment.CenterVertically) {
@@ -65,17 +65,17 @@ import kotlin.math.roundToInt
             Copy(progress.scheduleStatus(),12,Ink.muted)
         } else {
             Copy(if(progress?.total()==0)"Ready for your first lecture." else if(progress==null)"Your teaching overview starts here." else "No non-cancelled lectures.",14)
-            Action("Open full workspace","external",reduced=reduced,onClick=open)
+            Action(if(data.selected==null) "Manage offerings" else "Open lectures","arrow",onClick=open)
         }
     }
 }
 
-@Composable private fun Library(data:DashboardSnapshot,reduced:Boolean,modifier:Modifier) {
+@Composable private fun Library(data:DashboardSnapshot,modifier:Modifier) {
     Panel(modifier) {
         Copy("Your library",14,weight=FontWeight.SemiBold)
         listOf(Triple("Courses",data.courses,"book"),Triple("Students",data.overview.students(),"people"),
             Triple("Offerings",data.overview.offerings(),"grid")).forEachIndexed {index,(label,count,icon)->
-            val number by animateIntAsState(count,motion(reduced),label="count-"+label)
+            val number by animateIntAsState(count,motion(),label="count-"+label)
             Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                 Mark(icon,size=16);Copy(label,13,Ink.muted,modifier=Modifier.weight(1f));Copy(number.toString(),21,weight=FontWeight.Medium)
             }

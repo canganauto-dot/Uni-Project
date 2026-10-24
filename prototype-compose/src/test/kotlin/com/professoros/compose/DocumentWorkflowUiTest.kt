@@ -48,7 +48,7 @@ class DocumentWorkflowUiTest {
     @Test fun importPreviewMappingValidationGlobalAndEnrollmentPersistence()=runSkikoComposeUiTest(size=Size(1100f,950f)) {
         val (s,id)=setup();val file=workbook();lateinit var c:WorkspaceController;var compact by mutableStateOf(false)
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(s,scope)};LaunchedEffect(Unit){c.select(id)}
-            Box(Modifier.requiredSize(if(compact)864.dp else 1100.dp,if(compact)621.dp else 950.dp)){CatalogScreen("Students",c){};WorkspaceOverlays(c,true)}}
+            Box(Modifier.requiredSize(if(compact)864.dp else 1100.dp,if(compact)621.dp else 950.dp)){CatalogScreen("Students",c){};WorkspaceOverlays(c)}}
         settled(c);onNodeWithTag("import-students").performClick()
         runOnIdle {c.loadStudentWorkbook {file}};settled(c)
         onNodeWithTag("preview-import").performClick();settled(c)
@@ -88,7 +88,7 @@ class DocumentWorkflowUiTest {
         s.academic.questions().update(qs.first().id(),input(qs.first().type(),"LIVE_BANK_REPLACEMENT"))
         lateinit var c:WorkspaceController;var compact by mutableStateOf(false)
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(s,scope)};LaunchedEffect(Unit){c.select(id)}
-            Box(Modifier.requiredSize(if(compact)864.dp else 1100.dp,if(compact)621.dp else 950.dp)){ExamScreen(c);WorkspaceOverlays(c,true)}}
+            Box(Modifier.requiredSize(if(compact)864.dp else 1100.dp,if(compact)621.dp else 950.dp)){ExamScreen(c);WorkspaceOverlays(c)}}
         settled(c);onNodeWithTag("exams-table-${exam.id()}").performClick();onNodeWithTag("open-pdf").performClick();settled(c)
         onNodeWithTag("render-pdf").performClick();settled(c);assertNotNull(c.error)
         onNodeWithTag("pdf-university").performTextInput("جامعة بغداد")
@@ -126,7 +126,7 @@ class DocumentWorkflowUiTest {
         a.attendance().save(id,lecture,mapOf(enrollment to AttendanceStatus.LATE))
         lateinit var c:WorkspaceController
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(s,scope)};LaunchedEffect(Unit){c.select(id)}
-            Box(Modifier.fillMaxSize()){AttendanceScreen(c);WorkspaceOverlays(c,true)}}
+            Box(Modifier.fillMaxSize()){AttendanceScreen(c);WorkspaceOverlays(c)}}
         settled(c);val path=folder.root.toPath().resolve("report.xlsx")
         runOnIdle {c.attendance!!.set(enrollment,AttendanceStatus.ABSENT);c.exportGradeWorkbook {path}}
         assertContains(c.error.orEmpty(),"attendance edits");assertFalse(Files.exists(path))

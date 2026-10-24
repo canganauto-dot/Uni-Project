@@ -25,9 +25,9 @@ class WorkspaceLayoutTest {
             val scope=rememberCoroutineScope();c=remember {WorkspaceController(WorkspaceServices(path),scope)}
             LaunchedEffect(Unit){c.select(data.selected!!.offering().id())}
             Box(Modifier.requiredSize(width.dp,height.dp)) {
-                ProfessorDashboard(data,c.busy,null,page,{next->c.guard {page=next}},true,MotionMode.REDUCED,{},{c.refresh()},{c.select(it)},{},featureContent={p->
+                ProfessorDashboard(data,c.busy,null,page,{next->c.guard {page=next}},{c.refresh()},{c.select(it)},featureContent={p->
                     when(p){"Teaching context"->RosterScreen(c);"Lectures"->LectureScreen(c);"Question Bank"->QuestionScreen(c);"Exam Builder"->ExamScreen(c);else->CatalogScreen(p,c){c.select(it)}}})
-                WorkspaceOverlays(c,true)
+                WorkspaceOverlays(c)
             }
         }
         waitForIdle();waitUntil(timeoutMillis=10000){!c.busy}

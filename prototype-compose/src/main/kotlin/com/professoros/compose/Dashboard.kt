@@ -17,13 +17,13 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import java.time.format.DateTimeFormatter
 
-private val destinations = listOf("Overview" to "grid", "Teaching context" to "book", "Activity" to "pulse")
+private val destinations = listOf("Overview" to "grid", "Teaching context" to "book", "Activity" to "pulse", "Settings" to "settings")
 private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "book", "Students" to "people", "Terms" to "calendar",
-    "Offerings" to "layers", "Teaching context" to "chevrons", "Lectures" to "lecture", "Question Bank" to "question", "Exam Builder" to "exam", "Gradebook" to "grid", "Attendance" to "check", "Activity" to "pulse")
+    "Offerings" to "layers", "Teaching context" to "chevrons", "Lectures" to "lecture", "Question Bank" to "question", "Exam Builder" to "exam", "Gradebook" to "grid", "Attendance" to "check", "Activity" to "pulse", "Settings" to "settings")
 
 @Composable fun ProfessorDashboard(snapshot: DashboardSnapshot?, loading: Boolean, error: String?, page: String,
-    navigate: (String) -> Unit, reduced: Boolean, motion: MotionMode, setMotion: (MotionMode) -> Unit,
-    refresh: () -> Unit, selectOffering: (Long) -> Unit, openWorkspace: () -> Unit,
+    navigate: (String) -> Unit,
+    refresh: () -> Unit, selectOffering: (Long) -> Unit,
     featureContent: (@Composable (String) -> Unit)? = null) {
     var picker by remember { mutableStateOf(false) }
     BoxWithConstraints(Modifier.fillMaxSize().background(Ink.background).testTag("dashboard-root")
@@ -36,14 +36,14 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
         val compact = maxWidth < 1050.dp
         val narrow = maxWidth < 1120.dp
         Row(Modifier.fillMaxSize()) {
-            Sidebar(page,compact,reduced,navigate,openWorkspace,featureContent!=null)
+            Sidebar(page,compact,navigate,featureContent!=null)
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 Row(Modifier.fillMaxWidth().height(64.dp).background(Ink.sidebar.copy(alpha=.75f))
                     .padding(horizontal=24.dp), verticalAlignment=Alignment.CenterVertically,
                     horizontalArrangement=Arrangement.spacedBy(12.dp)) {
                     Copy(if(compact) page else "Workspace  /  " + page,12,Ink.muted,modifier=Modifier.weight(1f),lines=1)
                     Box {
-                        Action(snapshot?.selected?.let { it.courseCode()+" · "+it.termName()+" · "+it.offering().section() } ?: "Choose offering","chevrons",reduced=reduced,
+                        Action(snapshot?.selected?.let { it.courseCode()+" · "+it.termName()+" · "+it.offering().section() } ?: "Choose offering","chevrons",
                             modifier=Modifier.widthIn(max=280.dp).testTag("choose-context").semantics { contentDescription="Choose teaching context, Control K" }) { picker=true }
                         if(picker) Popup(alignment=Alignment.TopEnd,offset=IntOffset(0,46),onDismissRequest={picker=false},
                             properties=PopupProperties(focusable=true)) {
@@ -52,15 +52,11 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
                                     if(it.type==KeyEventType.KeyDown && it.key==Key.Escape) {picker=false;true} else false
                                 }) {
                                 Copy("Switch teaching context",15,weight=FontWeight.SemiBold)
-                                OfferingPicker(snapshot,reduced,dismissible=true) { picker=false;selectOffering(it) }
+                                OfferingPicker(snapshot,dismissible=true) { picker=false;selectOffering(it) }
                             }
                         }
                     }
-                    Action(if(compact) "" else motion.name.lowercase().replaceFirstChar { it.uppercase() },"motion",reduced=reduced,
-                        modifier=Modifier.testTag("motion").semantics { contentDescription="Motion: "+motion.name.lowercase() }) {
-                        setMotion(MotionMode.entries[(motion.ordinal+1)%3])
-                    }
-                    Action("","refresh",reduced=reduced,enabled=!loading,
+                    Action("","refresh",enabled=!loading,
                         modifier=Modifier.testTag("refresh").semantics { contentDescription=if(loading)"Refreshing workspace" else "Refresh workspace, Control R" },onClick=refresh)
                 }
                 Rule()
@@ -76,22 +72,24 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
                         }
                         error?.let { Panel(Modifier.fillMaxWidth()) {
                             Copy("Workspace unavailable",16,weight=FontWeight.SemiBold);Copy(it,13,Ink.muted)
-                            Action("Try again","refresh",reduced=reduced,onClick=refresh)
+                            Action("Try again","refresh",onClick=refresh)
                         } }
-                        if(snapshot==null) {
+                        if(page=="Settings" && featureContent!=null) {
+                            featureContent(page)
+                        } else if(snapshot==null) {
                             if(error==null) Copy("Opening your saved workspace…",14,Ink.muted)
                         } else {
                             AnimatedContent(page,transitionSpec={
-                                (fadeIn(tween(if(reduced)0 else 170)) + slideInVertically(motion(reduced)) { if(reduced)0 else 12 })
-                                    .togetherWith(fadeOut(tween(if(reduced)0 else 80)))
-                                    .using(SizeTransform(clip=false,sizeAnimationSpec={_,_->motion(reduced)}))
+                                (fadeIn(tween(170)) + slideInVertically(motion()) { 12 })
+                                    .togetherWith(fadeOut(tween(80)))
+                                    .using(SizeTransform(clip=false,sizeAnimationSpec={_,_->motion()}))
                             },label="page-reveal") { destination ->
                                 if(featureContent!=null && destination !in listOf("Overview","Activity")) featureContent(destination)
                                 else when(destination) {
                                     "Teaching context" -> Panel(Modifier.fillMaxWidth()) {
                                         Copy("Select an offering",16,weight=FontWeight.SemiBold)
                                         Copy("A course, term and section. Your overview follows the selected context.",13,Ink.muted)
-                                        OfferingPicker(snapshot,reduced,select=selectOffering)
+                                        OfferingPicker(snapshot,select=selectOffering)
                                     }
                                     "Activity" -> Column(verticalArrangement=Arrangement.spacedBy(18.dp)) {
                                         ActivityPanel("Coming up",snapshot.overview.upcoming(),"No upcoming teaching",
@@ -99,13 +97,13 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
                                         ActivityPanel("Recently updated",snapshot.overview.recentlyUpdated(),"A quiet workspace",
                                             "Updates to lectures and exams appear here as you work.",recent=true)
                                     }
-                                    else -> Overview(snapshot,reduced,narrow,openWorkspace)
+                                    else -> Overview(snapshot,narrow) { navigate(if(snapshot.selected==null) "Offerings" else "Lectures") }
                                 }
                             }
                         }
                         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                             Copy("Saved locally · available offline",11,Ink.muted)
-                            Copy(if(featureContent==null)"Dashboard preview" else "JavaFX fallback available",11,Ink.muted)
+                            Copy("Professor OS",11,Ink.muted)
                         }
                     }
                 }
@@ -114,7 +112,7 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
     }
 }
 
-@Composable private fun Sidebar(page:String,compact:Boolean,reduced:Boolean,navigate:(String)->Unit,open:()->Unit,features:Boolean=false) {
+@Composable private fun Sidebar(page:String,compact:Boolean,navigate:(String)->Unit,features:Boolean=false) {
     val destinations=if(features)workspaceDestinations else destinations
     Column(Modifier.width(if(compact)68.dp else 210.dp).fillMaxHeight().background(Ink.sidebar)
         .padding(horizontal=if(compact)12.dp else 16.dp),verticalArrangement=Arrangement.spacedBy(20.dp)) {
@@ -122,12 +120,12 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
         if(!compact) Copy("WORKSPACE",10,Ink.muted,FontWeight.Medium,Modifier.padding(start=10.dp))
         Box(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
             val offset by animateDpAsState((destinations.indexOfFirst{it.first==page}.coerceAtLeast(0)*44).dp,
-                motion(reduced),label="navigation-indicator")
+                motion(),label="navigation-indicator")
             Box(Modifier.offset(y=offset).fillMaxWidth().height(38.dp).clip(RoundedCornerShape(8.dp))
                 .background(Ink.selected).testTag("navigation-indicator"))
             Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 destinations.forEach { (label,icon) ->
-                    Action(if(compact)"" else label,icon,page==label,reduced,
+                    Action(if(compact)"" else label,icon,page==label,
                         Modifier.fillMaxWidth().height(38.dp).testTag("nav-"+label).semantics {
                             contentDescription=label;selected=page==label
                         },quiet=true,hint=if(compact)label else null) {navigate(label)}
@@ -138,9 +136,6 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
             Rule()
             Copy("One place for your\nacademic work.",12,Ink.muted,modifier=Modifier.padding(horizontal=10.dp))
         }
-        Action(if(compact)"" else "Open full workspace","external",reduced=reduced,
-            modifier=Modifier.fillMaxWidth().testTag("open-javafx").semantics {contentDescription="Open JavaFX workspace"},
-            quiet=true,onClick=open)
         if(!compact) Row(Modifier.padding(start=10.dp,bottom=18.dp),horizontalArrangement=Arrangement.spacedBy(7.dp),
             verticalAlignment=Alignment.CenterVertically) {
             Box(Modifier.size(5.dp).background(Ink.positive,RoundedCornerShape(3.dp)));Copy("On your device",11,Ink.muted)
