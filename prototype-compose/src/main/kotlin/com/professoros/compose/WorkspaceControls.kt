@@ -117,6 +117,8 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
 }
 
 @Composable internal fun WorkspaceOverlays(c:WorkspaceController,reduced:Boolean) {
+    c.studentImport?.let {StudentImportOverlay(c,it)}
+    c.pdfExport?.let {PdfExportOverlay(c,it)}
     c.gradeBulk?.let {GradeBulkOverlay(c,it)}
     c.questionDraft?.let {QuestionEditor(c,it)}
     c.examDraft?.let {ExamEditor(c,it)}

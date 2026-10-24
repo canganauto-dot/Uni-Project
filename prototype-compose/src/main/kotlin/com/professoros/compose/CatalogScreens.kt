@@ -32,6 +32,7 @@ import com.professoros.model.*
                 val row=c.catalog.students.firstOrNull {it.id()==selected}
                 Toolbar {
                     Action("New student","people",enabled=!c.busy,modifier=Modifier.testTag("new-student")){c.editStudent()}
+                    Action("Import from Excel",enabled=!c.busy,modifier=Modifier.testTag("import-students")){c.openStudentImport()}
                     Action("Edit",enabled=row!=null&&!c.busy){c.editStudent(row)}
                     Action("Details / enrollments",enabled=row!=null&&!c.busy){row?.let {student->c.inspect(student.toString()) {
                         "Email: ${student.email()}\n${student.notes()}\n\nEnrollment history\n"+c.services.academic.enrollments().findOfferingsForStudent(student.id()).joinToString("\n"){it.offering().label()+" · "+it.enrollment().status()}+"\n\nUpdated: ${student.updatedAt()}"
@@ -77,6 +78,7 @@ import com.professoros.model.*
         Input("Search enrolled students",query,{query=it},tag="roster-search")
         Toolbar {
             Action("Enroll student","people",enabled=!c.busy,modifier=Modifier.testTag("enroll-student")){c.enrollStudent()}
+            Action("Import & enroll",enabled=!c.busy,modifier=Modifier.testTag("import-enrollment")){c.openStudentImport(active.offering().id())}
             EnrollmentStatus.entries.forEach {status->Action(status.name.replace('_',' '),enabled=row!=null&&!c.busy) {
                 row?.let {c.confirm("Set enrollment to $status?",it.student().toString()+"\nHistory will be preserved."){c.mutate {c.services.academic.enrollments().updateStatus(it.enrollment().id(),status)}}}
             }}

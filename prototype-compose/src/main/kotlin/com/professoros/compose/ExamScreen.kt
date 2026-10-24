@@ -33,6 +33,7 @@ internal fun WorkspaceController.saveExam() {
         Toolbar {
             Action("New exam","book",enabled=!c.busy,modifier=Modifier.testTag("new-exam")){c.openExam()}
             Action("Build / edit",enabled=draft&&!c.busy){row?.let {c.openExam(it.id())}}
+            Action("Preview / export PDF",enabled=row!=null&&!c.busy,modifier=Modifier.testTag("open-pdf")){row?.let {c.openPdf(it.id())}}
             Action("Details",enabled=row!=null&&!c.busy){row?.let {exam->c.inspect("Exam details · saved snapshots") {
                 val saved=c.services.academic.exams().findById(scope,exam.id())
                 "${saved.title()} · ${saved.status()}\n${saved.date()} · ${saved.durationMinutes()} minutes\nCalculated ${saved.calculatedMarks()} / intended ${saved.intendedMarks()} marks${if(saved.marksDiffer())" · Warning: totals differ" else ""}\n\n${saved.instructions()}\n\n"+
@@ -43,7 +44,7 @@ internal fun WorkspaceController.saveExam() {
             Action("Delete draft",enabled=draft&&!c.busy){row?.let {c.confirm("Delete draft exam?",it.title()+"\nThis permanently deletes the draft and its saved selection."){c.mutate {c.services.academic.exams().delete(scope,it.id())}}}}
         }
         RecordTable(c.exams.filter {it.title().contains(query,true)},listOf(TableColumn("Exam",2f,Exam::title),TableColumn("Date"){it.date().toString()},TableColumn("Status"){it.status().name},TableColumn("Marks",1.5f){"${it.calculatedMarks()} / ${it.intendedMarks()}${if(it.marksDiffer())" !" else ""}"},TableColumn("Questions",.7f){it.questions().size.toString()}),Exam::id,selected,{selected=it.id()},{if(it.status()==ExamStatus.DRAFT)c.openExam(it.id())},"exams-table","No exams yet. Create a draft and choose questions from this course's bank.")
-        Copy("Finalized exams are read-only. PDF workflows remain available in JavaFX.",12,Ink.muted)
+        Copy("PDFs use saved exam snapshots. Student papers and answer keys are separate documents.",12,Ink.muted)
         c.error?.let {Copy(it,13,Ink.violet)}
     }
 }

@@ -18,6 +18,8 @@ dependencies {
     runtimeOnly(fileTree("../target/compose-libs") { include("*.jar") }.builtBy(backend))
     testImplementation(kotlin("test-junit"))
     testImplementation(compose.desktop.uiTestJUnit4)
+    // Verify generated files with the same POI/PDFBox versions already packaged by Maven.
+    testImplementation(fileTree("../target/compose-libs") { include("*.jar") }.builtBy(backend))
 }
 compose.desktop { application { mainClass = "com.professoros.compose.MainKt"; jvmArgs += "--enable-native-access=ALL-UNNAMED" } }
 tasks.test {

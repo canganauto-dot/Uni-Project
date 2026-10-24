@@ -52,6 +52,7 @@ import kotlinx.coroutines.launch
             },{c.chooseAttendanceLecture(it.toLong())},"attendance-lecture")
             Toolbar {
                 Action("Save attendance","check",enabled=editor.dirty&&!editor.readOnly&&!c.busy,modifier=Modifier.testTag("save-attendance"),onClick=c::saveAttendance)
+                Action("Export to Excel",enabled=!c.busy,modifier=Modifier.testTag("export-attendance")){c.exportGradeWorkbook()}
                 Action("Discard / reload",enabled=!c.busy,modifier=Modifier.testTag("reload-attendance")){c.guard {c.refresh()}}
                 Action("Student history","calendar",enabled=row!=null&&!c.busy,modifier=Modifier.testTag("attendance-history")){row?.let {c.detail=Detail("Attendance history · ${it.student().fullName()}",editor.history(it))}}
             }

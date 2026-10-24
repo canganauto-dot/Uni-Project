@@ -18,9 +18,6 @@ import androidx.compose.ui.unit.*
 import com.professoros.model.*
 import com.professoros.service.*
 import kotlinx.coroutines.launch
-import java.awt.EventQueue
-import java.awt.FileDialog
-import java.awt.Frame
 import java.nio.file.Path
 
 @Composable internal fun GradebookScreen(c:WorkspaceController) {
@@ -194,16 +191,13 @@ import java.nio.file.Path
     }
 }
 
-internal fun WorkspaceController.exportGradeWorkbook() {
+internal fun WorkspaceController.exportGradeWorkbook(pick:()->Path?={chooseDocument("Save gradebook and attendance report",true,"Gradebook.xlsx",listOf("xlsx"))}) {
     if(!gradeConfigurable())return
+    if(attendance?.dirty==true){error="Save or discard attendance edits before exporting. The report includes saved attendance.";return}
     val book=gradebook!!.book
-    confirm("Export saved gradebook?",GradeCalculator.configurationMessage(book)+"\nOnly saved grades are exported. Blank scores stay blank; incomplete results remain incomplete.") {
+    confirm("Export saved gradebook and attendance?",GradeCalculator.configurationMessage(book)+"\nIncludes Grades, Assessment Breakdown, Attendance and Statistics. Only saved records are exported. Blank scores stay blank; incomplete results remain incomplete.") {
         task({
-            var path:Path?=null
-            EventQueue.invokeAndWait {
-                val picker=FileDialog(null as Frame?,"Save gradebook as a new .xlsx file",FileDialog.SAVE)
-                try {picker.file="Gradebook.xlsx";picker.isVisible=true;picker.file?.let {path=Path.of(picker.directory,it)}}finally{picker.dispose()}
-            }
+            val path=pick()
             path?.let {destination->
                 val a=services.academic;val exporter=ExcelExportService(a.grades(),a.offerings(),a.attendance())
                 exporter.save(exporter.render(book.offeringId()),destination)
