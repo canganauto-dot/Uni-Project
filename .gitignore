@@ -1,4 +1,4 @@
-# Maven / Java / JavaFX packaging output
+# Maven / Java / desktop packaging output
 /target/
 **/target/
 /out/
@@ -45,7 +45,7 @@ $RECYCLE.BIN/
 # Do not globally ignore *.pdf, *.xlsx, *.sql or databases: reference documents,
 # import fixtures, migrations and required resources must remain trackable.
 
-# Isolated Compose Desktop prototype
+# Compose Desktop build output
 **/.gradle/
 **/build/
 **/.kotlin/

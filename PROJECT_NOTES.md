@@ -9,35 +9,29 @@ Build an all-in-one offline desktop workspace for university professors: courses
 | Technology | Version / status | Purpose |
 | --- | --- | --- |
 | Java | 25 LTS; verified local JDK 25.0.1 | Language, standard logging, JDBC |
-| JavaFX Controls | 25.0.4 | Desktop UI; Base and Graphics are transitive |
 | Maven | Wrapper pins 3.9.11 | Repeatable build and dependency resolution |
-| JavaFX Maven plugin | 0.0.8 | Development launch |
 | Maven Compiler / Surefire | 3.14.1 / 3.6.0 | Java 25 compilation and JUnit execution |
 | SQLite JDBC | 3.53.4.0 | Local storage engine and JDBC driver |
 | JUnit Jupiter | 5.14.0, test scope | Meaningful foundation tests |
-| Kotlin / Compose Desktop / Gradle | 2.3.20 / 1.10.3 / 9.3.1 | Isolated native dashboard evaluation; JavaFX remains the complete app |
+| Kotlin / Compose Desktop / Gradle | 2.3.20 / 1.10.3 / 9.3.1 | Sole desktop frontend, calling the Java backend |
 | Apache POI | 5.5.1 | Excel student import and grade export |
 | Apache PDFBox / ICU4J | 3.0.8 / 78.3 | PDF generation/preview and Arabic shaping/bidi |
 
-Version availability was checked against Maven Central. Setup guidance: [OpenJFX](https://openjfx.io/openjfx-docs/), [Apache Maven Wrapper](https://maven.apache.org/tools/wrapper/), [Xerial SQLite JDBC](https://github.com/xerial/sqlite-jdbc), [JUnit 5 release notes](https://docs.junit.org/5.14.0/release-notes/).
+Version availability was checked against Maven Central. Setup guidance: [Apache Maven Wrapper](https://maven.apache.org/tools/wrapper/), [Xerial SQLite JDBC](https://github.com/xerial/sqlite-jdbc), [JUnit 5 release notes](https://docs.junit.org/5.14.0/release-notes/).
 
 ## Architecture
 
-Intended dependency direction: **UI → services → repositories → database**. Domain models must stay independent of JavaFX and JDBC so future Excel/PDF services can reuse them.
+Dependency direction: **Compose UI → Java services → repositories → database**. Domain models remain independent of UI toolkits and JDBC. Main.kt composes DashboardBridge, WorkspaceServices and WorkspaceController; screen files build layouts, controllers coordinate background IO, services own business validation/calculations, and repositories own JDBC. There is no JavaFX dependency or alternate frontend.
 
-`ProfessorOsApplication` is the composition root: it initializes/migrates the database before showing the window and constructs CourseService plus AcademicServices. MainController wires entity controllers, navigation, the dashboard and session offering context. Views construct layouts; controllers coordinate interactions; services own validation and timestamps; repositories own JDBC and row mapping. The production dashboard reads saved data; synthetic fixtures belong only in tests.
-
-Database initialization runs in JavaFX's `init()` lifecycle method, off the JavaFX application thread. Each entity controller submits service operations through a serial background worker; JavaFX Task callbacks update controls on the JavaFX thread. Writes disable the form until completion and close it only after success. Each database operation owns a short-lived connection and closes it with try-with-resources; no pool is needed yet. Expected validation failures have specific exception types; unexpected storage failures retain their causes, are logged and show concise messages.
+Database initialization and service operations run off the Compose thread. Writes retain local edits until success; expected validation failures are actionable and unexpected failures are logged. Each database operation owns a short-lived connection and closes it with try-with-resources. No pool, backend server or generic CRUD framework is needed.
 
 ## Directory Structure
 
-Standard Maven `src/main/java`, `src/main/resources` and `src/test/java` layouts, under package `com.professoros`. Packages: `app`, `controller`, `view`, `theme`, `model`, `service`, `repository`, `database`, `pdf`, `excel`, `util`. Resources: `css`, `fxml`, `images`, `db/migrations`. Migration failure fixtures live separately in `src/test/resources/db/migrations`.
+The root Maven project contains Java `app` (storage policy), `model`, `service`, `repository`, `database`, `pdf` and `excel` packages, tests and resources. PDF fonts and immutable migration resources remain in `src/main/resources`; migration failure fixtures remain in `src/test/resources`. JavaFX view/controller/theme packages, launcher, CSS and unused FXML/image placeholder directories were removed.
 
-The requested structure gains `view` to keep layout construction out of controllers and `theme` to coordinate appearance. The former synthetic dashboard data was removed in Phase 10B. Reserved packages/resources use `.gitkeep` rather than empty placeholder classes. No FXML dependency is needed until an FXML file is actually introduced.
+`prototype-compose/` is now the sole desktop frontend; its historical folder name is intentionally retained to avoid unrelated build-path changes. It uses the existing Gradle/Kotlin configuration, consumes the Maven backend JAR and copied runtime libraries, and owns UI tests, desktop fonts and icons. Backend preparation removes stale generated classes/libraries before packaging, without deleting test reports or user data.
 
-Local development database files live in ignored `data/`. Future generated PDFs/Excel workbooks belong in ignored `exports/` or `generated/`; build/test output belongs in `target/`. Reference documents, fixtures and SQL migrations remain trackable rather than globally ignoring all PDF/Excel/SQL files.
-
-`prototype-compose/` is an isolated Gradle Kotlin/JVM desktop evaluation. Its `src/main/kotlin` contains the presentation/Java service bridge; bundled licensed fonts live in resources; temporary-data tests live in `src/test/kotlin`. It consumes the existing Maven JAR and runtime libraries. The original JavaFX entry point and Maven architecture remain authoritative for feature screens.
+Local development data lives in ignored `data/`; generated exports belong in `exports/` or `generated/`. Maven output belongs in `target/`, Compose output in `prototype-compose/build/`. Reference documents, fixtures and SQL migrations remain version controlled.
 
 ## Database Design
 
@@ -120,11 +114,11 @@ Each entity has a concrete repository and service. Repositories use the existing
 
 Service validation handles input normalization, relationships, duplicates and deletion restrictions; database constraints remain authoritative for races. `DomainValidationException` covers expected academic failures and is now the base of the existing course validation exception. Unexpected failures retain causes in `StorageException` and are logged with concise UI messages. Academic services are explicitly composed by `AcademicServices`; no dependency injection framework was added.
 
-`SessionContext` is a plain instance owned by `MainController`, with no static state or JavaFX dependency. It holds the selected offering for this session. The top-bar selector opens the offering, and Open reopens the same selection after navigating elsewhere. Refresh reconciles the selection by ID against current summaries, updates labels and clears missing selections. Future screens should obtain their offering identity from this context, never infer it from a catalog course.
+`SessionContext` is the original toolkit-independent Java session helper, retained with its backend tests. Compose owns active offering identity in Main/WorkspaceController without global state. Refresh reconciles the selection by ID against current summaries and clears missing selections. Offering-scoped screens obtain their identity from that selection, never infer it from a catalog course.
 
-Students has its own controller/view and an in-memory filtered/sorted list. Settings hosts Terms. Course details shows only that course's offerings; All Offerings and Create Offering actions keep the catalog table uncluttered. Offering details contains Overview and Students tabs. The roster displays real active/total enrollment counts. Dashboard shows the selected offering and real course count; student/exam/grading metric cards remain explicitly demo values.
+Compose provides separate Students, Terms, Offerings and Teaching context routes. Course details links to offerings, and the teaching-context roster exposes enrollment history and status changes. Dashboard counts and offering progress use saved records. The Phase 3 JavaFX controller/view implementations were removed after Compose feature migration.
 
-New controllers use `UiTaskRunner` for the established JavaFX Task/background-worker pattern. Shared form code only handles layout, busy/error state and Save/Cancel behavior; each entity form explicitly declares its fields. These small helpers remove actual duplication without introducing generic CRUD frameworks. No new third-party dependencies were added.
+Compose controllers coordinate the same services through background coroutine tasks. Shared controls handle layout, busy/error state and Save/Cancel behavior; each entity form explicitly declares its fields. The former JavaFX UiTaskRunner has been removed.
 
 Lectures, Exams and Assessments reference CourseOffering. Grades relate Enrollment and Assessment within that same offering; attendance relates Enrollment and Lecture within the same offering.
 
@@ -214,22 +208,22 @@ The current exam represents a single paper. Future A/B/C/D support should introd
 ## Major Technical Decisions
 
 ### Decision
-Use Java 25 LTS, JavaFX and Maven for an offline desktop application.
+Use Java 25 LTS and Maven for backend services, with Kotlin/JVM Compose Desktop and Gradle for the UI.
 
 ### Reason
-This matches the academic Java requirement and offers desktop tables, forms and charts. Java 25 is an LTS baseline suitable for the selected JavaFX line. Maven pins dependencies and the wrapper makes a separate Maven installation optional.
+Business logic remains Java for the academic requirement; Compose provides the approved desktop interface without a web runtime. Both build tools have pinned wrappers. The original JavaFX foundation was superseded after feature migration and parity verification.
 
 ### Alternatives Considered
-Swing; a web frontend; Java 21 LTS. Java 21 would be reasonable if university machines require it, but would need a compatible JavaFX version and compiler target change.
+Retaining JavaFX, Swing, a web frontend and Java 21 LTS. The current project retains Java 25 and avoids an unrelated language/build reorganization.
 
 ### Decision
-Use a single non-modular Maven application with code-built views and a dedicated CSS theme.
+Keep the non-modular Java backend and the existing Compose Gradle frontend with shared presentation tokens.
 
 ### Reason
-The small foundation does not need JPMS configuration, FXML reflection or a dependency injection framework. Explicit construction keeps dependencies easy to explain. CSS named color tokens and style classes allow future theme changes without rewriting controller behavior.
+Explicit service construction keeps dependencies explainable. Compose shared components and semantic palette tokens keep presentation separate from academic behavior. No dependency-injection framework or JPMS configuration is needed.
 
 ### Alternatives Considered
-JPMS modules, FXML and dependency injection. Revisit FXML if Scene Builder becomes useful; revisit modules/runtime packaging when building an installer. The present JAR is not a self-contained application distribution.
+Dependency injection and JPMS runtime packaging. Revisit distribution packaging for an installer; the Maven JAR is a backend library, not a self-contained desktop executable.
 
 ### Decision
 Keep demo data separate and delay schema and export dependencies until real use cases exist.
@@ -278,49 +272,38 @@ Planned algorithm documentation: advanced exam constraints, question difficulty 
 
 ## Implemented Features
 
-- Lecture-linked attendance with enrollment/offering validation, individual/bulk marking, saved history/summaries and Excel export.
-
-- Main window with Dashboard, Courses, Students, Lectures, Exam Bank, Exams, Grades, Attendance, Analytics and Settings navigation.
-- Header with application title, session offering selector, Open action and disabled global search placeholder.
-- Persisted course count on the dashboard, labelled “Courses · saved”; other cards explicitly remain demo values (126 students, 2 upcoming exams, 18 pending grading items). An unavailable count is shown as unknown, not zero.
-- Course creation, editing, details, confirmed deletion and immediate code/name/department search. Table sorting, empty/no-match/error states, selected saved rows and double-click editing are supported. Create/edit share a form with inline validation, default Save and Escape/Cancel behavior.
-- Sample schedule, deadlines, lecture completion and recent activity. Sample dates are relative illustrative labels, not a live calendar.
-- Students provides directory management; Settings provides academic term management. Courses includes offering creation, course-specific offering lists and access to each offering's roster.
-- Enrollment supports selecting an existing student, duplicate prevention, withdrawal, completion and reactivation while retaining history.
-- Lectures provides persisted offering-specific lecture organization, search, chronological ordering, completion counts and basic schedule status. The separate Timeline UI was removed during the Compose evaluation.
-- Exam Bank provides reusable Course questions, five types, MCQ choices/correct answer, difficulty, decimal marks, optional topic/image reference, CRUD/details/search and combined filters.
-- Exams provides offering-scoped draft creation/editing, manual ordered selections, saved question snapshots, marks warnings, constrained generation previews, finalization and archiving.
-- Exams exports separate Student Exam and Answer Key PDFs from saved snapshots, with preview and safe file selection.
-- Grades provides offering-scoped assessment/category management, direct and bulk score entry, weighted totals, configurable grading scales, incomplete results, search/sorting and basic class statistics.
-- Excel imports students globally or into an offering after mapping/preview; exports formatted grade reports using existing calculations.
-- All other destinations explicitly identify themselves as planned.
-- Transactional versioned SQLite migrations, CSS theme, Maven wrapper, repository/service tests and an opt-in desktop workflow check.
+- Compose Desktop shell with Overview, Courses, Students, Terms, Offerings, Teaching Context, Lectures, Question Bank, Exam Builder, Gradebook, Attendance, Activity and Settings.
+- Real persisted dashboard counts, offering progress, upcoming/recent activity and saved attendance summaries. No demo academic data is seeded.
+- Catalog/course/student/term/offering CRUD, search, details and protected deletion; session teaching-context selection and enrollment status/history.
+- Offering-scoped lecture organization and progress, five question types with MCQ validation, manual/constraint-based exam composition and saved snapshots, finalization/archive.
+- Separate Student Exam and Answer Key PDF preview/export with safe new-file selection, pagination, images, coding text and basic Arabic support.
+- Weighted categories/assessments, spreadsheet grades, bulk entry, configurable scales, incomplete results and class statistics. Blank and zero remain distinct.
+- Lecture attendance marking/clearing, whole-roster actions, saved history/percentages and academic-history restrictions.
+- Bilingual Excel student import with mapping/preview and optional enrollment; four-sheet grade/attendance/statistics reports.
+- Persisted Light/Dark/System appearance, storage configuration guidance, fixed restrained animations, shared controls and unsaved-change guards.
+- Transactional SQLite migration/checksum validation, pinned Maven/Gradle wrappers, backend and Compose workflow tests. JavaFX is removed.
 
 ## Planned Features
 
-- Excel student import.
-- Broader semester planning beyond offering-specific lecture organization.
-- Advanced generation constraints and multiple exam versions.
-- Further PDF layout customization.
-- Required Excel grade export.
-- Learning outcomes, question quality analysis, student performance analysis and course analytics.
-- Backup and restore.
+- Broader semester planning, advanced generation constraints and multiple exam versions.
+- Further PDF customization, learning outcomes and advanced question/student/course analytics.
+- Backup/restore and production packaging.
 
 ## Known Limitations
 
-- No advanced analytics yet. Global header search remains a placeholder. Excel supports student import and saved grade/attendance export; see Phase 9 and Phase 11 limits.
+- No advanced analytics yet; search is scoped to individual feature screens. Excel supports student import and saved grade/attendance export; see Phase 9 and Phase 11 limits.
 - Question usage counts finalized exams, not draft selections or previews. Image paths are external references and are not bundled, previewed or checked for existence. Topic labels are free text rather than managed entities.
 - Exam generation has explicit count/bank/search limits and no exact-mark optimization. Version variants remain future work. Snapshot locks are enforced by the application repository/service workflows, not protection against arbitrary external SQL edits.
 - Course codes, student numbers and sections use the documented ASCII identifier format. Localized identifier formats need an explicit future decision and migration.
 - Active offering selection lasts for the running session only. Academic statuses are explicit user choices, not automatic date-driven transitions; multiple active terms are allowed.
 - Lists are loaded in full and changes from other app instances require Refresh or navigation. Multi-user editing/conflict resolution is outside this phase.
-- No installer or packaged runtime; a compatible JDK and Maven dependency cache are needed for development launch.
-- Only local Windows desktop validation is available at initialization; other supported JavaFX platforms need their own checks.
+- No installer or packaged runtime; a compatible JDK and Maven/Gradle dependency caches are needed for development launch.
+- Only local Windows desktop validation is available at initialization; other desktop platforms need their own checks.
 - Database path is currently relative to the launch directory unless overridden. Selecting a different location does not migrate existing data.
-- The dashboard uses a desktop minimum size of 1100 × 740 and scrolls vertically; it is not a mobile layout.
+- The dashboard uses a desktop minimum size of 880 × 660 and scrolls vertically; it is not a mobile layout.
 - Java/Maven were initially absent from PATH. An existing JDK was found under the user profile; Maven was bootstrapped outside the repository. Set `JAVA_HOME` per README; no machine-wide settings were changed.
 - Maven 3.9.11 may print a JDK 25 deprecation warning from its bundled Guice dependency. This is build-tool output, not an application compilation failure.
-- This machine has a pre-existing Command Processor `AutoRun` setting (`color 02`) that returns a nonzero status in console-less shells. Normal forked testing reports a process failure despite passing assertions, including with Surefire 3.6.0. Local verification uses `cmd /d /c` for the wrapper and `-DforkCount=0` to run tests in Maven's JVM; default isolated testing is retained for unaffected machines. This workaround has less process isolation. No registry settings were modified. For in-process UI tests, the isolated storage directory is set explicitly in the environment (see README).
+- This machine has a pre-existing Command Processor `AutoRun` setting (`color 02`) that returns a nonzero status in console-less shells. Normal forked testing reports a process failure despite passing assertions, including with Surefire 3.6.0. Local verification uses `cmd /d /c` for the wrapper and `-DforkCount=0` to run tests in Maven's JVM; default isolated testing is retained for unaffected machines. This workaround has less process isolation. No registry settings were modified.
 
 ## Development History
 
@@ -710,3 +693,18 @@ Verification: 24 Compose tests passed with zero failures/errors/skips. Added Set
 Native Windows QA used only the isolated prototype-compose/build/native-settings-qa directory. Opened Settings in the running app, changed System (dark on this desktop) to Light, observed the saved appearance.properties value, closed the app normally, and restarted at 880×660. Light reloaded at startup; compact sidebar scrolling reached Settings and showed Light selected. Captures are settings-native-light.png and settings-native-minimum-restart.png under ignored prototype-compose/build/screenshots; renderer captures include settings-dark.png, settings-light.png, settings-system.png and settings-system-light-minimum.png. Native input was injected, not a physical-keyboard certification. No OS theme or accessibility setting was changed.
 
 The production data/professor-os.db SHA-256 remains E749E8C7DE93BB70E771F938BED99AF719B2BD4BE2C319FBFB56D58AB8CD2C52. Historical migrations and checksum verification are untouched. Remaining evaluation: OS appearance changes while running on other platforms, high-DPI/multi-monitor and full screen-reader/physical-keyboard coverage. Storage changes still require a configured launch/restart; this phase deliberately preserves that existing behavior. JavaFX removal is deferred to a separate feature-parity cleanup commit.
+
+
+### 2026-10-25 — Remove JavaFX; Compose is the sole desktop frontend
+
+Removed the obsolete JavaFX launcher, controller/view/theme packages, CSS, unused FXML/image placeholder directories, OpenJFX dependency/plugin and Maven ui-smoke profile. Removed only the JavaFX smoke/workflow helpers and CSS contrast test; all Java backend services, repositories, models, storage/migration infrastructure and relevant tests remain unchanged. PDFBox, ICU, embedded PDF fonts, Apache POI and their document workflows are retained. No schema change, migration repair or preference/data conversion was needed.
+
+The root Maven artifact is a backend library. The existing prototype-compose directory remains the desktop project to avoid unrelated path changes. Its prepareBackend task now refreshes generated target/classes and target/compose-libs before packaging, preventing removed classes/JARs from surviving incremental builds while retaining test reports and user data. Backend test execution remains a separate required step. BridgeTest now rejects JavaFX classes, the obsolete launcher/controllers/views/theme manager, CSS and JavaFX JARs on the actual Compose test runtime.
+
+The operation-by-operation parity audit is recorded in docs/COMPOSE_PARITY.md against baseline 72dc145. Existing Compose workflows cover catalog/academic management, lectures, questions, exam composition/generation, PDF preview/export, grades, attendance, Excel import/export, settings and unsaved-change protection. The former Analytics placeholder had no implemented feature to preserve. Historical notebook entries retain their original JavaFX verification context; README, theme guidance and current architecture now describe Compose only.
+
+Verification on the local Windows machine completed October 24, with the final documentation/integrity review October 25: cmd /d /c with JDK 25 and the documented shell workaround ran Maven -DforkCount=0 clean verify (197 tests) followed by Compose test (25 tests), all passing with zero failures/errors/skips. The two removed runnable tests were toolkit-specific; the new Compose runtime-absence regression passed. Inspection of the packaged backend JAR and copied runtime libraries also found no obsolete UI classes/resources or JavaFX libraries.
+
+Native Compose run initialized the existing data/professor-os.db, displayed its saved course/student/offering, navigated from Overview to Gradebook, and closed normally with BUILD SUCCESSFUL. Actual screenshots compose-only-native-dashboard.png and compose-only-native-gradebook.png under ignored prototype-compose/build/screenshots were inspected. Native checks were read-only; persistence, CRUD, document content and dirty-state behavior were exercised by the isolated regression suites. This pass does not claim exhaustive physical-keyboard, screen-reader, Microsoft Excel, cross-platform or multi-monitor testing.
+
+Before/after read-only database checks returned integrity_check = ok, no foreign_key_check rows, unchanged counts across all 17 application/history tables and identical ten-row schema_version history. The database SHA-256 stayed E749E8C7DE93BB70E771F938BED99AF719B2BD4BE2C319FBFB56D58AB8CD2C52. All ten migration Git contents are unchanged. A raw-byte comparison initially flagged V010's pre-existing CRLF working-tree endings versus Git LF; normalized SQL matches exactly, consistent with the existing MigrationRunner checksum policy. No migration files, stored checksums or user data were altered.

@@ -12,13 +12,11 @@
   <properties>
     <maven.compiler.release>25</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <javafx.version>25.0.4</javafx.version>
     <sqlite.version>3.53.4.0</sqlite.version>
     <junit.version>5.14.0</junit.version>
     <pdfbox.version>3.0.8</pdfbox.version>
     <icu4j.version>78.3</icu4j.version>
     <poi.version>5.5.1</poi.version>
-    <excludedTestGroups>ui</excludedTestGroups>
   </properties>
 
   <dependencies>
@@ -36,11 +34,6 @@
       <groupId>com.ibm.icu</groupId>
       <artifactId>icu4j</artifactId>
       <version>${icu4j.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.openjfx</groupId>
-      <artifactId>javafx-controls</artifactId>
-      <version>${javafx.version}</version>
     </dependency>
     <dependency>
       <groupId>org.xerial</groupId>
@@ -67,43 +60,10 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>3.6.0</version>
         <configuration>
-          <excludedGroups>${excludedTestGroups}</excludedGroups>
           <argLine>--enable-native-access=ALL-UNNAMED</argLine>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.openjfx</groupId>
-        <artifactId>javafx-maven-plugin</artifactId>
-        <version>0.0.8</version>
-        <configuration>
-          <mainClass>com.professoros.app.ProfessorOsApplication</mainClass>
-          <options>
-            <option>--enable-native-access=javafx.graphics,ALL-UNNAMED</option>
-          </options>
         </configuration>
       </plugin>
     </plugins>
   </build>
 
-  <profiles>
-    <profile>
-      <id>ui-smoke</id>
-      <properties>
-        <excludedTestGroups>none</excludedTestGroups>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-surefire-plugin</artifactId>
-            <configuration>
-              <environmentVariables>
-                <PROFESSOR_OS_DATA_DIR>${project.build.directory}/ui-smoke-data</PROFESSOR_OS_DATA_DIR>
-              </environmentVariables>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
 </project>

@@ -10,6 +10,21 @@ import androidx.compose.ui.graphics.luminance
 
 class BridgeTest {
     @get:Rule val folder=TemporaryFolder()
+    @Test fun desktopRuntimeHasNoLegacyToolkitOrLauncher() {
+        for(name in listOf("javafx.application.Application", "javafx.scene.control.Control",
+            "com.sun.javafx.application.PlatformImpl", "com.professoros.app.ProfessorOsApplication",
+            "com.professoros.compose.LegacyLauncher", "com.professoros.view.MainView",
+            "com.professoros.controller.MainController", "com.professoros.theme.ThemeManager")) {
+            assertFailsWith<ClassNotFoundException>("Obsolete runtime class: $name") {
+                Class.forName(name,false,javaClass.classLoader)
+            }
+        }
+        assertNull(javaClass.getResource("/css/theme.css"))
+        assertNull(javaClass.getResource("/css/palette.css"))
+        for(entry in System.getProperty("java.class.path").split(java.io.File.pathSeparator)) {
+            assertFalse(java.io.File(entry).name.startsWith("javafx-"),"Obsolete runtime JAR: $entry")
+        }
+    }
     @Test fun savedJavaRecordsAndSelectionSurviveReconstruction() {
         val path=folder.root.toPath().resolve("records.db")
         val bridge=fixture(path);val snapshot=bridge.load(null)

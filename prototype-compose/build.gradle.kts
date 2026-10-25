@@ -6,7 +6,12 @@ plugins {
 kotlin { jvmToolchain(25) }
 val backend = tasks.register<Exec>("prepareBackend") {
     workingDir(rootDir.parentFile)
-    val args = listOf("-B", "-ntp", "-DskipTests", "package", "org.apache.maven.plugins:maven-dependency-plugin:3.9.0:copy-dependencies", "-DincludeScope=runtime", "-DoutputDirectory=${rootDir.parentFile}/target/compose-libs")
+    val args = listOf("-B", "-ntp", "-Dmaven.test.skip=true", "package", "org.apache.maven.plugins:maven-dependency-plugin:3.9.0:copy-dependencies", "-DincludeScope=runtime", "-DoutputDirectory=${rootDir.parentFile}/target/compose-libs")
+    // Maven package/copy-dependencies do not remove obsolete classes or libraries.
+    // Refresh only generated runtime outputs; retain backend test reports and user data.
+    doFirst {
+        delete(rootDir.parentFile.resolve("target/classes"), rootDir.parentFile.resolve("target/compose-libs"))
+    }
     if (System.getProperty("os.name").startsWith("Windows")) commandLine(listOf("cmd", "/d", "/c", "mvnw.cmd") + args)
     else commandLine(listOf("./mvnw") + args)
     inputs.dir("../src/main"); inputs.file("../pom.xml")

@@ -15,7 +15,7 @@ import java.nio.file.Path
 import java.util.logging.Level
 import java.util.logging.Logger
 
-/** Appearance uses the same atomic local preference file as JavaFX; academic storage is unchanged. */
+/** Appearance uses the existing atomic local preference file; academic storage is unchanged. */
 class AppearanceSettings(val database:Path, private val scope:CoroutineScope) {
     val preferenceFile:Path = database.resolveSibling("appearance.properties")
     private val preferences = ThemePreferences(preferenceFile)
@@ -48,7 +48,7 @@ class AppearanceSettings(val database:Path, private val scope:CoroutineScope) {
                 }
             }
             Copy(if(settings.saving)"Saving appearance…" else "${settings.mode} · saved on this device",12,Ink.muted)
-            Copy("System follows your desktop appearance. Your selection is shared with the existing JavaFX application on its next launch.",12,Ink.muted)
+            Copy("System follows your desktop appearance. Your selection is remembered when you reopen Professor OS.",12,Ink.muted)
             settings.error?.let {Copy(it,13,Ink.violet,modifier=Modifier.testTag("settings-error"))}
         }
         Panel(Modifier.fillMaxWidth()) {

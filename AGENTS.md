@@ -2,12 +2,12 @@
 
 ## Project
 Professor OS is an offline-first Java desktop workspace for university professors.
-Use Java 25, JavaFX, Maven, SQLite and JDBC. Apache POI and PDFBox or OpenPDF are planned for Excel and PDF features; do not add them before they are needed.
+Use Java 25 backend services with Kotlin/JVM Compose Desktop, Maven, Gradle, SQLite and JDBC. Apache POI and PDFBox provide the implemented Excel and PDF workflows. Compose is the only UI; do not reintroduce JavaFX.
 
 ## Architecture
 - Keep UI, business logic, services, repositories, database access and domain models separate.
-- Dependency direction: UI → services → repositories → database; domain models remain independent of JavaFX and JDBC.
-- Never put SQL or substantial business logic in JavaFX controllers.
+- Dependency direction: Compose UI → Java services → repositories → database; domain models remain independent of UI toolkits and JDBC.
+- Never put SQL or substantial business logic in Compose screens or controllers.
 - Views build UI; controllers coordinate interactions. Demo data belongs in `demo`, never in persistence.
 - Prefer small cohesive classes, descriptive names and extending existing conventions. Avoid giant controllers, duplicated logic, unused code and unnecessary abstractions.
 
@@ -33,7 +33,8 @@ Use Java 25, JavaFX, Maven, SQLite and JDBC. Apache POI and PDFBox or OpenPDF ar
 ## Testing
 - After meaningful changes, run `./mvnw clean verify` (Windows: `.\mvnw.cmd clean verify`) and relevant tests; fix failures before declaring completion.
 - Add meaningful tests for important business behavior when practical.
-- For UI changes, also run the desktop smoke check (`-Pui-smoke verify`) when a graphical desktop is available and inspect the window/snapshot.
+- Run the Compose suite with `./prototype-compose/gradlew -p prototype-compose test` (Windows: `.\prototype-compose\gradlew.bat -p prototype-compose test`). For UI changes, inspect its snapshots and check native startup when a graphical desktop is available.
+- Run Maven and Gradle sequentially, and close the development app before rebuilding: they share generated backend outputs. The Maven JAR is a backend library; launch the app with the Compose Gradle `run` task.
 - Report environment limitations honestly; never claim checks that were not run.
 - On the initial Windows machine, see README for the verified `cmd /d /c` plus `-DforkCount=0` workaround for an existing shell AutoRun setting. Keep default test isolation for unaffected environments.
 
