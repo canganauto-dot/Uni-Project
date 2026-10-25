@@ -40,15 +40,28 @@ import androidx.compose.ui.window.*
         Box {
             Action(choices.firstOrNull {it.value==value}?.label?:"Select…","chevrons",modifier=Modifier.fillMaxWidth().testTag(tag)) {expanded=true;query=""}
             if(expanded) Popup(alignment=Alignment.TopStart,onDismissRequest={expanded=false},properties=PopupProperties(focusable=true)) {
+                val rows=remember(choices,query) {choices.filter {it.label.contains(query,true)}}
+                var cursor by remember(query) {mutableStateOf(0)}
+                val scroll=rememberLazyListState()
+                LaunchedEffect(cursor,rows) {if(rows.isNotEmpty())scroll.scrollToItem(cursor.coerceAtMost(rows.lastIndex))}
                 Panel(Modifier.width(370.dp).heightIn(max=350.dp).onPreviewKeyEvent {
-                    if(it.type==KeyEventType.KeyDown && it.key==Key.Escape){expanded=false;true}else false
+                    if(it.type!=KeyEventType.KeyDown)false else when {
+                        it.key==Key.Escape -> {expanded=false;true}
+                        rows.isEmpty() -> false
+                        it.key==Key.DirectionDown -> {cursor=(cursor+1)%rows.size;true}
+                        it.key==Key.DirectionUp -> {cursor=(cursor-1+rows.size)%rows.size;true}
+                        it.key==Key.Enter -> {change(rows[cursor.coerceAtMost(rows.lastIndex)].value);expanded=false;true}
+                        else -> false
+                    }
                 }) {
                     val focus=remember {FocusRequester()}
                     Input("Find an option",query,{query=it},Modifier.focusRequester(focus),tag=tag+"-search")
                     LaunchedEffect(Unit){focus.requestFocus()}
-                    LazyColumn(Modifier.heightIn(max=220.dp),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                        items(choices.filter {it.label.contains(query,true)}) { option ->
-                            Action(option.label,if(option.value==value)"check" else "arrow",modifier=Modifier.fillMaxWidth().testTag(tag+"-"+option.value)) {change(option.value);expanded=false}
+                    if(rows.isEmpty())Copy("No matching options",13,Ink.muted)
+                    LazyColumn(Modifier.heightIn(max=220.dp),state=scroll,verticalArrangement=Arrangement.spacedBy(4.dp)) {
+                        itemsIndexed(rows,key={_,option->option.value}) { index,option ->
+                            Action(option.label,if(option.value==value)"check" else "arrow",active=index==cursor,
+                                modifier=Modifier.fillMaxWidth().onFocusChanged {if(it.hasFocus)cursor=index}.testTag(tag+"-"+option.value)) {change(option.value);expanded=false}
                         }
                     }
                 }
@@ -68,7 +81,10 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
     Column(Modifier.fillMaxWidth().border(1.dp,Ink.border,RoundedCornerShape(10.dp)).testTag(tag)) {
         Row(Modifier.fillMaxWidth().background(Ink.raised).padding(8.dp)) {
             columns.forEachIndexed {index,column->
-                Box(Modifier.weight(column.weight).clickable {if(sort==index)descending=!descending else {sort=index;descending=false}}.padding(6.dp)) {
+                val interactions=remember {MutableInteractionSource()}
+                val focused by interactions.collectIsFocusedAsState()
+                Box(Modifier.weight(column.weight).border(1.dp,if(focused)Ink.violet else Ink.raised)
+                    .clickable(interactionSource=interactions,indication=null,enabled=enabled) {if(sort==index)descending=!descending else {sort=index;descending=false}}.padding(6.dp)) {
                     Copy(column.title+if(sort==index)if(descending)" ↓" else " ↑" else "",11,Ink.muted,FontWeight.Medium)
                 }
             }

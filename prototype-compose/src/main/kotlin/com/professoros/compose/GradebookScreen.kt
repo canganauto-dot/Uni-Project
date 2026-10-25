@@ -43,7 +43,7 @@ import java.nio.file.Path
         if(it.type==KeyEventType.KeyDown && it.key==Key.S && (it.isCtrlPressed||it.isMetaPressed)){c.saveGrades();true}else false
     },verticalArrangement=Arrangement.spacedBy(14.dp)) {
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-            Copy(c.active?.label().orEmpty(),14,Ink.violet)
+            Copy(c.active?.label().orEmpty(),14,Ink.violet,modifier=Modifier.weight(1f).padding(end=12.dp))
             Copy(if(editor.dirty)"● Unsaved changes" else "Saved locally",12,if(editor.dirty)Ink.violet else Ink.muted,modifier=Modifier.testTag("grade-save-state"))
         }
         Copy(GradeCalculator.configurationMessage(book),13,Ink.violet,modifier=Modifier.testTag("grade-weights"))

@@ -14,8 +14,13 @@ class GradebookEditor(val book:Gradebook) {
     fun set(key:GradeKey,value:String) {draft.set(key,value);revision++}
     fun changes()=draft.changes()
     fun discard(){draft=GradebookDraft(book);revision++}
-    fun summary():GradeSummary {
+    // Recalculate only when the draft changes, not on search, focus, tab or hover updates.
+    private val calculatedSummary by derivedStateOf {
         revision
+        calculateSummary()
+    }
+    fun summary():GradeSummary = calculatedSummary
+    private fun calculateSummary():GradeSummary {
         return try {
             val scores=draft.scores()
             GradeSummary(book.students().associate {it.enrollment().id() to GradeCalculator.calculate(book,it.enrollment().id(),scores)},GradeCalculator.statistics(book,scores),null)

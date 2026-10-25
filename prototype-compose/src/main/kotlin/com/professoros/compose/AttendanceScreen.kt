@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
     var bulk by remember {mutableStateOf("PRESENT")}
     var sort by remember {mutableStateOf("number")}
     val book=editor.book
+    val savedSummary=remember(book) {AttendanceCalculator.course(book).display()}
     val row=book.students().find {it.enrollment().id()==selected}
     Column(Modifier.fillMaxWidth().onPreviewKeyEvent {
         if(it.type==KeyEventType.KeyDown && (it.isCtrlPressed||it.isMetaPressed) && it.key==Key.S){c.saveAttendance();true}else false
@@ -78,7 +79,7 @@ import kotlinx.coroutines.launch
         }
         Panel(Modifier.fillMaxWidth()) {
             Copy("Saved course summary",14,weight=FontWeight.SemiBold)
-            Copy(AttendanceCalculator.course(book).display(),13,Ink.violet,modifier=Modifier.testTag("attendance-summary"))
+            Copy(savedSummary,13,Ink.violet,modifier=Modifier.testTag("attendance-summary"))
             Copy("Withdrawn enrollments excluded. Save changes to update percentages and history.",12,Ink.muted)
         }
         Copy(AttendanceCalculator.POLICY,12,Ink.muted)

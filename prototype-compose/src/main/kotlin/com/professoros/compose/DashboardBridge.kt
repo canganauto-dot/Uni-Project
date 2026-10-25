@@ -14,7 +14,7 @@ class DashboardBridge(val databasePath: Path) {
     private val dashboard = DashboardService(academic)
     fun initialize() = database.initialize()
     fun load(offeringId: Long?): DashboardSnapshot {
-        val offerings = academic.offerings().findAll().map { academic.offerings().summary(it.id()) }
+        val offerings = academic.offerings().summaries().sortedBy { it.offering().id() }
         val selected = offerings.firstOrNull { it.offering().id() == offeringId } ?: offerings.firstOrNull()
         return DashboardSnapshot(courses.findAll().size, offerings, selected, dashboard.load(selected?.offering()?.id()),
             selected?.let { AttendanceCalculator.course(academic.attendance().load(it.offering().id())) })

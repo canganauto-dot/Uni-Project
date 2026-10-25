@@ -47,7 +47,7 @@ import androidx.compose.ui.unit.*
         }
         if(rows.isEmpty()) {
             Copy(if(snapshot?.offerings.isNullOrEmpty())"No offerings yet" else "No matching offerings",16,weight=FontWeight.SemiBold)
-            Copy(if(snapshot?.offerings.isNullOrEmpty())"Create a course offering in the full workspace, then refresh." else "Try a course code, name or academic term.",13,Ink.muted)
+            Copy(if(snapshot?.offerings.isNullOrEmpty())"Create a course offering in Offerings, then choose it here." else "Try a course code, name or academic term.",13,Ink.muted)
         } else LazyColumn(Modifier.fillMaxWidth().heightIn(max=260.dp),state=scroll,verticalArrangement=Arrangement.spacedBy(4.dp)) {
             itemsIndexed(rows,key={_,row->row.offering().id()}) { index,row ->
                 val interaction=remember {MutableInteractionSource()}

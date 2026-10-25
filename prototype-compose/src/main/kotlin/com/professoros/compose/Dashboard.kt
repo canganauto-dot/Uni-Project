@@ -26,6 +26,8 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
     refresh: () -> Unit, selectOffering: (Long) -> Unit,
     featureContent: (@Composable (String) -> Unit)? = null) {
     var picker by remember { mutableStateOf(false) }
+    val pageScroll=rememberScrollState()
+    LaunchedEffect(page) { pageScroll.scrollTo(0) }
     BoxWithConstraints(Modifier.fillMaxSize().background(Ink.background).testTag("dashboard-root")
         .onPreviewKeyEvent {
             if(it.type != KeyEventType.KeyDown) false
@@ -60,7 +62,7 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
                         modifier=Modifier.testTag("refresh").semantics { contentDescription=if(loading)"Refreshing workspace" else "Refresh workspace, Control R" },onClick=refresh)
                 }
                 Rule()
-                Box(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),contentAlignment=Alignment.TopCenter) {
+                Box(Modifier.fillMaxSize().verticalScroll(pageScroll).testTag("page-scroll"),contentAlignment=Alignment.TopCenter) {
                     Column(Modifier.widthIn(max=1340.dp).fillMaxWidth().padding(if(compact)24.dp else 34.dp),
                         verticalArrangement=Arrangement.spacedBy(24.dp)) {
                         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Bottom,horizontalArrangement=Arrangement.SpaceBetween) {
@@ -121,7 +123,7 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
         Box(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())) {
             val offset by animateDpAsState((destinations.indexOfFirst{it.first==page}.coerceAtLeast(0)*44).dp,
                 motion(),label="navigation-indicator")
-            Box(Modifier.offset(y=offset).fillMaxWidth().height(38.dp).clip(RoundedCornerShape(8.dp))
+            Box(Modifier.offset { IntOffset(0,offset.roundToPx()) }.fillMaxWidth().height(38.dp).clip(RoundedCornerShape(8.dp))
                 .background(Ink.selected).testTag("navigation-indicator"))
             Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 destinations.forEach { (label,icon) ->
