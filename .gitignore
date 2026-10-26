@@ -49,3 +49,6 @@ $RECYCLE.BIN/
 **/.gradle/
 **/build/
 **/.kotlin/
+
+# Local Python maintenance-tool cache
+/tools/__pycache__/

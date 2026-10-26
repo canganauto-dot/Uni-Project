@@ -168,3 +168,7 @@ Read [AGENTS.md](AGENTS.md) before changing code and record significant decision
 ## Migration startup troubleshooting
 
 If startup reports an applied migration checksum mismatch, preserve the database and investigate the stored history and actual schema; do not delete the database or reset checksums. The known pre-commit V009 assessment-date issue has an explicit, guarded repair procedure: [V009 investigation and repair](docs/V009_REPAIR.md). The affected local database has been repaired and its records verified; this command is not needed for new databases or already repaired databases.
+
+## Optional demonstration workspace
+
+The [demo workspace guide](docs/DEMO_WORKSPACE.md) describes the explicit backup-first seeder, fictional academic dataset, Excel import fixtures and verified restore command. The application never seeds data automatically. Close the application before using the maintenance tool; databases, backups and generated files remain outside Git.
