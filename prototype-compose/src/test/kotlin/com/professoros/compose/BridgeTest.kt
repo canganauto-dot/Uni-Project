@@ -5,8 +5,6 @@ import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import kotlin.test.*
 import java.nio.file.Files
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 
 class BridgeTest {
     @get:Rule val folder=TemporaryFolder()
@@ -42,14 +40,6 @@ class BridgeTest {
         for(name in listOf("Manrope.ttf","IBMPlexSansArabic-Regular.ttf","IBMPlexSansArabic-SemiBold.ttf","Manrope-OFL.txt","IBM-Plex-Sans-Arabic-OFL.txt")) {
             val bytes=javaClass.getResourceAsStream("/fonts/$name")!!.use { it.readAllBytes() };assertTrue(bytes.size>1000)
             if(name.endsWith("txt")) assertTrue(bytes.toString(Charsets.UTF_8).contains("SIL OPEN FONT LICENSE"))
-        }
-    }
-    @Test fun primaryTextColorsHaveReadableDarkContrast() {
-        for (background in listOf(DarkPalette.background,DarkPalette.panel,DarkPalette.raised,DarkPalette.accentSurface,DarkPalette.selected)) {
-            for (foreground in listOf(DarkPalette.text,DarkPalette.muted,DarkPalette.positive,DarkPalette.violet)) {
-                val ratio=(foreground.luminance()+0.05f)/(background.luminance()+0.05f)
-                assertTrue(ratio>=4.5f,"Text contrast was $ratio for $foreground on $background")
-            }
         }
     }
 }

@@ -43,7 +43,7 @@ class LectureRepositoryTest {
         assertDoesNotThrow(() -> repository.create(fixture.second().id(),input(1,date,LectureStatus.PLANNED),now));
         assertEquals(2, repository.findByOffering(offering).size());
     }
-    @Test void timelineSortsByDateThenNumberAndSearchIsLiteralCaseInsensitive() {
+    @Test void offeringLecturesSortByDateThenNumberAndSearchIsLiteralCaseInsensitive() {
         long offering = fixture.first().id();
         var late = repository.create(offering,input(1,date.plusDays(2),LectureStatus.PLANNED),now);
         var earlyTwo = repository.create(offering,input(2,date,LectureStatus.PLANNED),now);

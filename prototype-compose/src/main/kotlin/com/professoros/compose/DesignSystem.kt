@@ -116,7 +116,6 @@ internal fun <T> motion(): FiniteAnimationSpec<T> = spring(dampingRatio = 1f, st
             "search" -> {drawCircle(color,5.5f*u,Offset(8.5f*u,8.5f*u),style=Stroke(1.4f*u));line(13f,13f,17f,17f)}
             "refresh" -> {drawArc(color,40f,290f,false,Offset(3*u,3*u),androidx.compose.ui.geometry.Size(14*u,14*u),style=Stroke(1.4f*u));line(17f,4f,17f,9f);line(12f,9f,17f,9f)}
             "settings" -> {line(3f,6f,17f,6f);line(3f,14f,17f,14f);line(7f,3f,7f,9f);line(13f,11f,13f,17f)}
-            "external" -> {line(11f,4f,17f,4f);line(17f,4f,17f,10f);line(9f,12f,17f,4f);line(3f,5f,3f,17f);line(3f,17f,15f,17f)}
             else -> {line(4f,10f,16f,10f);line(12f,6f,16f,10f);line(12f,14f,16f,10f)}
         }
     }

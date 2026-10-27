@@ -9,7 +9,6 @@ import androidx.compose.ui.graphics.toAwtImage
 import androidx.compose.ui.test.*
 import androidx.compose.ui.unit.dp
 import com.professoros.model.*
-import com.professoros.pdf.PdfKind
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import org.apache.poi.ss.usermodel.CellType
 import org.apache.pdfbox.Loader
