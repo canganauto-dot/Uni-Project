@@ -37,8 +37,12 @@ public final class ExamPdfService {
     }
     public void saveAs(RenderedExamPdf pdf,Path destination,boolean mismatchAcknowledged) {
         if(pdf.marksMismatch() && !mismatchAcknowledged) { throw new DomainValidationException("Acknowledge the mark-total mismatch before exporting."); }
+        if(destination==null || destination.toString().isBlank() || destination.toAbsolutePath().normalize().getFileName()==null) {
+            throw new DomainValidationException("Choose a filename ending in .pdf, not a drive or folder.");
+        }
         Path target=destination.toAbsolutePath().normalize();
         if(!target.getFileName().toString().toLowerCase(java.util.Locale.ROOT).endsWith(".pdf")) { throw new DomainValidationException("Choose a filename ending in .pdf."); }
+        if(Files.isDirectory(target)) { throw new DomainValidationException("Choose a PDF filename, not a folder."); }
         if(Files.exists(target,LinkOption.NOFOLLOW_LINKS)) { throw new DomainValidationException("This file already exists. Choose a new filename; existing PDFs are never overwritten."); }
         Path staging=null;
         try {

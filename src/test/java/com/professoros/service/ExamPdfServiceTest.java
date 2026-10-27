@@ -51,4 +51,22 @@ class ExamPdfServiceTest {
         Path output=directory.resolve("exam.pdf");
         assertThrows(DomainValidationException.class,() -> service.saveAs(pdf,output,false)); assertFalse(Files.exists(output));
     }
+    @Test void rejectsNullRootEmptyAndNonPdfDestinationsWithoutWriting() throws Exception {
+        var pdf=new RenderedExamPdf(new byte[]{1,2,3},PdfKind.STUDENT,1,List.of(),false);
+        var service=new ExamPdfService(null,null,null);
+        for(Path destination:java.util.Arrays.asList(null,directory.toAbsolutePath().getRoot(),Path.of(""),directory.resolve("bad.txt"))) {
+            var failure=assertThrows(DomainValidationException.class,()->service.saveAs(pdf,destination,false));
+            assertTrue(failure.getMessage().contains("filename"));
+        }
+        try(var files=Files.list(directory)) { assertEquals(0,files.count()); }
+    }
+    @Test void directoryAndMissingParentPathsFailWithoutStagingArtifacts() throws Exception {
+        var pdf=new RenderedExamPdf(new byte[]{1,2,3},PdfKind.STUDENT,1,List.of(),false);
+        var service=new ExamPdfService(null,null,null);
+        Path folder=Files.createDirectory(directory.resolve("folder.pdf"));
+        assertThrows(DomainValidationException.class,()->service.saveAs(pdf,folder,false));
+        var failure=assertThrows(StorageException.class,()->service.saveAs(pdf,directory.resolve("missing/report.pdf"),false));
+        assertTrue(failure.getMessage().contains("folder"));
+        try(var files=Files.list(directory)) { assertEquals(List.of(folder),files.toList()); }
+    }
 }

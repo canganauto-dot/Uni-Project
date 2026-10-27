@@ -15,6 +15,7 @@ class WorkspaceServices(path: Path) {
     private val database = Database(path)
     val academic = AcademicServices.create(database)
     val courses = CourseService(CourseRepository(database))
+    val dashboard = DashboardBridge(path)
     fun initialize() = database.initialize()
     fun catalog() = Catalog(courses.findAll(), academic.students().findAll(), academic.terms().findAll(), academic.offerings().summaries())
 }
@@ -25,9 +26,15 @@ data class Detail(val title: String, val text: String)
 
 /** Coordinates IO and editing state. Services remain authoritative for validation and calculations. */
 class WorkspaceController(val services: WorkspaceServices, private val scope: CoroutineScope, private val changed: () -> Unit = {}) {
+    private var ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+    internal constructor(services: WorkspaceServices, scope: CoroutineScope, ioDispatcher: CoroutineDispatcher) : this(services, scope) {
+        this.ioDispatcher = ioDispatcher
+    }
     var catalog by mutableStateOf(Catalog()); private set
     var busy by mutableStateOf(false); private set
     var error by mutableStateOf<String?>(null)
+    var loadError by mutableStateOf<String?>(null); private set
+    var snapshot by mutableStateOf<DashboardSnapshot?>(null); private set
     var form by mutableStateOf<RecordForm?>(null)
     var detail by mutableStateOf<Detail?>(null)
     var confirmation by mutableStateOf<Confirmation?>(null)
@@ -44,13 +51,18 @@ class WorkspaceController(val services: WorkspaceServices, private val scope: Co
     var studentImport by mutableStateOf<StudentImportEditor?>(null)
     var pdfExport by mutableStateOf<PdfExportEditor?>(null)
     private var attendanceLectureId:Long?=null
+    private data class Selection(val id: Long?, val accepted: () -> Unit)
+    private val pendingSelections = mutableListOf<Selection>()
+    private var pendingRefresh = false
+    private var loadingRequest = false
+    private var selectionCleared = false
     val active get() = catalog.offerings.firstOrNull { it.offering().id() == offeringId }
 
     fun <T> task(operation: () -> T, success: (T) -> Unit = {}) {
         if (busy) return
         busy = true; error = null
         scope.launch {
-            try { val result = withContext(Dispatchers.IO) { operation() }; success(result) }
+            try { val result = withContext(ioDispatcher) { operation() }; success(result) }
             catch (cancelled: CancellationException) { throw cancelled }
             catch (failure: Exception) {
                 Logger.getLogger("ComposeWorkspace").log(Level.WARNING, "Workspace operation failed", failure)
@@ -58,32 +70,62 @@ class WorkspaceController(val services: WorkspaceServices, private val scope: Co
                     is DomainValidationException, is CourseValidationException, is com.professoros.repository.StorageException -> failure.message
                     else -> "Could not complete this operation. Your edits are retained. Refresh and try again; see the launch log for details."
                 }
-            } finally { busy = false }
+                if (loadingRequest) loadError = error
+            } finally {
+                busy = false
+                loadingRequest = false
+                resumePendingRead()
+            }
         }
     }
-    private data class Loaded(val catalog: Catalog, val roster: List<EnrolledStudent>, val lectures: LectureOverview?, val questions: List<Question>, val exams: List<Exam>, val grades: Gradebook?, val attendance: AttendanceBook?)
+    private fun resumePendingRead() {
+        val selection = pendingSelections.lastOrNull { request ->
+            request.id == null || catalog.offerings.any { it.offering().id() == request.id }
+        }
+        pendingSelections.clear()
+        val refresh = pendingRefresh
+        pendingRefresh = false
+        if (selection != null) select(selection.id, selection.accepted) else if (refresh) refresh()
+    }
+    private data class Loaded(val snapshot: DashboardSnapshot, val catalog: Catalog, val roster: List<EnrolledStudent>, val lectures: LectureOverview?, val questions: List<Question>, val exams: List<Exam>, val grades: Gradebook?, val attendance: AttendanceBook?)
     private fun load(id: Long?): Loaded {
+        val snapshot = services.dashboard.load(id, !selectionCleared)
         val catalog = services.catalog()
-        val valid = id?.takeIf { value -> catalog.offerings.any { it.offering().id() == value } }
+        val valid = snapshot.selected?.offering()?.id()
         val a = services.academic
-        return Loaded(catalog, valid?.let { a.enrollments().findStudentsForOffering(it) }.orEmpty(),
+        return Loaded(snapshot, catalog, valid?.let { a.enrollments().findStudentsForOffering(it) }.orEmpty(),
             valid?.let { a.lectures().overview(it) }, a.questions().findAll(), valid?.let { a.exams().findByOffering(it) }.orEmpty(),valid?.let {a.grades().load(it)},valid?.let {a.attendance().load(it)})
     }
     private fun apply(data: Loaded) {
+        snapshot = data.snapshot
+        offeringId = data.snapshot.selected?.offering()?.id()
         catalog=data.catalog; roster=data.roster; lectures=data.lectures; questions=data.questions; exams=data.exams
         if(gradebook?.dirty!=true || gradebook?.book?.offeringId()!=data.grades?.offeringId()) gradebook=data.grades?.let(::GradebookEditor)
         if(attendance?.dirty!=true || attendance?.book?.offeringId()!=data.attendance?.offeringId()) attendance=data.attendance?.let {AttendanceEditor(it,attendance?.lectureId?:attendanceLectureId)}
         if(catalog.offerings.none { it.offering().id()==offeringId }) offeringId=null
     }
-    fun refresh() = task({ services.initialize(); load(offeringId) }, ::apply)
-    fun select(id: Long?) {
-        if(busy)return
-        if(id!=offeringId) {
-            if(gradebook?.dirty==true || attendance?.dirty==true) {guard {select(id)};return}
-            // Never show the previous offering's scores under a new context while loading or after a failed read.
-            gradebook=null;attendance=null;attendanceLectureId=null
+    fun refresh() {
+        if (busy) { pendingRefresh = true; return }
+        reload(offeringId)
+    }
+    private fun reload(id: Long?, accepted: () -> Unit = {}) {
+        loadingRequest = true
+        loadError = null
+        task({ services.initialize(); load(id) }) { apply(it); accepted() }
+    }
+    fun select(id: Long?) = select(id) {}
+    internal fun select(id: Long?, accepted: () -> Unit) {
+        if (id != null && catalog.offerings.isNotEmpty() && catalog.offerings.none { it.offering().id() == id }) {
+            error = "This offering no longer exists. Refresh and choose another offering."
+            return
         }
-        offeringId=id;refresh()
+        if (busy) { pendingSelections.add(Selection(id, accepted)); return }
+        guard {
+            selectionCleared = id == null
+            if (id != offeringId) attendanceLectureId = null
+            // Header, selection and feature data are published together only after a successful read.
+            reload(id, accepted)
+        }
     }
     fun mutate(committed: () -> Unit = {}, operation: () -> Unit) = task({
         operation()
