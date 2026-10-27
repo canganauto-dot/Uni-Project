@@ -57,4 +57,13 @@ class DashboardServiceTest {
         assertEquals("Lecture 1",overview.upcoming().getFirst().title());
         assertThrows(UnsupportedOperationException.class,()->overview.upcoming().clear());
     }
+    @Test void suppliedReadModelsProduceTheSameOverviewAsServiceLoading() {
+        long id=f.first().id();
+        f.academic().lectures().create(id,LectureFixture.input(1,today,LectureStatus.PLANNED));
+        f.academic().exams().save(id,null,new ExamInput("Exam",today,60,BigDecimal.TEN,""),List.of());
+        var expected=service.load(id);
+        assertEquals(expected,service.summarize(expected.students(),expected.offerings(),
+                f.academic().enrollments().findStudentsForOffering(id),f.academic().lectures().overview(id),f.academic().exams().findByOffering(id)));
+        assertEquals(service.load(null),service.summarize(expected.students(),expected.offerings(),List.of(),null,List.of()));
+    }
 }

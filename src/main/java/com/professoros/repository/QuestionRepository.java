@@ -54,10 +54,22 @@ public final class QuestionRepository {
     public Optional<Question> findById(long id) { return jdbc.transaction(connection -> read(connection, id)); }
     public List<Question> findAll() {
         return jdbc.transaction(connection -> {
+            // Both reads share one SQLite transaction/snapshot. Choice count does not add queries.
+            Map<Long,List<AnswerChoice>> choices = new HashMap<>();
+            try (var statement = connection.prepareStatement("""
+                    SELECT c.question_id, c.position, c.choice_text, q.correct_choice_position
+                    FROM question_choices c JOIN questions q ON q.id=c.question_id
+                    ORDER BY c.question_id, c.position
+                    """); var rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    choices.computeIfAbsent(rows.getLong("question_id"), key -> new ArrayList<>())
+                            .add(new AnswerChoice(rows.getString("choice_text"), rows.getInt("position") == rows.getInt("correct_choice_position")));
+                }
+            }
             List<Question> result = new ArrayList<>();
             try (var statement = connection.prepareStatement("SELECT * FROM questions ORDER BY updated_at DESC, id DESC");
                  var rows = statement.executeQuery()) {
-                while (rows.next()) { result.add(map(connection, rows)); }
+                while (rows.next()) { result.add(map(rows, choices.getOrDefault(rows.getLong("id"), List.of()))); }
             }
             return List.copyOf(result);
         });
@@ -84,6 +96,10 @@ public final class QuestionRepository {
                 while (rows.next()) { choices.add(new AnswerChoice(rows.getString(2), rows.getInt(1) == correct)); }
             }
         }
+        return map(row, choices);
+    }
+    private static Question map(ResultSet row, List<AnswerChoice> choices) throws SQLException {
+        long id = row.getLong("id");
         String lastUsed = row.getString("last_used_date");
         return new Question(id, row.getLong("course_id"), QuestionType.valueOf(row.getString("question_type")),
                 row.getString("question_text"), row.getString("topic"), Difficulty.valueOf(row.getString("difficulty")),

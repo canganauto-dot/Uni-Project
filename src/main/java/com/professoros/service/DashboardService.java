@@ -11,17 +11,24 @@ public final class DashboardService {
     public DashboardService(AcademicServices academic,Clock clock) { this.academic=academic; this.clock=clock; }
     public DashboardOverview load(Long offeringId) {
         int students=academic.students().findAll().size(),offerings=academic.offerings().findAll().size();
+        return summarize(students,offerings,
+                offeringId==null?List.of():academic.enrollments().findStudentsForOffering(offeringId),
+                offeringId==null?null:academic.lectures().overview(offeringId),
+                offeringId==null?List.of():academic.exams().findByOffering(offeringId));
+    }
+    /** Builds the same overview from data already loaded by a workspace refresh. Performs no IO. */
+    public DashboardOverview summarize(int students,int offerings,List<EnrolledStudent> roster,
+                                       LectureOverview lectures,List<Exam> exams) {
         LocalDate today=LocalDate.now(clock);
-        if(offeringId==null) { return new DashboardOverview(students,offerings,null,null,List.of(),List.of(),today); }
-        var lectures=academic.lectures().overview(offeringId);
-        int enrollmentCount=(int)academic.enrollments().findStudentsForOffering(offeringId).stream().filter(s->s.enrollment().status()==EnrollmentStatus.ACTIVE).count();
+        if(lectures==null) { return new DashboardOverview(students,offerings,null,null,List.of(),List.of(),today); }
+        int enrollmentCount=(int)roster.stream().filter(s->s.enrollment().status()==EnrollmentStatus.ACTIVE).count();
         List<DashboardOverview.Activity> upcoming=new ArrayList<>(),updated=new ArrayList<>();
         for(var lecture:lectures.lectures()) {
             var activity=new DashboardOverview.Activity("Lecture",lecture.title(),lecture.plannedDate(),"Lecture "+lecture.lectureNumber()+" · "+lecture.status().toString().replace('_',' '),lecture.updatedAt());
             updated.add(activity);
             if((lecture.status()==LectureStatus.PLANNED || lecture.status()==LectureStatus.PARTIALLY_COMPLETED) && !lecture.plannedDate().isBefore(today)) { upcoming.add(activity); }
         }
-        for(var exam:academic.exams().findByOffering(offeringId)) {
+        for(var exam:exams) {
             var activity=new DashboardOverview.Activity("Exam",exam.title(),exam.date(),exam.status()+" · "+exam.durationMinutes()+" min",exam.updatedAt());
             updated.add(activity);
             if(exam.status()!=ExamStatus.ARCHIVED && !exam.date().isBefore(today)) { upcoming.add(activity); }

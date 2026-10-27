@@ -71,4 +71,29 @@ class QuestionRepositoryTest {
         assertTrue(fixture.repository().search("", null, null, Difficulty.HARD).isEmpty());
         assertTrue(fixture.repository().search("%", null, null, null).isEmpty());
     }
+    @Test void batchListsMatchIndependentReadsIncludingChoiceOrderAndUsage() throws Exception {
+        assertTrue(fixture.repository().findAll().isEmpty());
+        for(QuestionType type:QuestionType.values()) { fixture.service().create(fixture.input(type)); }
+        var input=fixture.input(QuestionType.MCQ);
+        var special=fixture.service().create(new QuestionInput(fixture.second().id(),QuestionType.MCQ,"Separate course","Topic",Difficulty.HARD,
+                input.marks(),"","Explanation","",List.of(new AnswerChoice("Third",false),new AnswerChoice("First",true),new AnswerChoice("Second",false))));
+        try(var c=fixture.database().openConnection();var s=c.prepareStatement("UPDATE questions SET usage_count=7,last_used_date='2026-10-20' WHERE id=?")) {
+            s.setLong(1,special.id());s.executeUpdate();
+        }
+        var all=fixture.repository().findAll();
+        assertEquals(6,all.size());
+        for(var question:all) { assertEquals(fixture.repository().findById(question.id()).orElseThrow(),question); }
+        var selected=fixture.repository().search("Separate",fixture.second().id(),QuestionType.MCQ,Difficulty.HARD);
+        assertEquals(List.of(fixture.repository().findById(special.id()).orElseThrow()),selected);
+        assertEquals(List.of("Third","First","Second"),selected.getFirst().choices().stream().map(AnswerChoice::text).toList());
+        assertTrue(selected.getFirst().choices().get(1).correct());
+        assertEquals(7,selected.getFirst().usageCount());
+        assertEquals("2026-10-20",selected.getFirst().lastUsedDate().toString());
+        assertEquals(all.stream().sorted(Comparator.comparing(Question::updatedAt).reversed().thenComparing(Comparator.comparingLong(Question::id).reversed())).toList(),all);
+        try(var c=fixture.database().openConnection();var s=c.createStatement()) {
+            try(var r=s.executeQuery("PRAGMA integrity_check")) { assertTrue(r.next());assertEquals("ok",r.getString(1)); }
+            try(var r=s.executeQuery("PRAGMA foreign_key_check")) { assertFalse(r.next()); }
+            try(var r=s.executeQuery("SELECT count(*) FROM schema_version")) { assertTrue(r.next());assertEquals(10,r.getInt(1)); }
+        }
+    }
 }

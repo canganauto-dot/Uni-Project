@@ -151,4 +151,21 @@ class WorkspaceLoadingTest {
             assertEquals(ids[1], controller.offeringId)
         } finally { scope.cancel() }
     }
+
+    @Test fun closingTheScopeDoesNotRestartAQueuedSelection() {
+        val path = folder.root.toPath().resolve("cancelled.db")
+        fixture(path)
+        val services = WorkspaceServices(path)
+        val ids = services.academic.offerings().findAll().map { it.id() }
+        val io = QueuedIo()
+        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Unconfined)
+        val controller = WorkspaceController(services, scope, io)
+        controller.select(ids[0])
+        controller.select(ids[1])
+        scope.cancel()
+        io.drain()
+        assertFalse(controller.busy)
+        assertNull(controller.snapshot)
+        assertNull(controller.error)
+    }
 }

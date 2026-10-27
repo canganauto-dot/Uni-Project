@@ -762,3 +762,26 @@ Before changing loading behavior, a test-only JDBC driver interceptor measured s
 Maven clean verify passed 206 tests using the documented Windows cmd /d /c and -DforkCount=0 workaround. Python backup/restore safety tests passed all six cases. Deterministic controller tests cover latest/invalid requests, unsaved form and sheet protection, queued requests during work, failure/retry and explicit clearing. Final stage verification will include the native application against a newly created isolated QA database. No historical migration, fixture, backup, production/demo database or calculation rule changed.
 
 Compose verification for stage 1 passed all 37 tests (31 existing, five new controller tests and one measurement test), with zero failures/errors/skips. An intermediate run exposed accidental first-offering fallback after explicit clearing; that regression was corrected and the full suite rerun successfully. Graphify AST update completed; its Kotlin parser reports partial extraction for five files and SQL extraction is unavailable without tree_sitter_sql, so source and compiler/test results remain authoritative.
+
+
+### 2026-10-27 — Audit stage 2: bounded question reads and one workspace load
+
+QuestionRepository.findAll now reads ordered choices in one batch and question rows in a second query, both inside its existing JDBC transaction. The single-question read and all public overloads remain unchanged. Correct-answer flags, choice order, immutable aggregates, usage metadata, literal Unicode filtering and snapshot behavior are preserved. A deterministic WAL-mode test commits a changed prompt/choices/marks on another connection after the first SELECT; the batch reader still returns the complete original snapshot. Backend tests compare batch aggregates against independent single-record reads and check integrity_check, foreign_key_check and all ten migration-history rows on an isolated database.
+
+WorkspaceServices now owns one academic-service composition and a DashboardService. The controller supplies its loaded catalog, roster, lectures, exams and attendance to the existing summary/calculation code instead of constructing a second bridge and rereading them. DashboardService.load remains compatible; its new pure summarize method is verified against the established loading API. The roster is reused from the loaded gradebook. Each WorkspaceServices instance verifies migrations once at successful startup; failed initialization is retryable. Ordinary refreshes no longer acquire migration write locks. A new process/service composition still verifies all migration checksums.
+
+Offering switches reuse the controller's existing global catalog/question list; explicit refresh and every committed mutation reload global data. This is a small invalidation policy using existing observable state, not a cache framework. Writes remain serialized and are never cancelled to satisfy a newer read. Scope cancellation clears pending selections instead of starting another load. Post-write reload failure still reports that the write committed and must not be repeated. No domain write transaction or schema changed. Composite workspace read models still consist of separate existing service transactions; a cross-module snapshot against simultaneous external writers is not newly guaranteed. The question/choice aggregate does have one verified SQLite snapshot.
+
+Successful SELECT counts (PRAGMAs, transaction control, DDL and fixture creation excluded), on the same synthetic three-offering/twelve-student/five-lecture/twenty-MCQ fixture:
+
+| Operation | Original audit baseline | After stage 1 correctness | After stage 2 |
+| --- | ---: | ---: | ---: |
+| Question bank | 21 | 21 | 2 |
+| Startup | 55 | 54 | 21 |
+| Settled explicit refresh | 96 | 54 | 20 |
+| Offering switch | Not separately captured | 54 | 14 |
+| Course creation plus refresh | Not captured | Not captured | 21 |
+
+The stage-1 switch measurement included one additional fixture lookup to obtain the target ID (55 including that lookup; 54 for selection itself). Final regression tests obtain the ID before counting. Question-bank reads remain two SELECTs after growing the bank to forty MCQs. Count budgets verify initialization only once, no question-bank queries during selection, explicit global invalidation, and dashboard equality with the public bridge. No elapsed-time/FPS/memory speedup is claimed.
+
+Verification: Maven clean verify passed 208 tests. The complete Compose run passed 38 tests; after adding the concurrent-commit assertion, the focused loading/query suites passed all eight tests. The final cleanup stage will rerun the complete suites. All 48 protected files under data/, generated/, historical migrations and test resources matched their initial SHA-256 values, including production/demo databases, backups and manifests. No dependency or calculation rule changed.
