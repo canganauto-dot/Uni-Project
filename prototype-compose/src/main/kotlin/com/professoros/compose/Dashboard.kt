@@ -37,6 +37,7 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
         }) {
         val compact = maxWidth < 1050.dp
         val narrow = maxWidth < 1120.dp
+        val sheetPage = featureContent!=null && page in listOf("Gradebook","Attendance")
         Row(Modifier.fillMaxSize()) {
             Sidebar(page,compact,navigate,featureContent!=null)
             Column(Modifier.weight(1f).fillMaxHeight()) {
@@ -62,15 +63,15 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
                         modifier=Modifier.testTag("refresh").semantics { contentDescription=if(loading)"Refreshing workspace" else "Refresh workspace, Control R" },onClick=refresh)
                 }
                 Rule()
-                Box(Modifier.fillMaxSize().verticalScroll(pageScroll).testTag("page-scroll"),contentAlignment=Alignment.TopCenter) {
-                    Column(Modifier.widthIn(max=1340.dp).fillMaxWidth().padding(if(compact)24.dp else 34.dp),
-                        verticalArrangement=Arrangement.spacedBy(24.dp)) {
+                Box(Modifier.fillMaxSize().then(if(sheetPage) Modifier else Modifier.verticalScroll(pageScroll)).testTag("page-scroll"),contentAlignment=Alignment.TopCenter) {
+                    Column((if(sheetPage) Modifier.fillMaxSize() else Modifier.widthIn(max=1340.dp).fillMaxWidth()).padding(if(sheetPage)12.dp else if(compact)24.dp else 34.dp),
+                        verticalArrangement=Arrangement.spacedBy(if(sheetPage)8.dp else 24.dp)) {
                         Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.Bottom,horizontalArrangement=Arrangement.SpaceBetween) {
                             Column(verticalArrangement=Arrangement.spacedBy(5.dp)) {
-                                Copy(snapshot?.overview?.asOf()?.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")) ?: "Local workspace",12,Ink.muted)
-                                Copy(when(page) {"Teaching context" -> "Your teaching context";"Activity" -> "Your academic week";"Overview" -> "Your workspace";else -> page},28,weight=FontWeight.SemiBold)
+                                if(!sheetPage) Copy(snapshot?.overview?.asOf()?.format(DateTimeFormatter.ofPattern("EEEE, d MMMM")) ?: "Local workspace",12,Ink.muted)
+                                Copy(when(page) {"Teaching context" -> "Your teaching context";"Activity" -> "Your academic week";"Overview" -> "Your workspace";else -> page},if(sheetPage)20 else 28,weight=FontWeight.SemiBold)
                             }
-                            if(!compact) Copy("مساحتك الأكاديمية",16,Ink.muted,modifier=Modifier.testTag("arabic-welcome"))
+                            if(!compact && !sheetPage) Copy("مساحتك الأكاديمية",16,Ink.muted,modifier=Modifier.testTag("arabic-welcome"))
                         }
                         error?.let { Panel(Modifier.fillMaxWidth()) {
                             Copy("Workspace unavailable",16,weight=FontWeight.SemiBold);Copy(it,13,Ink.muted)
@@ -81,7 +82,7 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
                         } else if(snapshot==null) {
                             if(error==null) Copy("Opening your saved workspace…",14,Ink.muted)
                         } else {
-                            AnimatedContent(page,transitionSpec={
+                            AnimatedContent(page,modifier=if(sheetPage)Modifier.weight(1f).fillMaxWidth() else Modifier,transitionSpec={
                                 (fadeIn(tween(170)) + slideInVertically(motion()) { 12 })
                                     .togetherWith(fadeOut(tween(80)))
                                     .using(SizeTransform(clip=false,sizeAnimationSpec={_,_->motion()}))
@@ -103,7 +104,7 @@ private val workspaceDestinations = listOf("Overview" to "grid", "Courses" to "b
                                 }
                             }
                         }
-                        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
+                        if(!sheetPage) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
                             Copy("Saved locally · available offline",11,Ink.muted)
                             Copy("Professor OS",11,Ink.muted)
                         }

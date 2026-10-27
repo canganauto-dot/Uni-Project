@@ -55,14 +55,14 @@ class AttendanceUiTest {
         assertTrue(c.attendance!!.dirty);assertNull(c.attendance!!.value(first))
         // Percentages explicitly remain based on saved records until Save.
         onNodeWithTag("attendance-percent-$first",true).assertTextContains("100%")
-        onNodeWithTag("save-attendance").performScrollTo().performClick();settled(c)
+        onNodeWithTag("save-attendance").performClick();settled(c)
         assertFalse(c.attendance!!.dirty);assertNull(services.academic.attendance().load(id).status(first,lecture))
         onNodeWithTag("attendance-row-$first").performScrollTo().performClick().performKeyInput {pressKey(Key.A)}
         assertEquals(AttendanceStatus.ABSENT,c.attendance!!.value(first))
         onNodeWithTag("attendance-row-$first").performKeyInput {keyDown(Key.CtrlLeft);pressKey(Key.S);keyUp(Key.CtrlLeft)};settled(c)
         assertEquals(BigDecimal("50.00"),AttendanceCalculator.student(c.attendance!!.book,first).percentage())
         onNodeWithTag("attendance-row-$first").performScrollTo().performClick()
-        onNodeWithTag("attendance-history").performScrollTo().performClick()
+        onNodeWithTag("attendance-history").performClick()
         assertContains(c.detail!!.text,"(cancelled)");assertContains(c.detail!!.text,"Unmarked");assertContains(c.detail!!.text,"Late")
         runOnIdle {c.detail=null}
         onNodeWithTag("attendance-search").performTextInput("أحمد")

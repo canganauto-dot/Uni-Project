@@ -41,34 +41,36 @@ import java.nio.file.Path
     var categoryId by remember(book.offeringId()) {mutableStateOf<Long?>(null)}
     var assessmentId by remember(book.offeringId()) {mutableStateOf<Long?>(null)}
     val category=book.categories().find {it.id()==categoryId};val assessment=book.assessments().find {it.id()==assessmentId}
-    Column(Modifier.fillMaxWidth().onPreviewKeyEvent {
+    Column(Modifier.fillMaxSize().onPreviewKeyEvent {
         if(it.type==KeyEventType.KeyDown && it.key==Key.S && (it.isCtrlPressed||it.isMetaPressed)){c.saveGrades();true}else false
-    },verticalArrangement=Arrangement.spacedBy(14.dp)) {
+    },verticalArrangement=Arrangement.spacedBy(6.dp)) {
         Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween) {
-            Copy(c.active?.label().orEmpty(),14,Ink.violet,modifier=Modifier.weight(1f).padding(end=12.dp))
+            Copy(c.active?.label().orEmpty(),12,Ink.violet,modifier=Modifier.weight(1f).padding(end=12.dp),lines=1)
+            Copy(GradeCalculator.configurationMessage(book),12,Ink.violet,modifier=Modifier.padding(end=12.dp).testTag("grade-weights"))
             Copy(if(editor.dirty)"● Unsaved changes" else "Saved locally",12,if(editor.dirty)Ink.violet else Ink.muted,modifier=Modifier.testTag("grade-save-state"))
         }
-        Copy(GradeCalculator.configurationMessage(book),13,Ink.violet,modifier=Modifier.testTag("grade-weights"))
-        Toolbar {listOf("Grades","Assessments","Categories & scale").forEach {name->Action(name,if(tab==name)"check" else "arrow",modifier=Modifier.testTag("grade-tab-$name")){tab=name}}}
+        Toolbar {
+            listOf("Grades","Assessments","Categories & scale").forEach {name->Action(name,if(tab==name)"check" else "arrow",modifier=Modifier.testTag("grade-tab-$name")){tab=name}}
+            if(tab=="Grades") {
+                Action("Save grades","check",enabled=editor.dirty&&!c.busy,modifier=Modifier.testTag("save-grades"),onClick=c::saveGrades)
+                Action("Discard / reload",enabled=!c.busy,modifier=Modifier.testTag("discard-grades")){c.guard {c.refresh()}}
+                Action("Bulk entry",enabled=book.assessments().isNotEmpty()&&!c.busy,modifier=Modifier.testTag("bulk-grades")){c.error=null;c.gradeBulk=GradeBulk(book.assessments())}
+                Action("Export to Excel",enabled=!c.busy){c.exportGradeWorkbook()}
+            }
+        }
         when(tab) {
             "Grades" -> {
-                Toolbar {
-                    Action("Save grades","check",enabled=editor.dirty&&!c.busy,modifier=Modifier.testTag("save-grades"),onClick=c::saveGrades)
-                    Action("Discard / reload",enabled=!c.busy,modifier=Modifier.testTag("discard-grades")){c.guard {c.refresh()}}
-                    Action("Bulk entry",enabled=book.assessments().isNotEmpty()&&!c.busy,modifier=Modifier.testTag("bulk-grades")){c.error=null;c.gradeBulk=GradeBulk(book.assessments())}
-                    Action("Export to Excel",enabled=!c.busy){c.exportGradeWorkbook()}
-                }
                 Input("Search student number or name",query,{query=it},tag="grade-search")
                 Copy("Blank = ungraded · 0 = actual zero · Enter / ↑ ↓ move rows · Tab moves columns · Ctrl+S saves",12,Ink.muted)
                 if(book.assessments().isEmpty()) Panel(Modifier.fillMaxWidth()) {
                     Copy("Set up your first assessment",18,weight=FontWeight.SemiBold)
                     Copy("Create weighted categories, then add assessments to begin recording scores.",14,Ink.muted)
                     Action("Manage categories"){tab="Categories & scale"}
-                } else GradeGrid(editor,summary,query,!c.busy)
+                } else GradeGrid(editor,summary,query,!c.busy,Modifier.weight(1f))
                 Copy(summary.statistics,13,Ink.muted,modifier=Modifier.testTag("grade-statistics"))
                 summary.error?.let {Copy(it,13,Ink.violet,modifier=Modifier.testTag("grade-validation"))}
             }
-            "Assessments" -> {
+            "Assessments" -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 Toolbar {
                     Action("New assessment","exam",modifier=Modifier.testTag("new-assessment")){c.editAssessment()}
                     Action("Edit",enabled=assessment!=null){assessment?.let {c.editAssessment(it)}}
@@ -77,7 +79,7 @@ import java.nio.file.Path
                 RecordTable(book.assessments(),listOf(TableColumn("Assessment",2f){a:Assessment->a.title()},TableColumn("Maximum"){it.maximumMarks().toPlainString()},TableColumn("Date"){it.date().toString()},TableColumn("Category"){a->book.categories().find {it.id()==a.categoryId()}?.name().orEmpty()}),
                     Assessment::id,assessmentId,{assessmentId=it.id()},{c.editAssessment(it)},"grade-assessments","Create a category, then add your first assessment.")
             }
-            else -> {
+            else -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 Toolbar {
                     Action("New category","layers",modifier=Modifier.testTag("new-grade-category")){c.editGradeCategory()}
                     Action("Edit",enabled=category!=null){category?.let {c.editGradeCategory(it)}}
@@ -95,7 +97,7 @@ import java.nio.file.Path
 }
 
 /** A bounded, virtualized sheet; keyed editors retain focus while calculated summaries update. */
-@Composable private fun GradeGrid(editor:GradebookEditor,summary:GradeSummary,query:String,enabled:Boolean) {
+@Composable private fun GradeGrid(editor:GradebookEditor,summary:GradeSummary,query:String,enabled:Boolean,modifier:Modifier=Modifier) {
     val book=editor.book
     var sort by remember {mutableStateOf("number")};var descending by remember {mutableStateOf(false)}
     val filtered=book.students().filter {("${it.student().studentNumber()} ${it.student().fullName()}").contains(query.trim(),true)}
@@ -108,12 +110,13 @@ import java.nio.file.Path
             else -> compareValues(editor.value(GradeKey(a.enrollment().id(),sort.toLong())).toBigDecimalOrNull(),editor.value(GradeKey(b.enrollment().id(),sort.toLong())).toBigDecimalOrNull())
         };if(descending)-compared else compared
     })}
-    BoxWithConstraints(Modifier.fillMaxWidth()) {
+    BoxWithConstraints(modifier.fillMaxWidth()) {
     val horizontal=rememberScrollState();val vertical=rememberLazyListState();val scope=rememberCoroutineScope()
     val density=androidx.compose.ui.platform.LocalDensity.current
     val assessments=book.assessments()
-    val cellWidth=((maxWidth-500.dp)/assessments.size.coerceAtLeast(1)).coerceAtLeast(150.dp)
-    val width=260.dp+cellWidth*assessments.size+240.dp
+    val studentWidth=if(maxWidth<900.dp)220.dp else 280.dp
+    val resultWidth=210.dp
+    val cellWidth=((maxWidth-studentWidth-resultWidth-12.dp)/assessments.size.coerceAtLeast(1)).coerceAtLeast(136.dp)
     val focus=remember(rows.map {it.enrollment().id()},assessments.map {it.id()}) {rows.associate {r->r.enrollment().id() to assessments.associate {it.id() to FocusRequester()}}}
     fun navigate(row:Int,col:Int):Boolean {
         if(row !in rows.indices || col !in assessments.indices)return false
@@ -126,23 +129,30 @@ import java.nio.file.Path
         };return true
     }
     @Composable fun heading(title:String,key:String,width:Dp) {
-        Box(Modifier.width(width).height(72.dp).clickable {if(sort==key)descending=!descending else {sort=key;descending=false}}.padding(12.dp)) {
+        Box(Modifier.width(width).height(64.dp).clickable {if(sort==key)descending=!descending else {sort=key;descending=false}}.padding(12.dp)) {
             Copy(title+if(sort==key)if(descending)" ↓" else " ↑" else "",12,Ink.muted,lines=2)
         }
     }
-    Column(Modifier.fillMaxWidth().border(1.dp,Ink.border,RoundedCornerShape(10.dp)).testTag("grade-grid")) {
-        Column(Modifier.horizontalScroll(horizontal)) {
-            Row(Modifier.width(width).background(Ink.raised)) {
-                heading("Student number","number",115.dp);heading("Student","name",145.dp)
+    Column(Modifier.fillMaxSize().border(1.dp,Ink.border,RoundedCornerShape(10.dp)).testTag("grade-grid")) {
+            Row(Modifier.fillMaxWidth().padding(end=12.dp).background(Ink.raised).testTag("grade-grid-header")) {
+                Row(Modifier.width(studentWidth).testTag("grade-frozen-header")) {
+                    heading("Student","name",studentWidth-86.dp);heading("Number","number",86.dp)
+                }
+                Row(Modifier.weight(1f).horizontalScroll(horizontal).testTag("grade-scroll-header")) {
                 assessments.forEach {heading("${it.title()}\n/ ${it.maximumMarks()}",it.id().toString(),cellWidth)}
-                heading("Weighted /100 · Result","result",240.dp)
+                heading("Weighted /100 · Result","result",resultWidth)
+                }
             }
-            if(rows.isEmpty()) Copy("No enrolled students match. Enroll students in this offering or clear your search.",14,Ink.muted,modifier=Modifier.width(width).padding(24.dp))
-            else LazyColumn(Modifier.width(width).heightIn(max=330.dp),state=vertical) {
+            if(rows.isEmpty()) Copy("No enrolled students match. Enroll students in this offering or clear your search.",14,Ink.muted,modifier=Modifier.fillMaxWidth().padding(24.dp))
+            else Box(Modifier.weight(1f).fillMaxWidth()) {
+              LazyColumn(Modifier.fillMaxSize().padding(end=12.dp).testTag("grade-grid-rows"),state=vertical) {
                 itemsIndexed(rows,key={_,r->r.enrollment().id()}) {index,row->
-                    Row(Modifier.width(width).height(66.dp).background(if(index%2==0)Ink.panel else Ink.background),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-                        Copy(row.student().studentNumber(),13,modifier=Modifier.width(115.dp).padding(12.dp))
-                        Column(Modifier.width(145.dp).padding(10.dp)) {Copy(row.student().fullName(),13,lines=1);Copy(row.enrollment().status().name,10,Ink.muted)}
+                    Row(Modifier.fillMaxWidth().height(58.dp).background(if(index%2==0)Ink.panel else Ink.background),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                        Column(Modifier.width(studentWidth).padding(horizontal=12.dp).testTag("grade-student-${row.enrollment().id()}")) {
+                            Copy(row.student().fullName(),13,lines=1)
+                            Copy("${row.student().studentNumber()} · ${row.enrollment().status().name.lowercase()}",10,Ink.muted,lines=1)
+                        }
+                        Row(Modifier.weight(1f).horizontalScroll(horizontal),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                         assessments.forEachIndexed {column,a->
                             val key=GradeKey(row.enrollment().id(),a.id());val value=editor.value(key)
                             var focused by remember {mutableStateOf(false)}
@@ -167,15 +177,17 @@ import java.nio.file.Path
                             }
                         }
                         val result=summary.results[row.enrollment().id()]
-                        Column(Modifier.width(240.dp).padding(12.dp).testTag("grade-result-${row.enrollment().id()}")) {
+                        Column(Modifier.width(resultWidth).padding(12.dp).testTag("grade-result-${row.enrollment().id()}")) {
                             Copy(result?.let {"${PercentageFormatter.format(it.weightedPoints())} · ${it.letter()} · ${it.outcome()}"}?:"Check scores",13,if(result?.complete()==true)Ink.positive else Ink.muted)
                             if(result?.complete()==false)Copy("${result.graded()}/${result.required()} graded · provisional",11,Ink.muted)
                         }
+                        }
                     };Rule()
                 }
+              }
+              VerticalScrollbar(rememberScrollbarAdapter(vertical),Modifier.align(androidx.compose.ui.Alignment.CenterEnd).fillMaxHeight().width(10.dp))
             }
-        }
-        HorizontalScrollbar(rememberScrollbarAdapter(horizontal),Modifier.fillMaxWidth().height(12.dp))
+        HorizontalScrollbar(rememberScrollbarAdapter(horizontal),Modifier.padding(start=studentWidth,end=12.dp).fillMaxWidth().height(12.dp).testTag("grade-horizontal-scroll"))
     }
     }
 }

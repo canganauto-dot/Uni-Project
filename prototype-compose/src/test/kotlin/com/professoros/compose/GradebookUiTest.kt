@@ -61,7 +61,7 @@ class GradebookUiTest {
         assertEquals("B",c.gradebook!!.summary().results.getValue(first.enrollment().id()).letter())
         assertFalse(c.gradebook!!.summary().results.getValue(second.enrollment().id()).complete())
         onNodeWithTag(tag(second,b)).performTextInput("81")
-        onNodeWithTag("save-grades").performScrollTo().performClick();settled(c)
+        onNodeWithTag("save-grades").performClick();settled(c)
         assertNotNull(c.error);assertTrue(c.gradebook!!.dirty);assertTrue(services.academic.grades().load(id).grades().isEmpty(),"Invalid batch must not partially persist")
         onNodeWithTag(tag(second,b)).performTextReplacement("")
         onNodeWithTag(tag(first,a)).performClick().performKeyInput {keyDown(Key.CtrlLeft);pressKey(Key.S);keyUp(Key.CtrlLeft)}
@@ -74,12 +74,12 @@ class GradebookUiTest {
         assertFalse(left);assertTrue(c.gradebook!!.dirty)
         runOnIdle {c.editGradeCategory()};assertNotNull(c.error);assertNull(c.form)
         // A failed bulk batch is atomic even within the unsaved draft.
-        onNodeWithTag("bulk-grades").performScrollTo().performClick()
+        onNodeWithTag("bulk-grades").performClick()
         onNodeWithTag("grade-bulk-values").performTextInput("0001\t10\n0002\t99")
         onNodeWithTag("apply-grade-bulk").performClick();assertNotNull(c.gradeBulk);assertEquals("",c.gradebook!!.value(key))
         onNodeWithTag("grade-bulk-values").performTextReplacement("0001\t10\n0002\t0")
         onNodeWithTag("apply-grade-bulk").performClick();assertNull(c.gradeBulk);assertEquals("10",c.gradebook!!.value(key))
-        onNodeWithTag("save-grades").performScrollTo().performClick();settled(c)
+        onNodeWithTag("save-grades").performClick();settled(c)
         capture("gradebook-compose-normal")
         onNodeWithTag("grade-search").performTextInput("أحمد")
         onNodeWithTag(tag(second,a)).assertDoesNotExist()
