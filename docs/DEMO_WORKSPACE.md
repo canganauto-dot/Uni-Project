@@ -4,18 +4,19 @@ This is an explicit developer tool, never an application startup action. All dem
 
 ## Contents and useful routes
 
-The reference date for this installation is 2026-10-26. A repeat can use another explicit ISO date; teaching dates move relative to it. Existing historical migration scripts are never edited.
+The compact-v2 reference date for this installation is **2026-10-27**. An explicit ISO date controls the teaching calendar for future runs. The single Fall term remains active for result review and a possible resit; its twelve completed Mon/Thu sessions and four graded assessments are in the past. Historical migrations are never edited.
 
-- 3 terms: completed Spring, active Fall and planned next Spring.
-- 6 catalog courses: OOP, Algorithms, Databases, Software Engineering, Networks and HCI.
-- 12 offerings: 8 current, 2 completed, 2 planned; 45 enrollments each (540 total).
-- 180 distinct student profiles with Arabic/English names, text identifiers retaining leading zeros and synthetic email addresses. Some optional emails are blank.
-- 144 lectures with planned/completed/partial/cancelled states; past non-cancelled sessions contain varied Present/Absent/Late/Excused marks plus intentional unmarked cells. Future sessions remain unmarked.
-- 120 questions: four topics × all five types per course, mixed difficulties, explanations, valid MCQ choices with varied correct-answer positions and both true/false answers.
-- 24 saved exams with immutable question snapshots, matched calculated/intended marks, drafts/finalized/archived examples and recorded question usage.
-- 48 weighted categories and 48 assessments, 12 grading scales, actual zero marks, late/ungraded work and future assessments without grades. Weights are 20/10/30/40. Current offerings remain incomplete until their future final assessment; completed offerings demonstrate passing/failing final grades and a late submission.
+- Exactly **2 courses**: CS201 Object-Oriented Programming and CS202 Data Structures and Algorithms.
+- Exactly **1 active term** and **2 active offerings**, section A, one per course.
+- **70 unique students**, partitioned into two disjoint rosters of **35**. All are fictional Iraqi three-part given/father/grandfather names, curated as 35 women and 35 men. All 70 third names are distinct. The existing first/last-name model stores the given name in first_name and father plus grandfather in last_name; no schema change is needed. IDs remain text with leading zeros.
+- **24 completed lectures**, twelve per offering, with **840 attendance rows**: every student in every session has Present, Late, Absent or Excused. Nothing is accidentally unmarked. Attendance profiles vary with realistic student performance; the normal saved-attendance policy remains authoritative.
+- **40 questions**, twenty per course: four relevant topics, each with all five question types. MCQs have topic-specific distractors and varied correct-choice positions; model answers explain solutions and boundary cases. There are 32 bank-choice rows.
+- **6 saved exams**, three per offering: finalized midterm (50 marks), finalized final (100 marks), and a draft resit/practice paper (50 marks). Their immutable snapshots contain 80 question rows and 64 choice rows, with matched intended/calculated totals.
+- **8 categories, 8 assessments, 2 scales and 280 scores**. Each offering has laboratory portfolio, quiz, midterm and final assessments, all normalized to 100 marks and weighted **20/10/30/40**. Every assessment has all 35 grades. Final percentages span 25–96, including 49/50/51 and 59/60/61. Weighted offsets vary individual assessment scores while preserving exact final boundaries. Every result is complete; excellent, average, borderline and failing students are represented.
 
-Start with the default **CS201 / Fall / A**. Explore Teaching context, Lectures, Attendance and Gradebook. Select **CS201 / Spring / A (completed)** in the context picker to inspect final grades. Question Bank has every type; Exam Builder includes saved papers ready for PDF preview/export. Records are marked fictional in course descriptions, student notes and offering notes. Creation timestamps reflect when the demo records were inserted; teaching dates represent the scenario, and enrollment dates precede teaching.
+The verified existing demo settings are retained: CS201 passes at **50%**, CS202 at **60%**. Letter thresholds stay 90/80/70/60 in both. Pass/fail and letter thresholds are independent settings in the application, so CS201 can show an F letter with PASS at 50–59. This uses the existing configurable scale, not a grading-rule change; the application's default remains 60%.
+
+Start with **CS201 / Fall / A**. Gradebook shows complete scores and saved statistics, Attendance shows fully recorded sessions, and Question Bank/Exam Builder provide realistic papers for generation and PDF export. Switch to CS202 to inspect its separate 35-student cohort. No completed/planned extra offerings are needed to demonstrate populated screens. Fictional markers remain on all courses, students and offerings.
 
 ## Backup, staging and installation
 
@@ -28,16 +29,16 @@ python tools/demo_workspace.py prepare data/professor-os.db --app-closed
 # Use the exact manifest path printed above:
 $demoManifest = 'C:\path\printed\by\prepare\manifest.json'
 $demoPlan = Get-Content -Raw $demoManifest | ConvertFrom-Json
-& "$env:JAVA_HOME\bin\java.exe" --enable-native-access=ALL-UNNAMED -cp 'target/classes;target/compose-libs/*' com.professoros.demo.DemoDataSeeder $demoPlan.stage '2026-10-26' 'generated/demo-imports-NEW-RUN'
+& "$env:JAVA_HOME\bin\java.exe" --enable-native-access=ALL-UNNAMED -cp 'target/classes;target/compose-libs/*' com.professoros.demo.DemoDataSeeder $demoPlan.stage '2026-10-27' 'generated/demo-imports-NEW-RUN'
 # Only after the generator exits successfully and review/tests pass:
 python tools/demo_workspace.py install $demoManifest --app-closed
 ```
 
 For configured storage, replace `data/professor-os.db` with the actual `PROFESSOR_OS_DATA_DIR/professor-os.db` path. The runtime default is repository-root data, as documented by AppPaths. Unix classpaths use `:` instead of `;`.
 
-Prepare uses SQLite's backup API into a unique UTC-timestamped directory under the database's `backups/`. It verifies integrity, foreign keys, all table contents, DDL, counts and migration history, records SHA-256 hashes, and creates a sibling `.demo-stage-*.db` copy. Java refuses ordinary live-database filenames, verifies migrations, clears only known academic tables in foreign-key order, and populates the stage through existing services. Unknown tables cause refusal. A failed generation leaves the original intact; repeat generation replaces the stage instead of appending duplicates.
+The CLI first refuses unrecognized, mixed or non-demo workspaces using the known course identities, parent counts and fictional markers. The Java seeder independently refuses non-demo academic rows even if a file is renamed as a stage. Empty, newly initialized test stages are allowed. Prepare uses SQLite's backup API into a unique UTC-timestamped directory under the database's `backups/`. It verifies integrity, foreign keys, all table contents, DDL, counts and migration history, records SHA-256 hashes, and creates a sibling `.demo-stage-*.db` copy. Java refuses ordinary live-database filenames, verifies migrations, clears only known academic tables in foreign-key order, and populates the stage through existing services. Unknown tables cause refusal. A failed generation leaves the original intact; repeating a completed generation replaces the stage instead of appending duplicates. Preserve an interrupted stage and prepare a fresh copy if its partial contents fail the safety gate.
 
-Successful Java verification writes a SHA-256 completion receipt beside the stage; interrupted or subsequently changed stages cannot be installed. Install verifies the original has not changed, the backup digest still matches, the candidate has valid integrity/relationships, and DDL/migration history/user_version exactly match the original. It copies to a temporary sibling then atomically replaces the database; it never edits stored checksums. Retain the verified manifest and backup together. Intermediate staging copies are intentionally retained for inspection. Generated data, backups, samples and screenshots are ignored by Git.
+Successful Java verification writes a SHA-256 completion receipt beside the stage; interrupted or subsequently changed stages cannot be installed. CLI install independently checks exact compact-v2 counts, name uniqueness/third-name diversity, one roster per student, grade/attendance coverage, weights, exam totals and course relationships. It then verifies the original has not changed, the backup digest still matches, the candidate has valid integrity/relationships, and DDL/migration history/user_version exactly match the original. It copies to a temporary sibling then atomically replaces the database; it never edits stored checksums. Retain the verified manifest and backup together. Intermediate staging copies are intentionally retained for inspection. Generated data, backups, samples and screenshots are ignored by Git.
 
 ## Restore
 
@@ -51,7 +52,7 @@ Restore refuses to downgrade a database with different current schema/migration 
 
 ## Excel import fixtures
 
-The Java fixture writer uses the application's pinned POI dependency so the files can be regenerated offline. Choose a **new** output directory; existing directories are refused.
+Existing fixture files/directories are preserved. The Java fixture writer uses the application's pinned POI dependency so the files can be regenerated offline. Choose a **new** output directory; existing directories are refused.
 
 - `students-english.xlsx`: 24 new profiles; standard English ID/first/last/email/section columns.
 - `students-arabic.xlsx`: 24 new profiles; recognized Arabic ID/full-name/email/section headers.
@@ -62,7 +63,7 @@ The valid files use text IDs. Preview before confirming. Existing students must 
 
 ## Tests and limitations
 
-Run Python safety tests with `python -m unittest discover -s tools -p test_demo_workspace.py`, then the standard Maven and Compose suites sequentially. Java tests seed/reseed isolated databases, verify status/grade outcomes, reopen data, check immutable migration history and validate sample workbooks through the actual import reader/preview service. Compose renders every route using the same generator in an isolated database and checks the completed-term gradebook.
+Run Python safety tests with `python -m unittest discover -s tools -p test_demo_workspace.py`, then the standard Maven and Compose suites sequentially. Java tests seed/reseed isolated databases, verify status/grade outcomes, reopen data, check immutable migration history and validate sample workbooks through the actual import reader/preview service. Compose renders every route using the same generator in an isolated database and checks both fully populated active-offering gradebooks.
 
 Optional images are not seeded; question images remain an existing supported workflow. This is a realistic teaching demonstration, not a university's actual curriculum or assessment policy. No source database, backup or generated workbook is committed. Native Excel opening and full physical-keyboard/accessibility certification are not claimed.
 

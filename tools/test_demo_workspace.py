@@ -24,7 +24,7 @@ class DemoSafetyTest(unittest.TestCase):
 
     def populate_stage(self):
         with demo.connection(self.data['stage']) as db:
-            db.executemany('INSERT INTO students VALUES(?,?)', [(i, 'Demo') for i in range(2,151)])
+            db.executemany('INSERT INTO students VALUES(?,?)', [(i, 'Demo') for i in range(2,71)])
         self.receipt()
 
     def receipt(self):
@@ -34,7 +34,7 @@ class DemoSafetyTest(unittest.TestCase):
         self.populate_stage()
         with contextlib.redirect_stdout(io.StringIO()):
             demo.install(self.manifest)
-            self.assertEqual(150, demo.inspect(self.database)['counts']['students'])
+            self.assertEqual(70, demo.inspect(self.database)['counts']['students'])
             demo.install(self.manifest, restore=True)
         self.assertEqual(demo.canonical(self.original), demo.canonical(demo.inspect(self.database)))
         self.assertEqual(2, len(list((self.database.parent/'backups').glob('*/manifest.json'))))
@@ -75,6 +75,21 @@ class DemoSafetyTest(unittest.TestCase):
             db.execute("UPDATE students SET name='Interrupted change'")
         with self.assertRaisesRegex(ValueError, 'completion receipt'):
             demo.install(self.manifest)
+
+    def test_wrong_population_cannot_install_even_with_a_matching_receipt(self):
+        self.populate_stage()
+        with demo.connection(self.data['stage']) as db:
+            db.execute('DELETE FROM students WHERE id=70')
+        self.receipt()
+        with self.assertRaisesRegex(ValueError, 'incomplete'):
+            demo.install(self.manifest)
+        self.assertEqual(demo.canonical(self.original), demo.canonical(demo.inspect(self.database)))
+
+    def test_cli_demo_guard_rejects_non_demo_without_changing_it(self):
+        before = demo.digest(self.database)
+        with self.assertRaisesRegex(ValueError, 'Not a recognized demo'):
+            demo.require_demo_source(self.database)
+        self.assertEqual(before, demo.digest(self.database))
 
 
 if __name__ == '__main__':

@@ -30,7 +30,7 @@ public final class DemoImportSamples {
         workbook(directory.resolve("students-manual-mapping.xlsx"),List.of("Registration reference","Learner","Contact address","Tutorial"),
             List.of(List.of("00992001","Nadia Faris","nadia@example.edu","A"),List.of("00992002","Hugo Ellis","","A")),false);
         workbook(directory.resolve("students-validation-cases.xlsx"),List.of("Student ID","Full name","Email","Section"),List.of(
-            List.of("00"+year+"001","أحمد العبيدي","","A"),
+            List.of("00"+year+"001",DemoStudents.PEOPLE.getFirst().fullName(),"","A"),
             List.of("00993001","Leila Faris","leila@example.edu","A"),
             List.of("00993001","Different Name","different@example.edu","A"),
             List.of("","Missing Identifier","","A"),

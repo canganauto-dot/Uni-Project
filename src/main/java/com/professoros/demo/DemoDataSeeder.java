@@ -44,6 +44,18 @@ public final class DemoDataSeeder {
             try (var s = c.createStatement(); var r = s.executeQuery("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")) {
                 while (r.next()) if (!known.contains(r.getString(1))) throw new IllegalStateException("Unknown table; review demo tool before replacing data: " + r.getString(1));
             }
+            boolean populated;
+            try(var s=c.createStatement();var r=s.executeQuery("SELECT EXISTS(SELECT 1 FROM academic_terms UNION ALL SELECT 1 FROM courses UNION ALL SELECT 1 FROM students)")) { populated=r.next()&&r.getBoolean(1); }
+            if(populated) {
+                try(var s=c.createStatement();var r=s.executeQuery("""
+                        SELECT (SELECT count(*) FROM courses WHERE description IS NULL OR description NOT LIKE 'Fictional Professor OS demonstration curriculum.%')
+                             + (SELECT count(*) FROM students WHERE notes IS NULL OR notes NOT LIKE 'Fictional demo student — not a real university record.%')
+                             + (SELECT count(*) FROM course_offerings WHERE notes IS NULL OR notes NOT LIKE 'DEMO%'),
+                               (SELECT count(*) FROM courses), (SELECT count(*) FROM students)
+                        """)) {
+                    if(!r.next()||r.getInt(1)!=0||r.getInt(2)==0||r.getInt(3)==0)throw new IllegalStateException("Refusing to clear non-demo academic records");
+                }
+            }
             c.setAutoCommit(false);
             try (var s = c.createStatement()) {
                 // Fixed, dependency-ordered identifiers; never user-provided SQL.
@@ -52,35 +64,27 @@ public final class DemoDataSeeder {
             } catch (Exception failure) { c.rollback(); throw failure; }
         }
     }
+    private static final int[] PERCENTAGES = {96,93,91,90,88,86,84,83,81,79,77,75,74,72,70,69,67,66,64,63,61,60,59,57,55,53,51,50,49,47,44,41,37,32,25};
+    private static final int[][] SCORE_OFFSETS = {{1,-2,0,0},{3,0,-2,0},{0,4,0,-1},{2,2,2,-3}};
     private void populate() {
-        var current = a.terms().create(new AcademicTermInput("Fall", today.getYear()+"–"+(today.getYear()+1), today.minusWeeks(6), today.plusWeeks(10), AcademicStatus.ACTIVE));
-        var previous = a.terms().create(new AcademicTermInput("Spring", (today.getYear()-1)+"–"+today.getYear(), today.minusMonths(8), today.minusMonths(4), AcademicStatus.ACTIVE));
-        var next = a.terms().create(new AcademicTermInput("Spring", today.getYear()+"–"+(today.getYear()+1), today.plusMonths(4), today.plusMonths(8), AcademicStatus.PLANNED));
+        var term = a.terms().create(new AcademicTermInput("Fall", today.getYear()+"–"+(today.getYear()+1),
+            today.minusWeeks(8), today.plusWeeks(2), AcademicStatus.ACTIVE));
         var students = students();
         var courses = new CourseService(new CourseRepository(database));
         for (int index=0; index<DemoCurriculum.SUBJECTS.size(); index++) {
             var subject = DemoCurriculum.SUBJECTS.get(index);
-            var course = courses.create(new CourseInput(subject.code(), subject.name(), "Computer Science & Software Engineering", 3,
-                "Fictional Professor OS demonstration curriculum. Lectures, assessments and students are synthetic. Practical work covers " + subject.topics().stream().map(DemoCurriculum.Topic::name).toList()));
-            var bank = questions(course.id(), subject);
-            offering(course, subject, bank, current, students, index, "A", 0);
-            if (index<2) offering(course, subject, bank, current, students, index+3, "B", 0);
-            if (index<2) offering(course, subject, bank, previous, students, index, "A", -1);
-            if (index<2) offering(course, subject, bank, next, students, index, "A", 1);
+            var course = courses.create(new CourseInput(subject.code(), subject.name(), "Computer Science", 3,
+                "Fictional Professor OS demonstration curriculum. compact-v2. All academic records are synthetic."));
+            offering(course, subject, questions(course.id(),subject), term, students.subList(index*35,(index+1)*35), index);
         }
-        a.terms().update(previous.id(), new AcademicTermInput(previous.name(), previous.academicYear(),previous.startDate(),previous.endDate(),AcademicStatus.COMPLETED));
     }
     private List<Student> students() {
-        String[] arabicFirst = {"أحمد","سارة","علي","نور","عمر","مريم","حسن","زينب","يوسف","فاطمة","مصطفى","هبة","خالد","رنا","حيدر","دينا","كريم","لينا"};
-        String[] arabicLast = {"العبيدي","الهاشمي","الجبوري","السامرائي","النعيمي"};
-        String[] englishFirst = {"Adam","Emily","Daniel","Sofia","James","Olivia","Noah","Amelia","Ethan","Maya","Lucas","Chloe","Liam","Grace","Oliver","Hannah","Leo","Aisha"};
-        String[] englishLast = {"Wilson","Bennett","Parker","Morgan","Reed"};
         var result = new ArrayList<Student>();
-        for (int i=0;i<180;i++) {
-            int n=i%90;
+        for (int i=0;i<DemoStudents.PEOPLE.size();i++) {
+            var name = DemoStudents.PEOPLE.get(i);
             result.add(a.students().create(new StudentInput(String.format(Locale.ROOT,"00%d%03d",today.getYear(),i+1),
-                (i<90?arabicFirst:englishFirst)[n%18], (i<90?arabicLast:englishLast)[n/18],
-                i%13==0?"":"student"+(i+1)+"@example.edu", "Fictional demo student — not a real university record.")));
+                name.given(),name.family(),"student"+(i+1)+"@example.edu",
+                "Fictional demo student — not a real university record. compact-v2.")));
         }
         return result;
     }
@@ -90,107 +94,126 @@ public final class DemoDataSeeder {
             var topic=subject.topics().get(t);
             for (var type:QuestionType.values()) {
                 String text=switch(type) {
-                    case MCQ -> "Which statement best describes "+topic.name().toLowerCase(Locale.ROOT)+"?";
-                    case TRUE_FALSE -> (t%2==0?topic.principle():"A correct implementation of "+topic.name().toLowerCase(Locale.ROOT)+" never needs boundary tests")+". True or false?";
-                    case SHORT_ANSWER -> "Explain "+topic.name().toLowerCase(Locale.ROOT)+" and give one example in a university registration system.";
-                    case ESSAY -> "Evaluate a design that uses "+topic.name().toLowerCase(Locale.ROOT)+". Discuss correctness, maintenance and one trade-off. وضّح إجابتك بمثال.";
-                    case CODING -> "Write a small program to "+topic.exercise()+". Include boundary cases and explain the result.";
+                    case MCQ -> "Which statement correctly describes "+topic.name().toLowerCase(Locale.ROOT)+"?";
+                    case TRUE_FALSE -> (t%2==0?topic.principle():topic.misconception())+". True or false? Justify your answer.";
+                    case SHORT_ANSWER -> "Explain "+topic.name().toLowerCase(Locale.ROOT)+" using the following task: "+topic.exercise()+". State one important boundary case.";
+                    case ESSAY -> "Evaluate a design for this task: "+topic.exercise()+". Explain how "+topic.name().toLowerCase(Locale.ROOT)+" affects correctness, compare one alternative, and discuss a maintenance or complexity trade-off.";
+                    case CODING -> "Write Java code to "+topic.exercise()+". Include tests for normal and boundary cases.";
                 };
-                var choices=type==QuestionType.MCQ?new ArrayList<>(List.of(new AnswerChoice(topic.principle(),true),
-                    new AnswerChoice("Input validation can always be omitted when the user interface is trusted",false),
-                    new AnswerChoice("Correct behavior never needs an explicit contract or test",false),
-                    new AnswerChoice("Duplicating all data removes the need to check consistency",false))):new ArrayList<AnswerChoice>();
-                if(type==QuestionType.MCQ)Collections.rotate(choices,t);
+                var choices=new ArrayList<AnswerChoice>();
+                if(type==QuestionType.MCQ) {
+                    choices.add(new AnswerChoice(topic.principle(),true));
+                    topic.distractors().forEach(value->choices.add(new AnswerChoice(value,false)));
+                    Collections.rotate(choices,t);
+                }
+                int marks=switch(type) {case MCQ,TRUE_FALSE->2;case SHORT_ANSWER->6;case ESSAY->10;case CODING->5;};
                 result.add(a.questions().create(new QuestionInput(course,type,text,topic.name(),Difficulty.values()[(t+type.ordinal())%3],
-                    BigDecimal.valueOf(type==QuestionType.MCQ||type==QuestionType.TRUE_FALSE?2:type==QuestionType.SHORT_ANSWER?5:10),
-                    type==QuestionType.TRUE_FALSE?(t%2==0?"TRUE":"FALSE"):topic.principle()+". Award credit for a correct example, explicit assumptions and boundary tests.",
-                    "Assess the principle, then the worked example. "+topic.principle()+".","",choices)));
+                    BigDecimal.valueOf(marks),type==QuestionType.TRUE_FALSE?(t%2==0?"TRUE":"FALSE"):topic.solution(),
+                    topic.principle()+". "+topic.solution(),"",choices)));
             }
         }
         return result;
     }
     private void offering(Course course, DemoCurriculum.Subject subject, List<Question> bank, AcademicTerm term,
-                          List<Student> students, int group, String section, int period) {
-        var status=period>0?AcademicStatus.PLANNED:AcademicStatus.ACTIVE;
-        var offering=a.offerings().create(new CourseOfferingInput(course.id(),term.id(),section,
-            "DEMO · Dr. "+(group%2==0?"Layla Hassan":"Omar Bennett")+" · Weekly 09:00–10:30; see lecture dates · Computing Lab "+(201+group),status));
-        // Backdate enrollment through the existing injectable service clock, not raw record updates.
+                          List<Student> students, int group) {
+        var offering=a.offerings().create(new CourseOfferingInput(course.id(),term.id(),"A",
+            "DEMO compact-v2 · "+(group==0?"Dr. Layla Hassan":"Dr. Omar Khalid")+" · Mon/Thu laboratory and tutorial · Room "+(201+group),AcademicStatus.ACTIVE));
         var enrollments=new EnrollmentService(new EnrollmentRepository(database),new StudentRepository(database),
-            new CourseOfferingRepository(database),new AcademicTermRepository(database),Clock.fixed(term.startDate().minusDays(7).atStartOfDay(ZoneOffset.UTC).toInstant(),ZoneOffset.UTC));
-        var roster=new ArrayList<Enrollment>();
-        for(int n=0;n<45;n++) roster.add(enrollments.enroll(students.get((group*30+n)%students.size()).id(),offering.id()));
-        LocalDate start=period==0?today.minusDays(35):term.startDate().plusDays(7);
-        var lectures=new ArrayList<Lecture>();
+            new CourseOfferingRepository(database),new AcademicTermRepository(database),
+            Clock.fixed(term.startDate().atStartOfDay(ZoneOffset.UTC).toInstant(),ZoneOffset.UTC));
+        var roster=students.stream().map(student->enrollments.enroll(student.id(),offering.id())).toList();
+        var start=today.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(6);
         for(int n=0;n<12;n++) {
             var topic=subject.topics().get(n/3);
-            LocalDate date=start.plusDays(n*7L);
-            LectureStatus lectureStatus=date.isBefore(today)?(n==4&&period==0?LectureStatus.PARTIALLY_COMPLETED:LectureStatus.COMPLETED):LectureStatus.PLANNED;
-            if(n==8)lectureStatus=LectureStatus.CANCELLED;
-            lectures.add(a.lectures().create(offering.id(),new LectureInput(n+1,topic.name()+" · "+List.of("Concepts and examples","Guided laboratory","Review and application").get(n%3),date,
-                topic.name(),topic.principle(),90,lectureStatus,lectureStatus==LectureStatus.CANCELLED?"Campus event; independent reading assigned.":"Discuss examples, invite questions, then complete the practice exercise.")));
-        }
-        for(int l=0;l<lectures.size();l++) {
-            var lecture=lectures.get(l);
-            if(!lecture.plannedDate().isBefore(today)||lecture.status()==LectureStatus.CANCELLED)continue;
+            var date=start.plusWeeks(n/2).plusDays(n%2==0?0:3);
+            var lecture=a.lectures().create(offering.id(),new LectureInput(n+1,
+                topic.name()+" · "+List.of("Concepts and worked examples","Guided laboratory","Practice and review").get(n%3),
+                date,topic.name(),topic.principle(),90,LectureStatus.COMPLETED,topic.solution()));
             var marks=new LinkedHashMap<Long,AttendanceStatus>();
             for(int r=0;r<roster.size();r++) {
-                int code=(r+l*3)%16;
-                if(code==3)continue; // Unmarked is absence of a row, never ABSENT.
-                marks.put(roster.get(r).id(),switch(code){case 0->AttendanceStatus.ABSENT;case 1->AttendanceStatus.LATE;case 2->AttendanceStatus.EXCUSED;default->AttendanceStatus.PRESENT;});
+                int percent=percentage(r,group), code=Math.floorMod(r*17+n*13+group*7,100);
+                int absent=percent>=85?2:percent>=65?8:percent>=50?14:25;
+                int late=percent>=85?8:12,excused=percent>=85?2:percent>=65?5:percent>=50?6:8;
+                marks.put(roster.get(r).id(),code<absent?AttendanceStatus.ABSENT:code<absent+late?AttendanceStatus.LATE:
+                    code<absent+late+excused?AttendanceStatus.EXCUSED:AttendanceStatus.PRESENT);
             }
             a.attendance().save(offering.id(),lecture.id(),marks);
         }
-        assessments(offering.id(),roster,term,period);
-        var selection=bank.subList(0,5);
-        var total=selection.stream().map(Question::marks).reduce(BigDecimal.ZERO,BigDecimal::add);
-        LocalDate midterm=period==0?today.minusDays(7):term.startDate().plusWeeks(6);
-        var exam=a.exams().save(offering.id(),null,new ExamInput("Midterm · "+course.courseCode(),midterm,75,total,
-            "Answer all questions. Show your reasoning. Dictionaries are allowed; electronic communication is not. اكتب إجابات واضحة."),selection.stream().map(Question::id).toList());
-        if(period<=0) {a.exams().finalizeExam(offering.id(),exam.id());if(period<0)a.exams().archive(offering.id(),exam.id());}
-        var finalSelection=bank.subList(5,15);
-        a.exams().save(offering.id(),null,new ExamInput("Final examination · "+course.courseCode(),period==0?today.plusWeeks(7):term.endDate().minusDays(7),120,
-            finalSelection.stream().map(Question::marks).reduce(BigDecimal.ZERO,BigDecimal::add),"Read the paper before starting. Explain design decisions and include tests."),finalSelection.stream().map(Question::id).toList());
-        if(period<0) {
-            // Final papers in a completed term must not remain drafts.
-            var finalExam=a.exams().findByOffering(offering.id()).stream().filter(e->e.status()==ExamStatus.DRAFT).findFirst().orElseThrow();
-            a.exams().finalizeExam(offering.id(),finalExam.id());a.exams().archive(offering.id(),finalExam.id());
-        }
-        if(period<=0) for(int n=0;n<roster.size();n++) {
-            if(n%23==22)a.enrollments().updateStatus(roster.get(n).id(),EnrollmentStatus.WITHDRAWN);
-            else if(period<0)a.enrollments().updateStatus(roster.get(n).id(),EnrollmentStatus.COMPLETED);
-        }
-        if(period<0)a.offerings().update(offering.id(),new CourseOfferingInput(course.id(),term.id(),section,offering.notes(),AcademicStatus.COMPLETED));
+        assessments(offering.id(),roster,group,start);
+        exam(offering.id(),course.courseCode(),"Midterm",start.plusWeeks(3),bank.subList(0,10),90,true);
+        exam(offering.id(),course.courseCode(),"Final examination",start.plusWeeks(5).plusDays(4),bank,180,true);
+        var resit=new ArrayList<>(bank.subList(0,5));resit.addAll(bank.subList(10,15));
+        exam(offering.id(),course.courseCode(),"Resit practice paper",today.plusDays(7),resit,90,false);
     }
-    private void assessments(long offering,List<Enrollment> roster,AcademicTerm term,int period) {
-        String[] names={"Assignments","Quizzes","Midterm","Final"};int[] weights={20,10,30,40};
-        a.grades().saveScale(offering,GradingScale.standard());
+    private static int percentage(int row,int group) { return PERCENTAGES[(row+group*7)%PERCENTAGES.length]; }
+    private void exam(long offering,String code,String title,LocalDate date,List<Question> selection,int minutes,boolean finalize) {
+        var marks=selection.stream().map(Question::marks).reduce(BigDecimal.ZERO,BigDecimal::add);
+        var saved=a.exams().save(offering,null,new ExamInput(title+" · "+code,date,minutes,marks,
+            "Answer all questions. Show intermediate steps. For code, explain assumptions and test boundary cases."),selection.stream().map(Question::id).toList());
+        if(finalize)a.exams().finalizeExam(offering,saved.id());
+    }
+    private void assessments(long offering,List<Enrollment> roster,int group,LocalDate start) {
+        String[] categories={"Assignments","Quizzes","Midterm","Final"};int[] weights={20,10,30,40};
+        String[] titles={"Laboratory portfolio","Concepts and tracing quiz","Midterm written assessment","Final written and practical assessment"};
+        // Preserve the verified demo settings: CS201 passes at 50, CS202 at 60. Calculation/default rules are unchanged.
+        var standard=GradingScale.standard();
+        a.grades().saveScale(offering,new GradingScale(standard.a(),standard.b(),standard.c(),standard.d(),BigDecimal.valueOf(group==0?50:60)));
         var changes=new LinkedHashMap<GradeKey,String>();
         for(int k=0;k<4;k++) {
-            var category=a.grades().saveCategory(offering,null,names[k],BigDecimal.valueOf(weights[k]));
-            LocalDate date=period==0?(k==3?today.plusWeeks(7):today.minusDays(21-k*7L)):term.startDate().plusWeeks(3+k*3L);
-            var assessment=a.grades().saveAssessment(offering,null,category.id(),names[k]+" · "+(k<2?"practical work":"written assessment"),BigDecimal.valueOf(weights[k]),date);
-            if(date.isAfter(today))continue;
+            var category=a.grades().saveCategory(offering,null,categories[k],BigDecimal.valueOf(weights[k]));
+            var assessment=a.grades().saveAssessment(offering,null,category.id(),titles[k],BigDecimal.valueOf(100),start.plusDays(new int[]{14,18,21,39}[k]));
             for(int n=0;n<roster.size();n++) {
-                if((period==0&&n%11==0)||(period<0&&n==44&&k==3))continue;
-                int percent=40+Math.floorMod(n*7+k*3,59);
-                BigDecimal score=n==1&&k==0?BigDecimal.ZERO:BigDecimal.valueOf(weights[k]*percent).divide(BigDecimal.valueOf(100),2,RoundingMode.HALF_UP);
-                changes.put(new GradeKey(roster.get(n).id(),assessment.id()),score.toPlainString());
+                // Each offset vector has weighted sum zero. Individual assessment scores vary while final boundaries stay exact.
+                int score=percentage(n,group)+SCORE_OFFSETS[(n+group)%SCORE_OFFSETS.length][k];
+                changes.put(new GradeKey(roster.get(n).id(),assessment.id()),Integer.toString(score));
             }
         }
         a.grades().saveGrades(offering,changes);
     }
     private void verify() throws Exception {
+        var expected=Map.ofEntries(Map.entry("courses",2),Map.entry("academic_terms",1),Map.entry("course_offerings",2),
+            Map.entry("students",70),Map.entry("enrollments",70),Map.entry("lectures",24),Map.entry("questions",40),
+            Map.entry("question_choices",32),Map.entry("exams",6),Map.entry("exam_questions",80),Map.entry("exam_question_choices",64),
+            Map.entry("assessment_categories",8),Map.entry("assessments",8),Map.entry("student_grades",280),
+            Map.entry("grading_scales",2),Map.entry("attendance",840));
         try(var c=database.openConnection();var s=c.createStatement()) {
             try(var r=s.executeQuery("PRAGMA integrity_check")){if(!r.next()||!"ok".equals(r.getString(1)))throw new IllegalStateException("Integrity failed");}
             try(var r=s.executeQuery("PRAGMA foreign_key_check")){if(r.next())throw new IllegalStateException("Foreign keys failed");}
+            for(var entry:expected.entrySet()) {
+                try(var r=s.executeQuery("SELECT count(*) FROM "+entry.getKey())) {
+                    if(!r.next()||r.getInt(1)!=entry.getValue())throw new IllegalStateException("Demo count failed: "+entry.getKey());
+                }
+            }
         }
-        if(a.students().findAll().size()!=180||a.offerings().findAll().size()!=12)throw new IllegalStateException("Demo counts failed");
+        var names=new HashSet<String>();var thirds=new HashSet<String>();var enrolled=new HashSet<Long>();
+        for(var student:a.students().findAll()) {
+            var parts=student.fullName().split("\\s+");
+            if(parts.length!=3||!names.add(student.fullName())||!thirds.add(parts[2]))throw new IllegalStateException("Student name validation failed");
+        }
+        if(a.terms().findAll().getFirst().status()!=AcademicStatus.ACTIVE)throw new IllegalStateException("Term must be active");
         for(var offering:a.offerings().findAll()) {
+            if(offering.status()!=AcademicStatus.ACTIVE)throw new IllegalStateException("Offering must be active");
+            if(a.questions().search("",offering.courseId(),null,null).size()!=20)throw new IllegalStateException("Question count failed");
             var book=a.grades().load(offering.id());
-            if(GradeCalculator.weightTotal(book).compareTo(BigDecimal.valueOf(100))!=0)throw new IllegalStateException("Weights failed");
-            GradeCalculator.classStatistics(book,GradeCalculator.scores(book));
-            AttendanceCalculator.course(a.attendance().load(offering.id()));
-            for(var exam:a.exams().findByOffering(offering.id()))if(exam.marksDiffer())throw new IllegalStateException("Exam totals failed");
+            if(book.students().size()!=35||book.assessments().size()!=4||book.grades().size()!=140||GradeCalculator.weightTotal(book).compareTo(BigDecimal.valueOf(100))!=0)
+                throw new IllegalStateException("Gradebook coverage failed");
+            var percentages=new HashSet<Integer>();
+            for(var student:book.students()) {
+                if(!enrolled.add(student.student().id()))throw new IllegalStateException("Student enrolled in both courses");
+                var result=GradeCalculator.calculate(book,student.enrollment().id(),GradeCalculator.scores(book));
+                if(!result.complete())throw new IllegalStateException("Incomplete grade result");
+                percentages.add(result.weightedPoints().intValueExact());
+            }
+            if(!percentages.containsAll(List.of(49,50,51,59,60,61,90,96,25)))throw new IllegalStateException("Grade distribution failed");
+            var attendance=a.attendance().load(offering.id());
+            if(attendance.lectures().size()!=12||attendance.records().size()!=420||AttendanceCalculator.course(attendance).unmarked()!=0)
+                throw new IllegalStateException("Attendance coverage failed");
+            var exams=a.exams().findByOffering(offering.id());
+            if(exams.size()!=3||exams.stream().filter(e->e.status()==ExamStatus.FINALIZED).count()!=2)throw new IllegalStateException("Exam count/status failed");
+            for(var exam:exams) {
+                if(exam.marksDiffer()||exam.questions().isEmpty())throw new IllegalStateException("Exam totals failed");
+                for(var q:exam.questions())if(a.questions().findById(q.questionId()).courseId()!=offering.courseId())throw new IllegalStateException("Exam course mismatch");
+            }
         }
     }
 }

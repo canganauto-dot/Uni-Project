@@ -21,7 +21,7 @@ import kotlin.test.*
 
 class DemoWorkspaceUiTest {
     @get:Rule val folder=TemporaryFolder()
-    @Test fun seededRecordsPopulateEveryRouteAndHistoricalGradebook()=runSkikoComposeUiTest(size=Size(1360f,860f)) {
+    @Test fun seededRecordsPopulateEveryRouteAndCompleteGradebooks()=runSkikoComposeUiTest(size=Size(1360f,860f)) {
         val path=folder.root.toPath().resolve(".demo-stage-ui.db")
         Database(path).initialize();DemoDataSeeder.seed(path,LocalDate.of(2026,10,26))
         val bridge=DashboardBridge(path);var data by mutableStateOf(bridge.load(null))
@@ -40,23 +40,24 @@ class DemoWorkspaceUiTest {
             }
         }
         waitForIdle();waitUntil(timeoutMillis=15000){!c.busy}
-        assertEquals(180,c.catalog.students.size);assertEquals(45,c.roster.size);assertEquals(12,c.lectures!!.lectures().size)
-        assertEquals(120,c.questions.size);assertEquals(2,c.exams.size);assertFalse(c.gradebook!!.book.grades().isEmpty())
-        assertFalse(c.attendance!!.book.records().isEmpty())
+        assertEquals(70,c.catalog.students.size);assertEquals(35,c.roster.size);assertEquals(12,c.lectures!!.lectures().size)
+        assertEquals(40,c.questions.size);assertEquals(3,c.exams.size);assertEquals(140,c.gradebook!!.book.grades().size)
+        assertEquals(420,c.attendance!!.book.records().size)
+        assertTrue(c.catalog.students.all { it.fullName().split(" ").size==3 })
         val output=File(System.getProperty("compose.test.output"))
         for(route in listOf("Overview","Courses","Students","Terms","Offerings","Teaching context","Lectures","Question Bank","Exam Builder","Gradebook","Attendance","Activity","Settings")) {
             onNodeWithTag("nav-$route").performScrollTo().performClick();waitForIdle()
             assertEquals(route,page);assertNull(c.error)
-            if(route=="Overview") onNodeWithTag("completion-value",true).assertTextEquals("36.36%")
-            if(route=="Lectures") onNodeWithText("36.36% complete",substring=true).assertExists()
+            if(route=="Overview") onNodeWithTag("completion-value",true).assertTextEquals("100%")
+            if(route=="Lectures") onNodeWithText("100% complete",substring=true).assertExists()
             ImageIO.write(onNodeWithTag("dashboard-root").captureToImage().toAwtImage(),"png",File(output,"demo-${route.replace(' ','-')}.png"))
         }
-        val historical=c.catalog.offerings.first {it.offering().status()==AcademicStatus.COMPLETED}.offering().id()
-        runOnIdle {data=bridge.load(historical);c.select(historical);page="Gradebook"}
+        val second=c.catalog.offerings.first {it.offering().id()!=c.offeringId}.offering().id()
+        runOnIdle {data=bridge.load(second);c.select(second);page="Gradebook"}
         waitForIdle();waitUntil(timeoutMillis=15000){!c.busy}
         val book=c.gradebook!!.book;val stats=GradeCalculator.classStatistics(book,GradeCalculator.scores(book))
-        assertTrue(stats.complete()>0);assertTrue(stats.incomplete()>0);assertTrue(stats.passed()>0)
-        ImageIO.write(onNodeWithTag("dashboard-root").captureToImage().toAwtImage(),"png",File(output,"demo-historical-grades.png"))
-        assertEquals(180,WorkspaceServices(path).catalog().students.size)
+        assertEquals(35,stats.complete());assertEquals(0,stats.incomplete());assertTrue(stats.passed()>0);assertTrue(stats.passed()<35)
+        ImageIO.write(onNodeWithTag("dashboard-root").captureToImage().toAwtImage(),"png",File(output,"demo-second-course-grades.png"))
+        assertEquals(70,WorkspaceServices(path).catalog().students.size)
     }
 }
