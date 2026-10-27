@@ -166,6 +166,9 @@ class ExcelIntegrationTest {
         try(var w=new XSSFWorkbook(new ByteArrayInputStream(new ExcelExportService(grades,f.academic().offerings()).render(offering)))) {
             var row=w.getSheet("Grades").getRow(6); assertEquals("0001",row.getCell(0).getStringCellValue());
             assertEquals(82.5,row.getCell(5).getNumericCellValue()); assertEquals(.825,row.getCell(6).getNumericCellValue());
+            var display = new DataFormatter(Locale.ROOT);
+            assertEquals("82.5%", display.formatCellValue(row.getCell(6)));
+            assertEquals("100%", display.formatCellValue(w.getSheet("Statistics").getRow(13).getCell(1)));
             assertEquals(expected.letter(),row.getCell(7).getStringCellValue()); assertEquals(expected.outcome(),row.getCell(8).getStringCellValue());
             assertEquals(.825,w.getSheet("Statistics").getRow(8).getCell(1).getNumericCellValue());
             assertEquals(1,w.getSheet("Statistics").getRow(13).getCell(1).getNumericCellValue());

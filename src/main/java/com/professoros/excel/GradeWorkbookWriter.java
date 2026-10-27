@@ -12,6 +12,7 @@ import java.util.*;
 /** Read-only report snapshots. All grading decisions come from the existing calculator, never Excel formulas. */
 public final class GradeWorkbookWriter {
     private CellStyle body,number,integer,percent,header,title,note,date;
+    private final CellStyle[] percentStyles = new CellStyle[3];
     public byte[] write(Gradebook book,String offering) throws IOException { return write(book,offering,null); }
     public byte[] write(Gradebook book,String offering,AttendanceBook attendance) throws IOException {
         if(book.assessments().size()>1000 || book.students().size()>10000 || (long)(book.assessments().size()+8)*book.students().size()>200000) { throw new DomainValidationException("Excel export supports up to 1,000 assessments, 10,000 students and 200,000 gradebook cells."); }
@@ -127,13 +128,23 @@ public final class GradeWorkbookWriter {
         if(rows==6) { text(sheet.createRow(6),0,"No saved records."); }
     }
     private void text(Row row,int col,String value) { Cell cell=row.createCell(col); if(!value.isEmpty()) { cell.setCellValue(value); } cell.setCellStyle(body); }
-    private void decimal(Row row,int col,BigDecimal value,CellStyle style) { Cell cell=row.createCell(col); if(value!=null) { cell.setCellValue(value.doubleValue()); } cell.setCellStyle(style); }
+    private void decimal(Row row,int col,BigDecimal value,CellStyle style) { Cell cell=row.createCell(col); if(value!=null) { cell.setCellValue(value.doubleValue()); } // Select display precision only; retain the original numeric cell value.
+        if (style == percent && value != null) {
+            int digits = Math.max(0, value.movePointRight(2).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().scale());
+            cell.setCellStyle(percentStyles[digits]);
+        } else { cell.setCellStyle(style); }
+    }
     private void styles(XSSFWorkbook wb) {
         Font font=wb.createFont(); font.setFontName("Arial"); font.setFontHeightInPoints((short)11);
         body=wb.createCellStyle(); body.setFont(font); body.setVerticalAlignment(VerticalAlignment.CENTER); body.setWrapText(true); body.setDataFormat(wb.createDataFormat().getFormat("@")); body.setAlignment(HorizontalAlignment.LEFT); body.setIndention((short)1);
         number=wb.createCellStyle(); number.cloneStyleFrom(body); number.setDataFormat(wb.createDataFormat().getFormat("0.00")); number.setAlignment(HorizontalAlignment.RIGHT);
         integer=wb.createCellStyle(); integer.cloneStyleFrom(number); integer.setDataFormat(wb.createDataFormat().getFormat("0"));
-        percent=wb.createCellStyle(); percent.cloneStyleFrom(number); percent.setDataFormat(wb.createDataFormat().getFormat("0.00%"));
+        for (int digits = 0; digits <= 2; digits++) {
+            percentStyles[digits] = wb.createCellStyle();
+            percentStyles[digits].cloneStyleFrom(number);
+            percentStyles[digits].setDataFormat(wb.createDataFormat().getFormat(digits == 0 ? "0%" : "0." + "0".repeat(digits) + "%"));
+        }
+        percent = percentStyles[2];
         date=wb.createCellStyle(); date.cloneStyleFrom(body); date.setDataFormat(wb.createDataFormat().getFormat("yyyy-mm-dd"));
         Font white=wb.createFont(); white.setFontName("Arial"); white.setFontHeightInPoints((short)11); white.setBold(true); white.setColor(IndexedColors.WHITE.getIndex());
         header=wb.createCellStyle(); header.cloneStyleFrom(body); header.setFont(white); header.setFillForegroundColor(IndexedColors.BLUE_GREY.getIndex()); header.setFillPattern(FillPatternType.SOLID_FOREGROUND); header.setAlignment(HorizontalAlignment.CENTER); header.setBorderRight(BorderStyle.THIN); header.setRightBorderColor(IndexedColors.WHITE.getIndex());

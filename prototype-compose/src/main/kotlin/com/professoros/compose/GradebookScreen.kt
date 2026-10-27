@@ -1,5 +1,7 @@
 package com.professoros.compose
 
+import com.professoros.util.PercentageFormatter
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -82,9 +84,9 @@ import java.nio.file.Path
                     Action("Delete",enabled=category!=null){if(category!=null&&c.gradeConfigurable())c.confirm("Delete category?",category.name()+"\nCategories containing assessments cannot be deleted."){c.mutate {c.services.academic.grades().deleteCategory(book.offeringId(),category.id())}}}
                     Action("Grading scale",modifier=Modifier.testTag("grading-scale")){c.editGradingScale()}
                 }
-                RecordTable(book.categories(),listOf(TableColumn("Category",2f){v:AssessmentCategory->v.name()},TableColumn("Weight %"){it.weight().toPlainString()}),AssessmentCategory::id,categoryId,{categoryId=it.id()},{c.editGradeCategory(it)},"grade-categories","No categories yet. Create categories with weights totaling 100%.")
+                RecordTable(book.categories(),listOf(TableColumn("Category",2f){v:AssessmentCategory->v.name()},TableColumn("Weight %"){PercentageFormatter.number(it.weight())}),AssessmentCategory::id,categoryId,{categoryId=it.id()},{c.editGradeCategory(it)},"grade-categories","No categories yet. Create categories with weights totaling 100%.")
                 val s=book.scale()
-                Copy("Inclusive thresholds · A ${s.a()} · B ${s.b()} · C ${s.c()} · D ${s.d()} · Pass ${s.pass()}%",13)
+                Copy("Inclusive thresholds · A ${PercentageFormatter.format(s.a())} · B ${PercentageFormatter.format(s.b())} · C ${PercentageFormatter.format(s.c())} · D ${PercentageFormatter.format(s.d())} · Pass ${PercentageFormatter.format(s.pass())}",13)
                 Copy("Within each category, earned marks are divided by total maximum marks. Zero-weight categories do not affect totals. Final letters and pass/fail require all weighted entries and weights totaling 100%.",13,Ink.muted)
             }
         }
@@ -166,7 +168,7 @@ import java.nio.file.Path
                         }
                         val result=summary.results[row.enrollment().id()]
                         Column(Modifier.width(240.dp).padding(12.dp).testTag("grade-result-${row.enrollment().id()}")) {
-                            Copy(result?.let {"${it.weightedPoints()}% · ${it.letter()} · ${it.outcome()}"}?:"Check scores",13,if(result?.complete()==true)Ink.positive else Ink.muted)
+                            Copy(result?.let {"${PercentageFormatter.format(it.weightedPoints())} · ${it.letter()} · ${it.outcome()}"}?:"Check scores",13,if(result?.complete()==true)Ink.positive else Ink.muted)
                             if(result?.complete()==false)Copy("${result.graded()}/${result.required()} graded · provisional",11,Ink.muted)
                         }
                     };Rule()

@@ -42,7 +42,7 @@ internal fun WorkspaceController.editGradeCategory(existing:AssessmentCategory?=
     if(!gradeConfigurable())return
     val id=gradebook!!.book.offeringId()
     form=RecordForm(if(existing==null)"New assessment category" else "Edit category",listOf(
-        Field("name","Category name *",existing?.name().orEmpty()),Field("weight","Weight % *",existing?.weight()?.toPlainString().orEmpty()))) {
+        Field("name","Category name *",existing?.name().orEmpty()),Field("weight","Weight % *",existing?.weight()?.stripTrailingZeros()?.toPlainString().orEmpty()))) {
         services.academic.grades().saveCategory(id,existing?.id(),it["name"],GradebookService.number(it["weight"],"Weight"))
     }
 }
@@ -61,8 +61,8 @@ internal fun WorkspaceController.editGradingScale() {
     if(!gradeConfigurable())return
     val book=gradebook!!.book;val scale=book.scale()
     form=RecordForm("Grading scale · inclusive minimum percentages",listOf(
-        Field("a","A minimum %",scale.a().toPlainString()),Field("b","B minimum %",scale.b().toPlainString()),
-        Field("c","C minimum %",scale.c().toPlainString()),Field("d","D minimum %",scale.d().toPlainString()),Field("pass","Pass minimum %",scale.pass().toPlainString()))) {f->
+        Field("a","A minimum %",scale.a().stripTrailingZeros().toPlainString()),Field("b","B minimum %",scale.b().stripTrailingZeros().toPlainString()),
+        Field("c","C minimum %",scale.c().stripTrailingZeros().toPlainString()),Field("d","D minimum %",scale.d().stripTrailingZeros().toPlainString()),Field("pass","Pass minimum %",scale.pass().stripTrailingZeros().toPlainString()))) {f->
         fun n(key:String)=GradebookService.number(f[key],"Threshold")
         services.academic.grades().saveScale(book.offeringId(),GradingScale(n("a"),n("b"),n("c"),n("d"),n("pass")))
     }

@@ -1,5 +1,7 @@
 package com.professoros.compose
 
+import com.professoros.util.PercentageFormatter
+
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -31,7 +33,7 @@ internal fun WorkspaceController.editLecture(existing:Lecture?=null) {
         Copy(c.active?.label().orEmpty(),14,Ink.violet)
         overview?.progress()?.let {p->Panel(Modifier.fillMaxWidth()) {
             Copy("${p.total()} lectures · ${p.completed()} completed · ${p.partial()} partial",16)
-            Copy("${p.completionPercent()}% complete · ${p.scheduleStatus()}",14,Ink.violet)
+            Copy("${PercentageFormatter.format(p.completionPercent())} complete · ${p.scheduleStatus()}",14,Ink.violet)
             Copy("Cancelled lectures are excluded. Partially completed lectures do not count as completed.",12,Ink.muted)
         }}
         Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {

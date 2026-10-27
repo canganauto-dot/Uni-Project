@@ -124,7 +124,7 @@ class GradebookTest {
         assertThrows(DomainValidationException.class,draft::scores);
         draft.set(key(),""); assertFalse(draft.dirty());
         draft.set(key(),"20"); assertTrue(draft.dirty()); assertEquals("20",draft.changes().get(key()));
-        assertTrue(GradeCalculator.statistics(draft.book(),draft.scores()).contains("Mean: 100.00"));
+        assertTrue(GradeCalculator.statistics(draft.book(),draft.scores()).contains("Mean: 100%"));
         f.academic().enrollments().updateStatus(enrollment,EnrollmentStatus.WITHDRAWN);
         var b=service.load(offering); assertTrue(GradeCalculator.statistics(b,draft.scores()).contains("No complete results"));
     }

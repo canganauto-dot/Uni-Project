@@ -47,6 +47,8 @@ class DemoWorkspaceUiTest {
         for(route in listOf("Overview","Courses","Students","Terms","Offerings","Teaching context","Lectures","Question Bank","Exam Builder","Gradebook","Attendance","Activity","Settings")) {
             onNodeWithTag("nav-$route").performScrollTo().performClick();waitForIdle()
             assertEquals(route,page);assertNull(c.error)
+            if(route=="Overview") onNodeWithTag("completion-value",true).assertTextEquals("36.36%")
+            if(route=="Lectures") onNodeWithText("36.36% complete",substring=true).assertExists()
             ImageIO.write(onNodeWithTag("dashboard-root").captureToImage().toAwtImage(),"png",File(output,"demo-${route.replace(' ','-')}.png"))
         }
         val historical=c.catalog.offerings.first {it.offering().status()==AcademicStatus.COMPLETED}.offering().id()

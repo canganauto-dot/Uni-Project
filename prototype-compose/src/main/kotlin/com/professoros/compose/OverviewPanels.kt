@@ -1,5 +1,7 @@
 package com.professoros.compose
 
+import com.professoros.util.PercentageFormatter
+
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.*
@@ -13,7 +15,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
 import com.professoros.model.DashboardOverview
 import java.time.format.DateTimeFormatter
-import kotlin.math.roundToInt
 
 @Composable internal fun Overview(data:DashboardSnapshot,narrow:Boolean,open:()->Unit) {
     Column(verticalArrangement=Arrangement.spacedBy(18.dp)) {
@@ -57,7 +58,7 @@ import kotlin.math.roundToInt
         if(hasLectures) {
             Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.Bottom) {
                 Copy(progress.completed().toString()+" of "+progress.scheduledTotal()+" lectures delivered",13)
-                Copy(completion.roundToInt().toString()+"%",24,Ink.text,FontWeight.SemiBold,Modifier.testTag("completion-value"))
+                Copy(PercentageFormatter.format(completion.toDouble()),24,Ink.text,FontWeight.SemiBold,Modifier.testTag("completion-value"))
             }
             Box(Modifier.fillMaxWidth().height(4.dp).background(Ink.border,RoundedCornerShape(3.dp))) {
                 Box(Modifier.fillMaxWidth((completion/100).coerceIn(0f,1f)).fillMaxHeight().background(Ink.violet,RoundedCornerShape(3.dp)))
@@ -96,7 +97,7 @@ import kotlin.math.roundToInt
                 Copy("Active students",11,Ink.muted)
             }
             Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)) {
-                Copy(data.attendance?.percentage()?.let {it.stripTrailingZeros().toPlainString()+"%"}?:"—",28,Ink.positive,FontWeight.Medium)
+                Copy(data.attendance?.percentage()?.let {PercentageFormatter.format(it)}?:"—",28,Ink.positive,FontWeight.Medium)
                 Copy("Attendance",11,Ink.muted)
             }
         }

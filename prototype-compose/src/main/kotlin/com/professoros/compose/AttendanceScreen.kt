@@ -1,5 +1,7 @@
 package com.professoros.compose
 
+import com.professoros.util.PercentageFormatter
+
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -134,7 +136,7 @@ import kotlinx.coroutines.launch
                                     }
                                 }
                             }
-                            Copy(saved[id]?.percentage()?.let {"$it%"}?:"Not rated",12,Ink.muted,modifier=Modifier.width(90.dp).testTag("attendance-percent-$id"))
+                            Copy(saved[id]?.percentage()?.let {PercentageFormatter.format(it)}?:"Not rated",12,Ink.muted,modifier=Modifier.width(90.dp).testTag("attendance-percent-$id"))
                         }
                     }
                 }

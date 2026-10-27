@@ -54,7 +54,7 @@ class AttendanceUiTest {
         onNodeWithTag("attendance-$first-UNMARKED").performScrollTo().performClick()
         assertTrue(c.attendance!!.dirty);assertNull(c.attendance!!.value(first))
         // Percentages explicitly remain based on saved records until Save.
-        onNodeWithTag("attendance-percent-$first",true).assertTextContains("100.00%")
+        onNodeWithTag("attendance-percent-$first",true).assertTextContains("100%")
         onNodeWithTag("save-attendance").performScrollTo().performClick();settled(c)
         assertFalse(c.attendance!!.dirty);assertNull(services.academic.attendance().load(id).status(first,lecture))
         onNodeWithTag("attendance-row-$first").performScrollTo().performClick().performKeyInput {pressKey(Key.A)}

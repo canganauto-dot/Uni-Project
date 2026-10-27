@@ -95,7 +95,7 @@ Thirty-one tests cover direct Java persistence/reconstruction, unchanged databas
 
 Snapshots in ignored `build/screenshots/` include `refined-overview-*` renderer captures at 1360×860, 900×720 and 1700×1050, `refined-minimum-content.png` at 864×621, Arabic context labels and an empty workspace. Actual running Windows captures include `refined-native-1360.png`, `refined-native-880.png`, `refined-native-880-scrolled.png`, `refined-native-maximized.png`, `refined-native-picker.png` and navigation start/settled frames. Native screenshots use the existing database; the blue pointer halo belongs to the capture tool, not the application. `render-observation.txt` measures warmed screenshot/readback time, **not FPS or a GPU benchmark**.
 
-The Maven `-DforkCount=0 clean verify` workflow runs 200 backend tests; the retired JavaFX smoke and CSS tests were removed. Compose tests additionally reject the legacy toolkit, launchers and CSS on the runtime classpath. See PROJECT_NOTES and [parity audit](../docs/COMPOSE_PARITY.md) for verification and data-integrity evidence.
+The Maven `-DforkCount=0 clean verify` workflow runs 204 backend tests; the retired JavaFX smoke and CSS tests were removed. Compose tests additionally reject the legacy toolkit, launchers and CSS on the runtime classpath. See PROJECT_NOTES and [parity audit](../docs/COMPOSE_PARITY.md) for verification and data-integrity evidence.
 
 Migration screenshots use the `migration-*` prefix, including integrated normal/minimum shell views, forms, composition and native Windows captures. Native QA uses a separately seeded database under ignored `build/native-migration-qa/`; it never seeds the user's normal database. Launch normally without `PROFESSOR_OS_DATA_DIR` to use your existing saved workspace.
 

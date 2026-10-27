@@ -1,4 +1,5 @@
 package com.professoros.service;
+import com.professoros.util.PercentageFormatter;
 import com.professoros.model.*;
 import java.math.*;
 import java.util.*;
@@ -7,7 +8,7 @@ public final class GradeCalculator {
     private GradeCalculator() { }
     public static BigDecimal weightTotal(Gradebook book) { return book.categories().stream().map(AssessmentCategory::weight).reduce(BigDecimal.ZERO,BigDecimal::add); }
     public static String configurationMessage(Gradebook book) {
-        String result="Category weights: "+weightTotal(book)+"%";
+        String result="Category weights: "+PercentageFormatter.format(weightTotal(book));
         if(weightTotal(book).compareTo(new BigDecimal("100"))!=0) { result+=" — WARNING: must total 100% for final results."; }
         var empty=book.categories().stream().filter(c->c.weight().signum()>0 && book.assessments().stream().noneMatch(a->a.categoryId()==c.id())).map(AssessmentCategory::name).toList();
         if(!empty.isEmpty()) { result+=" — Incomplete: add assessments to "+String.join(", ",empty)+"."; }
@@ -50,7 +51,7 @@ public final class GradeCalculator {
     public static String statistics(Gradebook book,Map<GradeKey,BigDecimal> scores) {
         var summary=classStatistics(book,scores);
         if(summary.complete()==0) { return "No complete results · "+summary.incomplete()+" incomplete · withdrawn students excluded"; }
-        return "Complete: "+summary.complete()+" · Incomplete: "+summary.incomplete()+" · Mean: "+summary.mean()+"% · Min: "+summary.minimum()+"% · Max: "+summary.maximum()+"% · Passed: "+summary.passed()+" (withdrawn excluded)";
+        return "Complete: "+summary.complete()+" · Incomplete: "+summary.incomplete()+" · Mean: "+PercentageFormatter.format(summary.mean())+" · Min: "+PercentageFormatter.format(summary.minimum())+" · Max: "+PercentageFormatter.format(summary.maximum())+" · Passed: "+summary.passed()+" (withdrawn excluded)";
     }
     public static GradeStatistics classStatistics(Gradebook book,Map<GradeKey,BigDecimal> scores) {
         var results=book.students().stream().filter(s->s.enrollment().status()!=EnrollmentStatus.WITHDRAWN)

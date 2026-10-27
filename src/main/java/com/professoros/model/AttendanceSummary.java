@@ -1,5 +1,6 @@
 package com.professoros.model;
+import com.professoros.util.PercentageFormatter;
 import java.math.BigDecimal;
 public record AttendanceSummary(int present,int absent,int late,int excused,int unmarked,BigDecimal percentage) {
-    public String display() { return (percentage==null?"Not yet rated":percentage+"%")+" · Present "+present+" · Absent "+absent+" · Late "+late+" · Excused "+excused+" · Unmarked "+unmarked; }
+    public String display() { return (percentage==null?"Not yet rated":PercentageFormatter.format(percentage))+" · Present "+present+" · Absent "+absent+" · Late "+late+" · Excused "+excused+" · Unmarked "+unmarked; }
 }
