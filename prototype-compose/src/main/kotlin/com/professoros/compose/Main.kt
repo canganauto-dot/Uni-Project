@@ -16,10 +16,13 @@ fun main() = application {
     // Optional development capture sizes; normal launches retain the same responsive window.
     val initialWidth = System.getProperty("professoros.preview.width")?.toIntOrNull()?.coerceIn(880, 3840) ?: 1360
     val initialHeight = System.getProperty("professoros.preview.height")?.toIntOrNull()?.coerceIn(660, 2160) ?: 860
-    Window(onCloseRequest = {if(!preferences.saving)workspace.guard {exitApplication()}}, title = "Professor OS", icon = painterResource("professor-os.svg"),
+    Window(onCloseRequest = {if(!preferences.saving)workspace.guard {exitApplication()}}, title = "Professor OS", icon = painterResource("icons/professor-os-256.png"),
         state = rememberWindowState(width = initialWidth.dp, height = initialHeight.dp)) {
         DisposableEffect(window) {
             window.minimumSize = java.awt.Dimension(880, 660)
+            window.iconImages = listOf(16,24,32,48,64,128,256).map { size ->
+                javax.imageio.ImageIO.read(checkNotNull(Thread.currentThread().contextClassLoader.getResource("icons/professor-os-$size.png")))
+            }
             onDispose {}
         }
         CompositionLocalProvider(LocalPalette provides if(preferences.mode.dark(isSystemInDarkTheme())) DarkPalette else LightPalette) {

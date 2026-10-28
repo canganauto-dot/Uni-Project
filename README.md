@@ -176,3 +176,7 @@ The [demo workspace guide](docs/DEMO_WORKSPACE.md) describes the explicit backup
 ## Repository publication
 
 Local databases, backups, generated Graphify output, development exports, build outputs, caches and credentials are excluded from Git. A fresh checkout creates an empty workspace on first launch; demo records require the explicit maintenance workflow. Keep font provenance/licenses, wrapper files, historical migrations and test fixtures in the repository. Check `git status` and staged filenames before publishing. See [publication cleanup record](docs/PUBLICATION_CLEANUP.md).
+
+## Windows installer
+
+Build the self-contained Windows EXE with `tools/package-windows.ps1` after configuring JDK 25. Installed users need no Java or Gradle; user data stays under `%LOCALAPPDATA%\ProfessorOS\data`. See [Windows packaging and verification](docs/WINDOWS_PACKAGING.md) for icons, upgrades, storage overrides and release checks.
