@@ -23,8 +23,8 @@ import androidx.compose.ui.window.Popup
 
 /** Shared presentation tokens. No Material components or platform-specific rendering dependencies. */
 data class Palette(val background: Color, val sidebar: Color, val panel: Color, val raised: Color, val selected: Color, val border: Color, val text: Color, val muted: Color, val violet: Color, val positive: Color, val accentSurface: Color)
-val DarkPalette = Palette(Color(0xFF101522),Color(0xFF151C2C),Color(0xFF1C2638),Color(0xFF253248),Color(0xFF343B57),Color(0xFF73809A),Color(0xFFF4F6FC),Color(0xFFC0CADC),Color(0xFFD0BBFF),Color(0xFF88E2BB),Color(0xFF302B49))
-val LightPalette = Palette(Color(0xFFF5F4F7),Color(0xFFEFEDF2),Color(0xFFFFFFFF),Color(0xFFF0EEF4),Color(0xFFE4DFED),Color(0xFF737D90),Color(0xFF202027),Color(0xFF57515F),Color(0xFF644A83),Color(0xFF35634D),Color(0xFFEDE7F4))
+val DarkPalette = Palette(Color(0xFF141824),Color(0xFF181D2B),Color(0xFF202735),Color(0xFF293243),Color(0xFF38354C),Color(0xFF495368),Color(0xFFEDEFF6),Color(0xFFB6BFD0),Color(0xFFC7B7E7),Color(0xFFA4CFBE),Color(0xFF2D293E))
+val LightPalette = Palette(Color(0xFFF5F4F7),Color(0xFFEFEDF2),Color(0xFFFFFFFF),Color(0xFFF0EEF4),Color(0xFFE4DFED),Color(0xFFA4A6B4),Color(0xFF202027),Color(0xFF57515F),Color(0xFF644A83),Color(0xFF35634D),Color(0xFFEDE7F4))
 internal val LocalPalette = staticCompositionLocalOf { DarkPalette }
 object Ink {
     val background: Color @Composable get() = LocalPalette.current.background
@@ -56,18 +56,28 @@ internal fun fontFor(text: String) = if (ArabicText.containsMatchIn(text)) arabi
 }
 internal fun <T> motion(): FiniteAnimationSpec<T> = spring(dampingRatio = 1f, stiffness = 420f)
 
-@Composable internal fun Rule() = Box(Modifier.fillMaxWidth().height(1.dp).background(Ink.border))
+@Composable internal fun Rule() = Box(Modifier.fillMaxWidth().height(1.dp).background(Ink.border.copy(alpha=.65f)))
 
 /** Intent is explicit at call sites; labels never determine action semantics. */
 internal enum class ActionVariant { PRIMARY, SUCCESS, DESTRUCTIVE, SECONDARY, WARNING }
-internal fun actionSurface(variant:ActionVariant):Color = when(variant) {
-    ActionVariant.PRIMARY -> Color(0xFF6746B5)
-    ActionVariant.SUCCESS -> Color(0xFF176344)
-    ActionVariant.DESTRUCTIVE -> Color(0xFFA32F45)
-    ActionVariant.SECONDARY -> Color(0xFF303E56)
-    ActionVariant.WARNING -> Color(0xFF80500D)
+internal data class ActionTone(val surface:Color,val foreground:Color,val border:Color)
+internal fun actionTone(variant:ActionVariant,light:Boolean=false):ActionTone {
+    fun tone(surface:Long,foreground:Long,border:Long)=ActionTone(Color(surface),Color(foreground),Color(border))
+    if(light)return when(variant) {
+        ActionVariant.PRIMARY -> tone(0xFF66518F,0xFFFFFFFF,0xFF8069A8)
+        ActionVariant.SUCCESS -> tone(0xFFE6EFEB,0xFF285744,0xFF9AB9AA)
+        ActionVariant.DESTRUCTIVE -> tone(0xFFF3E7EB,0xFF883E50,0xFFC69AA6)
+        ActionVariant.SECONDARY -> tone(0xFFEBECF2,0xFF3E495E,0xFFA4A9B8)
+        ActionVariant.WARNING -> tone(0xFFF2EDE3,0xFF735521,0xFFC2AE86)
+    }
+    return when(variant) {
+        ActionVariant.PRIMARY -> tone(0xFF66518F,0xFFFFFFFF,0xFF8974B1)
+        ActionVariant.SUCCESS -> tone(0xFF263B38,0xFFA4CFBE,0xFF4B7064)
+        ActionVariant.DESTRUCTIVE -> tone(0xFF402E3A,0xFFE0AFBA,0xFF805363)
+        ActionVariant.SECONDARY -> tone(0xFF272F40,0xFFD1D7E5,0xFF4D5870)
+        ActionVariant.WARNING -> tone(0xFF3D352E,0xFFD9C29C,0xFF78664D)
+    }
 }
-internal val ActionForeground=Color(0xFFFFFFFF)
 
 @Composable internal fun Action(label: String, icon: String = "arrow", active: Boolean = false,
     modifier: Modifier = Modifier, quiet: Boolean = false,
@@ -77,15 +87,16 @@ internal val ActionForeground=Color(0xFFFFFFFF)
     val hovered by interaction.collectIsHoveredAsState()
     val focused by interaction.collectIsFocusedAsState()
     val pressed by interaction.collectIsPressedAsState()
-    val surface=if(active) actionSurface(ActionVariant.PRIMARY) else actionSurface(variant)
-    val foreground=if(!enabled)Ink.muted else if(quiet&&!active&&!hovered&&!pressed)Ink.text else ActionForeground
+    val tone=actionTone(if(active)ActionVariant.PRIMARY else variant,LocalPalette.current.background.luminance()>.5f)
+    val surface=tone.surface
+    val foreground=if(!enabled)Ink.muted else if(quiet&&!active&&!hovered&&!pressed)Ink.text else tone.foreground
     val fill by animateColorAsState(
-        if(!enabled) Ink.raised else if(pressed) lerp(surface,Color.Black,.18f)
-        else if(hovered) lerp(surface,Color.White,.08f) else if(quiet&&!active) Color.Transparent else surface,
+        if(!enabled) Ink.raised else if(pressed) lerp(surface,Color.Black,.08f)
+        else if(hovered) lerp(surface,Color.White,.04f) else if(quiet&&!active) Color.Transparent else surface,
         motion(), label = "button-surface")
     Box {
     Row(modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(8.dp)).background(fill)
-        .border(if(focused)2.dp else 1.dp, if (focused) Ink.violet else if (quiet&&!active) Color.Transparent else if(active)Ink.violet else Ink.border, RoundedCornerShape(8.dp))
+        .border(if(focused)2.dp else 1.dp, if (focused) Ink.violet else if (quiet&&!active) Color.Transparent else if(!enabled)Ink.border.copy(alpha=.5f) else tone.border, RoundedCornerShape(8.dp))
         .hoverable(interaction).clickable(interactionSource = interaction, indication = null, enabled = enabled,
             role = Role.Button, onClick = onClick)
         .padding(horizontal = 10.dp, vertical = 8.dp),

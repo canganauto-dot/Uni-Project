@@ -84,10 +84,12 @@ class SettingsUiTest {
         assertTrue(ThemeMode.DARK.dark(false));assertFalse(ThemeMode.LIGHT.dark(true))
     }
     @Test fun semanticButtonsKeepAaTextContrastInInteractiveStates() {
-        for(variant in ActionVariant.entries) {
-            val base=actionSurface(variant)
-            for(surface in listOf(base,androidx.compose.ui.graphics.lerp(base,androidx.compose.ui.graphics.Color.White,.08f),androidx.compose.ui.graphics.lerp(base,androidx.compose.ui.graphics.Color.Black,.18f))) {
-                assertTrue((ActionForeground.luminance()+.05f)/(surface.luminance()+.05f)>=4.5f,"Button contrast: $variant")
+        for(light in listOf(false,true))for(variant in ActionVariant.entries) {
+            val tone=actionTone(variant,light)
+            val base=tone.surface
+            for(surface in listOf(base,androidx.compose.ui.graphics.lerp(base,androidx.compose.ui.graphics.Color.White,.04f),androidx.compose.ui.graphics.lerp(base,androidx.compose.ui.graphics.Color.Black,.08f))) {
+                val a=tone.foreground.luminance();val b=surface.luminance()
+                assertTrue((maxOf(a,b)+.05f)/(minOf(a,b)+.05f)>=4.5f,"Button contrast: $variant light=$light")
             }
         }
     }
