@@ -64,18 +64,18 @@ internal data class ActionTone(val surface:Color,val foreground:Color,val border
 internal fun actionTone(variant:ActionVariant,light:Boolean=false):ActionTone {
     fun tone(surface:Long,foreground:Long,border:Long)=ActionTone(Color(surface),Color(foreground),Color(border))
     if(light)return when(variant) {
-        ActionVariant.PRIMARY -> tone(0xFF66518F,0xFFFFFFFF,0xFF8069A8)
+        ActionVariant.PRIMARY -> tone(0xFF5D4C80,0xFFFFFFFF,0xFF786595)
         ActionVariant.SUCCESS -> tone(0xFFE6EFEB,0xFF285744,0xFF9AB9AA)
         ActionVariant.DESTRUCTIVE -> tone(0xFFF3E7EB,0xFF883E50,0xFFC69AA6)
         ActionVariant.SECONDARY -> tone(0xFFEBECF2,0xFF3E495E,0xFFA4A9B8)
         ActionVariant.WARNING -> tone(0xFFF2EDE3,0xFF735521,0xFFC2AE86)
     }
     return when(variant) {
-        ActionVariant.PRIMARY -> tone(0xFF66518F,0xFFFFFFFF,0xFF8974B1)
-        ActionVariant.SUCCESS -> tone(0xFF263B38,0xFFA4CFBE,0xFF4B7064)
-        ActionVariant.DESTRUCTIVE -> tone(0xFF402E3A,0xFFE0AFBA,0xFF805363)
-        ActionVariant.SECONDARY -> tone(0xFF272F40,0xFFD1D7E5,0xFF4D5870)
-        ActionVariant.WARNING -> tone(0xFF3D352E,0xFFD9C29C,0xFF78664D)
+        ActionVariant.PRIMARY -> tone(0xFF51436F,0xFFF1EBFF,0xFF71608F)
+        ActionVariant.SUCCESS -> tone(0xFF243532,0xFF95D2B5,0xFF426052)
+        ActionVariant.DESTRUCTIVE -> tone(0xFF382A32,0xFFE3A9AE,0xFF6C4851)
+        ActionVariant.SECONDARY -> tone(0xFF252D3C,0xFFCAD3E3,0xFF465167)
+        ActionVariant.WARNING -> tone(0xFF363128,0xFFDFC08B,0xFF685B43)
     }
 }
 

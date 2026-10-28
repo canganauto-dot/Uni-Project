@@ -864,3 +864,9 @@ Verification: Maven clean verify passed 225 tests; the full Compose suite passed
 Visual review found the initial filled semantic colors and bright universal borders competed with the navy/violet identity. Semantic buttons now share muted tonal surfaces, with coordinated foreground/border tokens per intent and separate light-theme tones. Violet remains the single filled emphasis; emerald, rose-red and amber are restrained accents. Neutral controls blend into the navy surfaces. Panel borders and separators are quieter, while readable text and focused controls retain emphasis. Hover and pressed changes are smaller. The shared contrast test covers both tonal palettes and interactive states.
 
 Verification: 225 Maven and 43 Compose tests passed, including contrast for both tonal palettes. Reviewed refreshed minimum-size screenshots across the six major screens and native Windows startup on an isolated database copy. Existing records were untouched.
+
+### 2026-10-28 — Blend semantic buttons into existing surfaces
+
+Retained all five explicit semantic button variants and their existing action assignments. Reduced dark button surface and border prominence to sit closer to the navy panels, while preserving recognizable violet, emerald, red, slate and amber foreground cues. Primary violet remains the strongest emphasis. This adjustment changes shared color tokens only.
+
+Verification: 225 Maven tests and 9 relevant Compose appearance/route audit tests passed. The tests cover button contrast in both themes and generate all-route minimum-window screenshots; refreshed Gradebook and Question Bank screenshots were reviewed. No application behavior or database changes.
