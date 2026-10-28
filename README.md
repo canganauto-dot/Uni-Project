@@ -10,7 +10,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 - Excel student import with Arabic/English mapping, validation preview and optional offering enrollment; formatted gradebook export with saved calculations.
 - Student Exam and Answer Key PDF preview/export from saved snapshots, with A4 pagination, embedded fonts and basic Arabic/RTL support.
-- Offering-scoped gradebook with editable cells, bulk plain-text entry, weighted categories, assessment CRUD, configurable letter/pass thresholds, incomplete results and basic class statistics.
+- Offering-scoped gradebook with editable cells, selected-student bulk score entry, weighted categories, assessment CRUD, configurable letter/pass thresholds, incomplete results and basic class statistics.
 - Compose shell, catalog Course CRUD, academic Terms and student directory management.
 - Course offerings by term/section, an active offering selector and enrollment rosters with withdrawal/completion/reactivation.
 - Offering-specific lecture CRUD and search, completion counts and basic schedule status.
@@ -24,7 +24,7 @@ An offline-first desktop workspace for university professors, built as an academ
 
 ## Desktop application
 
-The native Kotlin/JVM workspace calls the existing Java services for catalog, enrollment, lecture, question, exam and Gradebook workflows. It retains the obsidian/charcoal dashboard, muted violet accents, Arabic fonts and fixed, restrained animations with Light/Dark/System appearance in Settings. Timeline remains removed; lecture records, algorithms and migration history are preserved.
+The native Kotlin/JVM workspace calls the existing Java services for catalog, enrollment, lecture, question, exam and Gradebook workflows. It retains the dark navy dashboard, muted violet accents, Arabic fonts and fixed, restrained animations with Light/Dark/System appearance in Settings. Timeline remains removed; lecture records, algorithms and migration history are preserved.
 
 With JDK 25 configured, run from the repository root: `cmd /d /c ".\prototype-compose\gradlew.bat -p prototype-compose run"`. See [desktop setup, verification and limitations](prototype-compose/README.md). Close the application before rebuilding. Maven builds/tests the Java backend library; Gradle builds/tests/launches the Compose desktop. The existing `prototype-compose` folder name is retained to avoid an unrelated path migration.
 
@@ -40,13 +40,13 @@ Broader semester planning, advanced generation constraints, multiple exam versio
 4. Open an offering from **Offerings** or the top-bar selector; **Teaching context** manages its enrolled roster.
 5. Select **Lectures** to organize the active offering's lectures. Switching the top-bar offering updates the page. Progress covers all lectures in that offering, independent of search.
 6. Use **Question Bank** to create reusable questions for a catalog course. No term or active offering is required. Choose 2–10 distinct choices and one correct answer for MCQs, or a True/False answer when applicable. Optional image files are referenced by absolute local path, not copied into the database.
-7. Select an offering and open **Exam Builder**. Create a draft, add questions from its course's bank, and use the composition area to remove/reorder them. Generate selection supports exact difficulty/type/topic counts; leaving a whole distribution blank makes it unrestricted. Review calculated versus intended marks, then Save. Finalize only when content is ready: finalized exams cannot be edited or deleted.
+7. Select an offering and open **Exam Builder**. Create a draft, add questions from its course's bank, and use the composition area to remove/reorder them and edit exam-specific marks without changing Question Bank defaults. Generate selection supports exact difficulty/type/topic counts; leaving a whole distribution blank makes it unrestricted. Review calculated versus intended marks, then Save. Finalize only when content is ready: finalized exams cannot be edited or deleted.
 
 Course is a reusable catalog definition. Enrollment links a student to a specific offering, never directly to the catalog course. Records with dependent academic history cannot be deleted. Active offering selection lasts for the current application session.
 
 For PDFs, select a saved exam and choose **Preview / export PDF**. Enter university, department, professor and an optional PNG/JPEG logo. Generate and review Student Exam, then save to a new filename. Switch to Answer Key, generate its preview and save separately. A mark mismatch requires acknowledgement; existing files are never replaced. Print details are entered per export session. Missing images or unsupported glyphs produce an actionable error rather than silently disappearing.
 
-For grades, select an offering and open **Gradebook**. Create weighted categories under **Categories & Scale**, then dated assessments under **Assessments**. Enter scores directly or use **Bulk Entry** (student number, TAB, score per line), then **Save Grades**. Blank means ungraded; zero is a real score. Final results require weights totaling 100% and complete scores in all positive-weight categories. The default scale is A ≥90, B ≥80, C ≥70, D ≥60, F below 60, pass ≥60; configure thresholds per offering. Deleting an assessment also deletes its grades after confirmation.
+For grades, select an offering and open **Gradebook**. Create weighted categories under **Categories & Scale**, then dated assessments under **Assessments**. Enter scores directly or select students and use **Bulk Entry** to apply one validated score to a chosen assessment, with confirmation before overwriting, then **Save Grades**. Blank means ungraded; zero is a real score. Final results require weights totaling 100% and complete scores in all positive-weight categories. E uses the configured Pass minimum inclusively; F always means failure. The default Pass minimum equals D at 60, so E has no interval until Pass is set below D. Configure thresholds per offering. Deleting an assessment also deletes its grades after confirmation.
 
 For Excel, choose **Import from Excel** in Students or **Teaching context → Import & enroll**. Load an `.xlsx`, select its sheet/header, review automatic Arabic/English column mapping (or map manually), then preview and confirm valid rows. Existing profiles are never overwritten. Repeated IDs and conflicting profiles are errors; matching students can be enrolled without duplication. Section must match the selected offering when supplied. Set student ID columns to Text before entering values. For existing numeric IDs, re-enter the original ID after formatting; formatting alone cannot restore lost zeros or rounded digits. Numeric formats that scale or abbreviate IDs are rejected. See [Excel QA and manual verification](docs/EXCEL_QA.md) for realistic fixtures and pending native checks.
 
@@ -172,3 +172,7 @@ If startup reports an applied migration checksum mismatch, preserve the database
 ## Optional demonstration workspace
 
 The [demo workspace guide](docs/DEMO_WORKSPACE.md) describes the explicit backup-first seeder, fictional academic dataset, Excel import fixtures and verified restore command. The application never seeds data automatically. Close the application before using the maintenance tool; databases, backups and generated files remain outside Git.
+
+## Repository publication
+
+Local databases, backups, generated Graphify output, development exports, build outputs, caches and credentials are excluded from Git. A fresh checkout creates an empty workspace on first launch; demo records require the explicit maintenance workflow. Keep font provenance/licenses, wrapper files, historical migrations and test fixtures in the repository. Check `git status` and staged filenames before publishing. See [publication cleanup record](docs/PUBLICATION_CLEANUP.md).

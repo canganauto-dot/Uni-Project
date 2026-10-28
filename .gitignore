@@ -42,7 +42,7 @@ $RECYCLE.BIN/
 .env.local
 
 # Generated PDF/Excel output belongs in exports/, generated/ or target/.
-# Do not globally ignore *.pdf, *.xlsx, *.sql or databases: reference documents,
+# Do not globally ignore *.pdf, *.xlsx or *.sql: reference documents,
 # import fixtures, migrations and required resources must remain trackable.
 
 # Compose Desktop build output
@@ -52,3 +52,45 @@ $RECYCLE.BIN/
 
 # Local Python maintenance-tool cache
 /tools/__pycache__/
+
+# Publication: machine-local tooling and generated artifacts
+/graphify-out/
+/.codex/
+/outputs/
+**/node_modules/
+**/__pycache__/
+*.py[cod]
+
+# Local SQLite files and backups; intentional resource fixtures remain versionable
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.db-wal
+*.db-shm
+**/backups/
+*.bak
+!**/src/test/resources/**/*.db
+!**/src/test/resources/**/*.sqlite
+!**/src/test/resources/**/*.sqlite3
+!**/src/test/resources/**/*.bak
+
+!**/src/main/resources/**/*.db
+!**/src/main/resources/**/*.sqlite
+!**/src/main/resources/**/*.sqlite3
+
+# Temporary editor files and local credentials
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.env.*
+!.env.example
+!.env.template
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.json
