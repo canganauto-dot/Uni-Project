@@ -54,14 +54,20 @@ import java.nio.file.Path
             if(tab=="Grades") {
                 Action("Save grades","check",enabled=editor.dirty&&!c.busy,modifier=Modifier.testTag("save-grades"),onClick=c::saveGrades)
                 Action("Discard / reload",enabled=!c.busy,modifier=Modifier.testTag("discard-grades")){c.guard {c.refresh()}}
-                Action("Bulk entry",enabled=book.assessments().isNotEmpty()&&!c.busy,modifier=Modifier.testTag("bulk-grades")){c.error=null;c.gradeBulk=GradeBulk(book.assessments())}
+                Action("Bulk entry",enabled=book.assessments().isNotEmpty()&&!c.busy,modifier=Modifier.testTag("bulk-grades")){editor.bulkOpen=!editor.bulkOpen}
                 Action("Export to Excel",enabled=!c.busy){c.exportGradeWorkbook()}
             }
         }
         when(tab) {
             "Grades" -> {
+                if(editor.bulkOpen) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=androidx.compose.ui.Alignment.Bottom) {
+                    Column(Modifier.weight(1f)){Select("Assessment",editor.bulkAssessment,book.assessments().map {Choice(it.id().toString(),it.title())},{editor.bulkAssessment=it},"bulk-assessment")}
+                    Input("Score",editor.bulkScore,{editor.bulkScore=it},Modifier.width(120.dp),tag="selected-grade-score")
+                    Action("Apply (${editor.selected.size})",enabled=editor.selected.isNotEmpty()&&!c.busy,modifier=Modifier.testTag("apply-selected-grades")){c.applySelectedGrades()}
+                    Action("Clear selection"){editor.selected.clear()}
+                }
                 Input("Search student number or name",query,{query=it},tag="grade-search")
-                Copy("Blank = ungraded · 0 = actual zero · Enter / ↑ ↓ move rows · Tab moves columns · Ctrl+S saves",12,Ink.muted)
+                Copy("Blank = ungraded · 0 = actual zero · Enter / ↑ ↓ move rows · Tab / Alt+← → move columns · Ctrl+S saves",12,Ink.muted)
                 if(book.assessments().isEmpty()) Panel(Modifier.fillMaxWidth()) {
                     Copy("Set up your first assessment",18,weight=FontWeight.SemiBold)
                     Copy("Create weighted categories, then add assessments to begin recording scores.",14,Ink.muted)
@@ -136,7 +142,10 @@ import java.nio.file.Path
     Column(Modifier.fillMaxSize().border(1.dp,Ink.border,RoundedCornerShape(10.dp)).testTag("grade-grid")) {
             Row(Modifier.fillMaxWidth().padding(end=12.dp).background(Ink.raised).testTag("grade-grid-header")) {
                 Row(Modifier.width(studentWidth).testTag("grade-frozen-header")) {
-                    heading("Student","name",studentWidth-86.dp);heading("Number","number",86.dp)
+                    Action("",if(rows.isNotEmpty()&&rows.all {it.enrollment().id() in editor.selected})"check" else "people",modifier=Modifier.width(38.dp).testTag("select-grade-roster").semantics {contentDescription="Toggle selection of all filtered students"}) {
+                        val ids=rows.map {it.enrollment().id()};if(ids.all {it in editor.selected})editor.selected.removeAll(ids.toSet()) else ids.forEach {if(it !in editor.selected)editor.selected.add(it)}
+                    }
+                    heading("Student","name",studentWidth-118.dp);heading("No.","number",80.dp)
                 }
                 Row(Modifier.weight(1f).horizontalScroll(horizontal).testTag("grade-scroll-header")) {
                 assessments.forEach {heading("${it.title()}\n/ ${it.maximumMarks()}",it.id().toString(),cellWidth)}
@@ -148,9 +157,13 @@ import java.nio.file.Path
               LazyColumn(Modifier.fillMaxSize().padding(end=12.dp).testTag("grade-grid-rows"),state=vertical) {
                 itemsIndexed(rows,key={_,r->r.enrollment().id()}) {index,row->
                     Row(Modifier.fillMaxWidth().height(58.dp).background(if(index%2==0)Ink.panel else Ink.background),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
-                        Column(Modifier.width(studentWidth).padding(horizontal=12.dp).testTag("grade-student-${row.enrollment().id()}")) {
+                        Row(Modifier.width(studentWidth),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
+                        val id=row.enrollment().id()
+                        Action("",if(id in editor.selected)"check" else "people",active=id in editor.selected,enabled=enabled,modifier=Modifier.width(38.dp).testTag("select-grade-$id").semantics {selected=id in editor.selected;contentDescription="Select ${row.student().fullName()} for bulk grades"}){if(!editor.selected.remove(id))editor.selected.add(id)}
+                        Column(Modifier.weight(1f).padding(horizontal=4.dp).testTag("grade-student-${row.enrollment().id()}")) {
                             Copy(row.student().fullName(),13,lines=1)
                             Copy("${row.student().studentNumber()} · ${row.enrollment().status().name.lowercase()}",10,Ink.muted,lines=1)
+                        }
                         }
                         Row(Modifier.weight(1f).horizontalScroll(horizontal),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                         assessments.forEachIndexed {column,a->
@@ -166,6 +179,8 @@ import java.nio.file.Path
                                                 Key.Enter -> navigate(index+if(event.isShiftPressed)-1 else 1,column)
                                                 Key.DirectionDown -> navigate(index+1,column)
                                                 Key.DirectionUp -> navigate(index-1,column)
+                                                Key.DirectionLeft -> if(event.isAltPressed)navigate(index,column-1) else false
+                                                Key.DirectionRight -> if(event.isAltPressed)navigate(index,column+1) else false
                                                 Key.Tab -> {val next=index*assessments.size+column+if(event.isShiftPressed)-1 else 1; if(next<0)false else navigate(next/assessments.size,next%assessments.size)}
                                                 else -> false
                                             }
@@ -189,19 +204,6 @@ import java.nio.file.Path
             }
         HorizontalScrollbar(rememberScrollbarAdapter(horizontal),Modifier.padding(start=studentWidth,end=12.dp).fillMaxWidth().height(12.dp).testTag("grade-horizontal-scroll"))
     }
-    }
-}
-
-@Composable internal fun GradeBulkOverlay(c:WorkspaceController,bulk:GradeBulk) {
-    Modal("Bulk grade entry",c::closeEditor,submit={c.applyGradeBulk()},footer={
-        Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
-            c.error?.let {Copy(it,13,Ink.violet,modifier=Modifier.testTag("bulk-error"))}
-            Action("Apply to gradebook","check",modifier=Modifier.testTag("apply-grade-bulk")){c.applyGradeBulk()}
-        }
-    }) {
-        Select("Assessment",bulk.assessment,bulk.assessments.map {Choice(it.id().toString(),it.title())},{bulk.assessment=it})
-        Input("Student number TAB score",bulk.text,{bulk.text=it},multiline=true,tag="grade-bulk-values")
-        Copy("Paste one student number, a tab, and a score per line. Preserve leading zeros. A blank score clears a grade. Apply stages all valid rows; Save grades persists them together.",13,Ink.muted)
     }
 }
 

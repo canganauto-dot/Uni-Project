@@ -38,6 +38,13 @@ class ExamPdfRendererTest {
                 question(4,QuestionType.ESSAY,"Compare composition and inheritance. Explain a suitable use case for each.",""),
                 question(5,QuestionType.CODING,"Complete this method:\npublic int sum(int a, int b) {\n    // return the sum\n}",""));
     }
+    @Test void pdfUsesExamSpecificSnapshotMarks() throws Exception {
+        var q=question(1,QuestionType.SHORT_ANSWER,"Explain encapsulation.","").withMarks(new BigDecimal("7.25"));
+        for(var kind:PdfKind.values()) {
+            String result=text(new ExamPdfRenderer().render(source(List.of(q)),profile(),kind));
+            assertTrue(result.contains("7.25"));
+        }
+    }
     @Test void studentContainsAllPromptsButNoAnswerFieldsOrCorrectnessMarkers() throws Exception {
         var renderer=new ExamPdfRenderer(); var source=source(fiveTypes(""));
         var student=renderer.render(source,profile(),PdfKind.STUDENT);

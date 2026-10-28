@@ -28,6 +28,19 @@ class ExamServiceTest {
         return new QuestionInput(courseId,QuestionType.MCQ,text,"OOP",difficulty,marks,"","Explanation","",
                 List.of(new AnswerChoice("A",true),new AnswerChoice("B",false)));
     }
+    @Test void examSpecificMarksPersistWithoutChangingBankOrOtherExams() {
+        var a=service.save(offering,null,input(),List.of(first.id()),Map.of(first.id(),new BigDecimal("4")));
+        var b=service.save(offering,null,input(),List.of(first.id()),Map.of(first.id(),new BigDecimal("7.25")));
+        assertEquals(new BigDecimal("4.00"),service.findById(offering,a.id()).calculatedMarks());
+        assertEquals(new BigDecimal("7.25"),b.calculatedMarks());
+        assertEquals(new BigDecimal("2.50"),f.academic().questions().findById(first.id()).marks());
+        assertEquals(a.questions(),service.save(offering,a.id(),input(),List.of(first.id())).questions());
+        var beforeInvalid=service.findById(offering,a.id());
+        for(String invalid:List.of("0","-1","1.234","100001")) {
+            assertThrows(DomainValidationException.class,()->service.save(offering,a.id(),input(),List.of(first.id()),Map.of(first.id(),new BigDecimal(invalid))));
+        }
+        assertEquals(beforeInvalid,service.findById(offering,a.id()));
+    }
     @Test void manuallyBuildsReordersRemovesAndPersistsExactMarks() {
         var exam=service.save(offering,null,input(),List.of(first.id(),second.id()));
         assertEquals(new BigDecimal("5.00"),exam.calculatedMarks()); assertFalse(exam.marksDiffer());

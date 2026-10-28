@@ -19,6 +19,9 @@ public final class ExamService {
         this.repository=repository; this.offerings=offerings; this.questions=questions; this.clock=clock;
     }
     public Exam save(long offeringId,Long id,ExamInput input,List<Long> questionIds) {
+        return save(offeringId,id,input,questionIds,Map.of());
+    }
+    public Exam save(long offeringId,Long id,ExamInput input,List<Long> questionIds,Map<Long,BigDecimal> questionMarks) {
         offering(offeringId);
         AcademicValidation.required(input,"Exam details");
         String title=AcademicValidation.text(input.title(),"Exam title",200,true);
@@ -35,8 +38,15 @@ public final class ExamService {
                 || new HashSet<>(questionIds).size()!=questionIds.size()) {
             throw new DomainValidationException("Select at most 100 distinct questions; duplicates are not allowed.");
         }
+        if(questionMarks==null || !questionIds.containsAll(questionMarks.keySet()))throw new DomainValidationException("Marks must belong to selected questions.");
+        questionMarks.values().forEach(ExamService::validateQuestionMarks);
         return repository.save(offeringId,id,new ExamInput(title,date,input.durationMinutes(),marks.setScale(2),
-                AcademicValidation.text(input.instructions(),"Instructions",20000,false)),List.copyOf(questionIds),AcademicValidation.now(clock));
+                AcademicValidation.text(input.instructions(),"Instructions",20000,false)),List.copyOf(questionIds),Map.copyOf(questionMarks),AcademicValidation.now(clock));
+    }
+    public static BigDecimal validateQuestionMarks(BigDecimal value) {
+        if(value==null || value.signum()<=0 || value.compareTo(new BigDecimal("100000"))>0 || value.stripTrailingZeros().scale()>2)
+            throw new DomainValidationException("Question marks must be 0.01–100000, with at most two decimal places.");
+        return value;
     }
     public List<Exam> findByOffering(long id) { offering(id); return repository.findByOffering(id); }
     public Exam findById(long offeringId,long id) {

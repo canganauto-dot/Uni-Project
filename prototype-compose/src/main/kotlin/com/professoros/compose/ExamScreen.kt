@@ -19,7 +19,8 @@ internal fun WorkspaceController.openExam(id:Long?=null) {
 internal fun WorkspaceController.saveExam() {
     if(busy)return
     val draft=examDraft?:return;val input=draft.input();val ids=draft.selected.map {it.questionId()}
-    mutate {services.academic.exams().save(draft.offeringId,draft.existing?.id(),input,ids)}
+    val marks=try {draft.marksForSave()}catch(f:DomainValidationException){error=f.message;return}
+    mutate {services.academic.exams().save(draft.offeringId,draft.existing?.id(),input,ids,marks)}
 }
 
 @Composable internal fun ExamScreen(c:WorkspaceController) {
@@ -102,8 +103,11 @@ internal fun WorkspaceController.saveExam() {
                     // Composition is intentionally not sortable: ordering is an explicit edit.
                     d.selected.forEachIndexed {index,q->
                         Panel(Modifier.fillMaxWidth()) {
-                            Copy("${index+1}. ${q.text()}",14,modifier=Modifier.testTag("composition-$index"),lines=3)
-                            Copy("${q.type()} · ${q.marks()} marks",12,Ink.muted)
+                            Row(horizontalArrangement=Arrangement.spacedBy(12.dp)) {
+                            Copy("${index+1}. ${q.text()}",14,modifier=Modifier.weight(1f).testTag("composition-$index"),lines=3)
+                            Input("Marks for this exam",d.marks[q.questionId()]?:q.marks().toPlainString(),{d.marks[q.questionId()]=it},Modifier.width(180.dp),tag="exam-marks-${q.questionId()}")
+                            }
+                            Copy("${q.type()} · Question bank default unchanged",12,Ink.muted)
                             Toolbar {
                                 Action("Up",enabled=index>0,modifier=Modifier.testTag("move-up-$index")){d.move(index,-1)}
                                 Action("Down",enabled=index<d.selected.lastIndex){d.move(index,1)}

@@ -52,7 +52,6 @@ class WorkspaceController(val services: WorkspaceServices, private val scope: Co
     var examDraft by mutableStateOf<ExamDraft?>(null)
     var questionDraft by mutableStateOf<QuestionDraft?>(null)
     var gradebook by mutableStateOf<GradebookEditor?>(null); private set
-    var gradeBulk by mutableStateOf<GradeBulk?>(null)
     var attendance by mutableStateOf<AttendanceEditor?>(null); private set
     var studentImport by mutableStateOf<StudentImportEditor?>(null)
     var pdfExport by mutableStateOf<PdfExportEditor?>(null)
@@ -165,11 +164,11 @@ class WorkspaceController(val services: WorkspaceServices, private val scope: Co
     fun guard(includeSheets:Boolean=true, action: () -> Unit) {
         if(busy) return
         fun proceed() {
-            form=null; examDraft=null; questionDraft=null; gradeBulk=null; studentImport=null; pdfExport=null; error=null
+            form=null; examDraft=null; questionDraft=null; studentImport=null; pdfExport=null; error=null
             if(includeSheets) {gradebook?.discard();attendance?.discard()}
             action()
         }
-        if(form?.dirty==true || examDraft?.dirty==true || questionDraft?.dirty==true || gradeBulk?.dirty==true || studentImport?.dirty==true || pdfExport?.dirty==true || (includeSheets && (gradebook?.dirty==true || attendance?.dirty==true))) confirmation=Confirmation("Discard unsaved changes?", "Your changes have not been saved. Keep editing or discard them to continue.",::proceed)
+        if(form?.dirty==true || examDraft?.dirty==true || questionDraft?.dirty==true || studentImport?.dirty==true || pdfExport?.dirty==true || (includeSheets && (gradebook?.dirty==true || gradebook?.bulkScore?.isNotBlank()==true || attendance?.dirty==true))) confirmation=Confirmation("Discard unsaved changes?", "Your changes have not been saved. Keep editing or discard them to continue.",::proceed)
         else proceed()
     }
     fun closeEditor() = guard(false) { detail=null }

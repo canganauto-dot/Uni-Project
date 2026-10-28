@@ -10,6 +10,9 @@ public record ExamQuestion(long questionId, int position, QuestionType type, Str
         return new ExamQuestion(question.id(),position,question.type(),question.text(),question.topic(),question.difficulty(),
                 question.marks(),question.answer(),question.explanation(),question.imagePath(),question.choices());
     }
+    public ExamQuestion withMarks(BigDecimal value) {
+        return new ExamQuestion(questionId,position,type,text,topic,difficulty,value,answer,explanation,imagePath,choices);
+    }
     public ExamQuestion atPosition(int value) {
         return new ExamQuestion(questionId,value,type,text,topic,difficulty,marks,answer,explanation,imagePath,choices);
     }

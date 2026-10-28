@@ -73,12 +73,21 @@ class GradebookUiTest {
         runOnIdle {c.guard {left=true}};onNodeWithTag("cancel-confirm").performClick()
         assertFalse(left);assertTrue(c.gradebook!!.dirty)
         runOnIdle {c.editGradeCategory()};assertNotNull(c.error);assertNull(c.form)
-        // A failed bulk batch is atomic even within the unsaved draft.
+        onNodeWithTag("select-grade-${first.enrollment().id()}").performClick()
+        onNodeWithTag("select-grade-${second.enrollment().id()}").performClick()
         onNodeWithTag("bulk-grades").performClick()
-        onNodeWithTag("grade-bulk-values").performTextInput("0001\t10\n0002\t99")
-        onNodeWithTag("apply-grade-bulk").performClick();assertNotNull(c.gradeBulk);assertEquals("",c.gradebook!!.value(key))
-        onNodeWithTag("grade-bulk-values").performTextReplacement("0001\t10\n0002\t0")
-        onNodeWithTag("apply-grade-bulk").performClick();assertNull(c.gradeBulk);assertEquals("10",c.gradebook!!.value(key))
+        onNodeWithTag("selected-grade-score").performTextInput("99")
+        onNodeWithTag("apply-selected-grades").performClick();assertNotNull(c.error);assertEquals("",c.gradebook!!.value(key))
+        onNodeWithTag("selected-grade-score").performTextReplacement("10")
+        onNodeWithTag("apply-selected-grades").performClick()
+        assertEquals("10",c.gradebook!!.value(key))
+        assertEquals("10",c.gradebook!!.value(GradeKey(second.enrollment().id(),a.id())))
+        onNodeWithTag("selected-grade-score").performTextReplacement("0")
+        onNodeWithTag("apply-selected-grades").performClick();assertNotNull(c.confirmation)
+        onNodeWithTag("cancel-confirm").performClick();assertEquals("10",c.gradebook!!.value(key))
+        onNodeWithTag("select-grade-${first.enrollment().id()}").performClick()
+        onNodeWithTag("apply-selected-grades").performClick();onNodeWithTag("confirm").performClick()
+        assertEquals("10",c.gradebook!!.value(key))
         onNodeWithTag("save-grades").performClick();settled(c)
         capture("gradebook-compose-normal")
         onNodeWithTag("grade-search").performTextInput("أحمد")
@@ -189,6 +198,26 @@ class GradebookUiTest {
         onNodeWithText("54.99% · F · FAIL").assertExists()
         onNodeWithTag("grade-cell-$student-$second").performTextReplacement("55")
         onNodeWithText("55% · E · PASS").assertExists()
+    }
+    @Test fun examMarksEditTotalsValidateAndPersistWithoutChangingBank()=runSkikoComposeUiTest(size=Size(1200f,900f)) {
+        val (services,id)=fixture()
+        val course=services.academic.offerings().findAll().first().courseId()
+        val q=services.academic.questions().create(QuestionInput(course,QuestionType.SHORT_ANSWER,"Explain encapsulation.","Objects",Difficulty.EASY,BigDecimal("2"),"Answer","","",emptyList()))
+        val d=ExamDraft(id,null,listOf(q));d.add(q);d.title="Marks test";d.date="2026-11-01"
+        lateinit var c:WorkspaceController
+        setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)}
+            Box(Modifier.fillMaxSize()){WorkspaceOverlays(c)}}
+        runOnIdle {c.examDraft=d}
+        onNodeWithTag("exam-tab-Composition").performClick()
+        onNodeWithTag("exam-marks-${q.id()}").performTextReplacement("7.25")
+        assertEquals(BigDecimal("7.25"),d.total);assertTrue(d.dirty)
+        onNodeWithTag("exam-totals").assertTextContains("7.25",substring=true)
+        onNodeWithTag("exam-marks-${q.id()}").performTextReplacement("-1")
+        onNodeWithTag("save-exam").performClick();assertNotNull(c.error);assertNotNull(c.examDraft)
+        onNodeWithTag("exam-marks-${q.id()}").performTextReplacement("7.25")
+        onNodeWithTag("save-exam").performClick();settled(c)
+        assertEquals(BigDecimal("7.25"),services.academic.exams().findByOffering(id).single().questions().single().marks())
+        assertEquals(BigDecimal("2.00"),services.academic.questions().findById(q.id()).marks())
     }
     private fun ComposeUiTest.settled(c:WorkspaceController){waitForIdle();waitUntil(timeoutMillis=10000){!c.busy};waitForIdle()}
     private fun ComposeUiTest.capture(name:String){waitForIdle();val file=File(System.getProperty("compose.test.output"),"$name.png");file.parentFile.mkdirs();ImageIO.write(onNodeWithTag("dashboard-root").captureToImage().toAwtImage(),"png",file)}

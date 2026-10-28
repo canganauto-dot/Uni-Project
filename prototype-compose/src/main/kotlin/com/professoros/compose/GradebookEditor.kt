@@ -8,6 +8,10 @@ import java.time.LocalDate
 /** Observable adapter around the existing Java draft; no grading arithmetic lives in Compose. */
 class GradebookEditor(val book:Gradebook) {
     private var draft=GradebookDraft(book)
+    val selected=mutableStateListOf<Long>()
+    var bulkAssessment by mutableStateOf(book.assessments().firstOrNull()?.id()?.toString().orEmpty())
+    var bulkScore by mutableStateOf("")
+    var bulkOpen by mutableStateOf(false)
     private var revision by mutableStateOf(0)
     val dirty get():Boolean { revision;return draft.dirty() }
     fun value(key:GradeKey):String {revision;return draft.value(key)}
@@ -28,11 +32,6 @@ class GradebookEditor(val book:Gradebook) {
     }
 }
 data class GradeSummary(val results:Map<Long,GradeResult>,val statistics:String,val error:String?)
-class GradeBulk(val assessments:List<Assessment>) {
-    var assessment by mutableStateOf(assessments.firstOrNull()?.id()?.toString().orEmpty())
-    var text by mutableStateOf("")
-    val dirty get()=text.isNotEmpty()
-}
 internal fun WorkspaceController.gradeConfigurable():Boolean {
     if(busy || gradebook==null)return false
     if(gradebook!!.dirty){error="Save or discard grade edits before exporting or changing assessment settings.";return false}
@@ -67,10 +66,16 @@ internal fun WorkspaceController.editGradingScale() {
         services.academic.grades().saveScale(book.offeringId(),GradingScale(n("a"),n("b"),n("c"),n("d"),n("pass")))
     }
 }
-internal fun WorkspaceController.applyGradeBulk() {
-    val bulk=gradeBulk?:return;val editor=gradebook?:return
+internal fun WorkspaceController.applySelectedGrades() {
+    val editor=gradebook?:return
+    if(busy || editor.selected.isEmpty())return
     try {
-        val changes=services.academic.grades().parseBulk(editor.book,bulk.assessment.toLongOrNull()?:0L,bulk.text)
-        changes.forEach { (key,value)->editor.set(key,value) };gradeBulk=null;error=null
-    } catch(failure:DomainValidationException) {error=failure.message}
+        val assessment=editor.book.assessments().firstOrNull {it.id().toString()==editor.bulkAssessment}?:throw DomainValidationException("Choose an assessment.")
+        val value=editor.bulkScore
+        if(value.isBlank())throw DomainValidationException("Enter a score; edit individual cells to clear grades.")
+        GradebookService.validateScore(value,assessment)
+        val keys=editor.book.students().filter {it.enrollment().id() in editor.selected}.map {GradeKey(it.enrollment().id(),assessment.id())}
+        val apply={keys.forEach {editor.set(it,value)};editor.bulkScore="";error=null}
+        if(keys.any {editor.value(it).isNotBlank()})confirm("Overwrite selected grades?","Apply $value to ${keys.size} selected students for ${assessment.title()}? Existing grades will be replaced in the draft. Save grades to persist.",apply) else apply()
+    }catch(f:DomainValidationException){error=f.message}
 }

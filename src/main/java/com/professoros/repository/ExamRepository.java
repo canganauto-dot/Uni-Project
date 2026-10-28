@@ -12,6 +12,9 @@ public final class ExamRepository {
     public ExamRepository(Database database) { jdbc=new JdbcOperations(database,"A question or position is duplicated in this exam."); }
 
     public Exam save(long offeringId,Long examId,ExamInput input,List<Long> questionIds,Instant now) {
+        return save(offeringId,examId,input,questionIds,Map.of(),now);
+    }
+    public Exam save(long offeringId,Long examId,ExamInput input,List<Long> questionIds,Map<Long,BigDecimal> marks,Instant now) {
         return jdbc.transaction(c -> {
             long courseId=course(c,offeringId);
             Exam previous=examId==null ? null : required(c,offeringId,examId);
@@ -25,6 +28,10 @@ public final class ExamRepository {
                 if(bank.courseId()!=courseId) { throw new DomainValidationException("Every exam question must belong to the offering's catalog course."); }
                 int position=snapshots.size()+1;
                 snapshots.add(preserved.containsKey(questionId) ? preserved.get(questionId).atPosition(position) : ExamQuestion.snapshot(bank,position));
+            }
+            for(int i=0;i<snapshots.size();i++) {
+                var q=snapshots.get(i);
+                if(marks.containsKey(q.questionId()))snapshots.set(i,q.withMarks(marks.get(q.questionId())));
             }
             long id;
             if(previous==null) {
