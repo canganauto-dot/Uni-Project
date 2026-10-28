@@ -54,9 +54,9 @@ import java.nio.file.Path
         Toolbar {
             listOf("Grades","Assessments","Categories & scale").forEach {name->Action(name,if(tab==name)"check" else "arrow",modifier=Modifier.testTag("grade-tab-$name")){tab=name}}
             if(tab=="Grades") {
-                Action("Save grades","check",enabled=editor.dirty&&!c.busy,modifier=Modifier.testTag("save-grades"),onClick=c::saveGrades)
-                Action("Discard / reload",enabled=!c.busy,modifier=Modifier.testTag("discard-grades")){c.guard {c.refresh()}}
-                Action("Bulk entry",enabled=book.assessments().isNotEmpty()&&!c.busy,modifier=Modifier.testTag("bulk-grades")){editor.bulkOpen=!editor.bulkOpen}
+                Action("Save grades","check",variant=ActionVariant.SUCCESS,enabled=editor.dirty&&!c.busy,modifier=Modifier.testTag("save-grades"),onClick=c::saveGrades)
+                Action("Discard / reload",variant=ActionVariant.WARNING,enabled=!c.busy,modifier=Modifier.testTag("discard-grades")){c.guard {c.refresh()}}
+                Action("Bulk entry",variant=ActionVariant.PRIMARY,enabled=book.assessments().isNotEmpty()&&!c.busy,modifier=Modifier.testTag("bulk-grades")){editor.bulkOpen=!editor.bulkOpen}
                 Action("Export to Excel",enabled=!c.busy){c.exportGradeWorkbook()}
             }
         }
@@ -65,7 +65,7 @@ import java.nio.file.Path
                 if(editor.bulkOpen) Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp),verticalAlignment=androidx.compose.ui.Alignment.Bottom) {
                     Column(Modifier.weight(1f)){Select("Assessment",editor.bulkAssessment,book.assessments().map {Choice(it.id().toString(),it.title())},{editor.bulkAssessment=it},"bulk-assessment")}
                     Input("Score",editor.bulkScore,{editor.bulkScore=it},Modifier.width(120.dp),tag="selected-grade-score")
-                    Action("Apply (${editor.selected.size})",enabled=editor.selected.isNotEmpty()&&!c.busy,modifier=Modifier.testTag("apply-selected-grades")){c.applySelectedGrades()}
+                    Action("Apply (${editor.selected.size})",variant=ActionVariant.SUCCESS,enabled=editor.selected.isNotEmpty()&&!c.busy,modifier=Modifier.testTag("apply-selected-grades")){c.applySelectedGrades()}
                     Action("Clear selection"){editor.selected.clear()}
                 }
                 Input("Search student number or name",query,{query=it},tag="grade-search")
@@ -80,18 +80,18 @@ import java.nio.file.Path
             }
             "Assessments" -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 Toolbar {
-                    Action("New assessment","exam",modifier=Modifier.testTag("new-assessment")){c.editAssessment()}
+                    Action("New assessment","exam",variant=ActionVariant.PRIMARY,modifier=Modifier.testTag("new-assessment")){c.editAssessment()}
                     Action("Edit",enabled=assessment!=null){assessment?.let {c.editAssessment(it)}}
-                    Action("Delete",enabled=assessment!=null){if(assessment!=null&&c.gradeConfigurable())c.confirm("Delete assessment and its grades?","${assessment.title()}\nAll saved grades for this assessment will be permanently removed. This cannot be undone."){c.mutate {c.services.academic.grades().deleteAssessment(book.offeringId(),assessment.id())}}}
+                    Action("Delete",variant=ActionVariant.DESTRUCTIVE,enabled=assessment!=null){if(assessment!=null&&c.gradeConfigurable())c.confirm("Delete assessment and its grades?","${assessment.title()}\nAll saved grades for this assessment will be permanently removed. This cannot be undone."){c.mutate {c.services.academic.grades().deleteAssessment(book.offeringId(),assessment.id())}}}
                 }
                 RecordTable(book.assessments(),listOf(TableColumn("Assessment",2f){a:Assessment->a.title()},TableColumn("Maximum"){it.maximumMarks().toPlainString()},TableColumn("Date"){it.date().toString()},TableColumn("Category"){a->book.categories().find {it.id()==a.categoryId()}?.name().orEmpty()}),
                     Assessment::id,assessmentId,{assessmentId=it.id()},{c.editAssessment(it)},"grade-assessments","Create a category, then add your first assessment.")
             }
             else -> Column(Modifier.weight(1f).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(6.dp)) {
                 Toolbar {
-                    Action("New category","layers",modifier=Modifier.testTag("new-grade-category")){c.editGradeCategory()}
+                    Action("New category","layers",variant=ActionVariant.PRIMARY,modifier=Modifier.testTag("new-grade-category")){c.editGradeCategory()}
                     Action("Edit",enabled=category!=null){category?.let {c.editGradeCategory(it)}}
-                    Action("Delete",enabled=category!=null){if(category!=null&&c.gradeConfigurable())c.confirm("Delete category?",category.name()+"\nCategories containing assessments cannot be deleted."){c.mutate {c.services.academic.grades().deleteCategory(book.offeringId(),category.id())}}}
+                    Action("Delete",variant=ActionVariant.DESTRUCTIVE,enabled=category!=null){if(category!=null&&c.gradeConfigurable())c.confirm("Delete category?",category.name()+"\nCategories containing assessments cannot be deleted."){c.mutate {c.services.academic.grades().deleteCategory(book.offeringId(),category.id())}}}
                     Action("Grading scale",modifier=Modifier.testTag("grading-scale")){c.editGradingScale()}
                 }
                 RecordTable(book.categories(),listOf(TableColumn("Category",2f){v:AssessmentCategory->v.name()},TableColumn("Weight %"){PercentageFormatter.number(it.weight())}),AssessmentCategory::id,categoryId,{categoryId=it.id()},{c.editGradeCategory(it)},"grade-categories","No categories yet. Create categories with weights totaling 100%.")

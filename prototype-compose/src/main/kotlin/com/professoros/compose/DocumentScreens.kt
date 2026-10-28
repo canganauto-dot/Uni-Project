@@ -19,7 +19,7 @@ import com.professoros.pdf.PdfKind
             e.result?.let {Copy("$it · Import committed.",13,Ink.violet,modifier=Modifier.testTag("import-result"))}
             Toolbar {
                 Action("Preview rows",enabled=!c.busy&&e.sheet!=null,modifier=Modifier.testTag("preview-import")){c.previewStudentImport()}
-                Action("Confirm valid rows",enabled=!c.busy&&(e.reviewed?.actionable()?:0)>0,modifier=Modifier.testTag("confirm-import")){c.confirmStudentImport()}
+                Action("Confirm valid rows",variant=ActionVariant.SUCCESS,enabled=!c.busy&&(e.reviewed?.actionable()?:0)>0,modifier=Modifier.testTag("confirm-import")){c.confirmStudentImport()}
             }
         }
     }) {
@@ -57,8 +57,8 @@ import com.professoros.pdf.PdfKind
             Copy(if(c.busy)"Working… Rendering or saving document." else e.message,13,Ink.muted,modifier=Modifier.testTag("pdf-status"))
             c.error?.let {Copy(it,13,Ink.violet,modifier=Modifier.testTag("document-error"))}
             Toolbar {
-                Action("Generate preview",enabled=!c.busy,modifier=Modifier.testTag("render-pdf")){c.renderPdf()}
-                Action("Save PDF as…",enabled=!c.busy&&e.rendered!=null&&(!e.source.exam().marksDiffer()||e.acknowledged),modifier=Modifier.testTag("save-pdf")){c.savePdf()}
+                Action("Generate preview",variant=ActionVariant.PRIMARY,enabled=!c.busy,modifier=Modifier.testTag("render-pdf")){c.renderPdf()}
+                Action("Save PDF as…",variant=ActionVariant.SUCCESS,enabled=!c.busy&&e.rendered!=null&&(!e.source.exam().marksDiffer()||e.acknowledged),modifier=Modifier.testTag("save-pdf")){c.savePdf()}
                 Action("Previous",enabled=!c.busy&&e.page>0,modifier=Modifier.testTag("pdf-previous")){c.turnPdf(-1)}
                 Copy("${if(e.rendered==null)0 else e.page+1} / ${e.rendered?.pageCount()?:0}",12,Ink.muted)
                 Action("Next",enabled=!c.busy&&e.page+1<(e.rendered?.pageCount()?:0),modifier=Modifier.testTag("pdf-next")){c.turnPdf(1)}
@@ -78,7 +78,7 @@ import com.professoros.pdf.PdfKind
             Copy("Calculated ${e.source.exam().calculatedMarks()} / intended ${e.source.exam().intendedMarks()} marks",13,Ink.violet)
             if(e.source.exam().marksDiffer()) {
                 Copy("Warning: totals differ. Both totals will be printed; exam content is never adjusted.",13,Ink.violet)
-                Action(if(e.acknowledged)"✓ Mark mismatch acknowledged" else "Acknowledge mark mismatch",enabled=!c.busy,modifier=Modifier.testTag("pdf-acknowledge")){e.acknowledged=!e.acknowledged}
+                Action(if(e.acknowledged)"✓ Mark mismatch acknowledged" else "Acknowledge mark mismatch",variant=ActionVariant.WARNING,enabled=!c.busy,modifier=Modifier.testTag("pdf-acknowledge")){e.acknowledged=!e.acknowledged}
             }
             val bitmap=remember(e.png){e.png?.let {org.jetbrains.skia.Image.makeFromEncoded(it).toComposeImageBitmap()}}
             if(bitmap!=null)Image(bitmap,"${e.kind} preview page ${e.page+1}",Modifier.fillMaxWidth().heightIn(max=650.dp).testTag("pdf-image"))

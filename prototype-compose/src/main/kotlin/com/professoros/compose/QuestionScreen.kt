@@ -43,7 +43,7 @@ internal fun questionDetails(q:ExamQuestion):String = "${q.type()} · ${q.diffic
     Modal(f.title,c::closeEditor,submit=c::saveQuestion,footer={Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
         c.error?.let {Copy(it,13,Ink.violet,modifier=Modifier.testTag("form-error"))}
         Toolbar {
-            Action("Save question","check",enabled=!c.busy,modifier=Modifier.testTag("save-question")) {
+            Action("Save question","check",variant=ActionVariant.SUCCESS,enabled=!c.busy,modifier=Modifier.testTag("save-question")) {
                 c.saveQuestion()
             }
             Action("Cancel",enabled=!c.busy,onClick=c::closeEditor)
@@ -73,10 +73,10 @@ internal fun questionDetails(q:ExamQuestion):String = "${q.type()} · ${q.diffic
                             Action(if(choice.correct())"Correct answer" else "Mark correct",if(choice.correct())"check" else "arrow",modifier=Modifier.testTag("correct-$index")) {
                                 draft.choices.indices.forEach {i->draft.choices[i]=AnswerChoice(draft.choices[i].text(),i==index)}
                             }
-                            Action("Remove choice",enabled=draft.choices.size>2){draft.choices.removeAt(index)}
+                            Action("Remove choice",variant=ActionVariant.DESTRUCTIVE,enabled=draft.choices.size>2){draft.choices.removeAt(index)}
                         }
                     }
-                    Action("Add choice",enabled=draft.choices.size<10,modifier=Modifier.testTag("add-choice")){draft.choices.add(AnswerChoice("",false))}
+                    Action("Add choice",variant=ActionVariant.PRIMARY,enabled=draft.choices.size<10,modifier=Modifier.testTag("add-choice")){draft.choices.add(AnswerChoice("",false))}
                 }
                 "TRUE_FALSE" -> Select("Correct answer *",f["answer"],listOf(Choice("TRUE","True"),Choice("FALSE","False")),{f.values["answer"]=it},"question-answer")
                 else -> Input("Answer / model answer",f["answer"],{f.values["answer"]=it},multiline=true,tag="question-answer")
@@ -98,10 +98,10 @@ internal fun questionDetails(q:ExamQuestion):String = "${q.type()} · ${q.diffic
             Column(Modifier.weight(1f)){Select("Difficulty",difficulty,listOf(Choice("","All levels"))+options(Difficulty.entries),{difficulty=it},"filter-difficulty")}
         }
         Toolbar {
-            Action("New question","book",enabled=c.catalog.courses.isNotEmpty()&&!c.busy,modifier=Modifier.testTag("new-question")){c.editQuestion(courseId=course.toLongOrNull())}
+            Action("New question","book",variant=ActionVariant.PRIMARY,enabled=c.catalog.courses.isNotEmpty()&&!c.busy,modifier=Modifier.testTag("new-question")){c.editQuestion(courseId=course.toLongOrNull())}
             Action("Edit",enabled=row!=null&&!c.busy){row?.let {c.editQuestion(it)}}
             Action("Details",enabled=row!=null){row?.let {c.detail=Detail("Question details",questionDetails(ExamQuestion.snapshot(it,1))+"\n\nUsage: ${it.usageCount()} · Last used: ${it.lastUsedDate()?:"Never"}\nCreated: ${it.createdAt()}\nUpdated: ${it.updatedAt()}")}}
-            Action("Delete",enabled=row!=null&&!c.busy){row?.let {c.confirm("Delete question?",it.text()+"\nDeletion may be restricted by saved exam history."){c.mutate {c.services.academic.questions().delete(it.id())}}}}
+            Action("Delete",variant=ActionVariant.DESTRUCTIVE,enabled=row!=null&&!c.busy){row?.let {c.confirm("Delete question?",it.text()+"\nDeletion may be restricted by saved exam history."){c.mutate {c.services.academic.questions().delete(it.id())}}}}
             Action("Clear filters"){query="";course="";type="";difficulty=""}
         }
         val rows=c.questions.filter {it.matches(query)&&(course.isEmpty()||it.courseId().toString()==course)&&(type.isEmpty()||it.type().name==type)&&(difficulty.isEmpty()||it.difficulty().name==difficulty)}

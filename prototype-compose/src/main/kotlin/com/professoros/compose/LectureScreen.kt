@@ -41,10 +41,10 @@ internal fun WorkspaceController.editLecture(existing:Lecture?=null) {
             Column(Modifier.weight(1f)){Select("Status",status,listOf(Choice("","All statuses"))+options(LectureStatus.entries),{status=it})}
         }
         Toolbar {
-            Action("New lecture","book",enabled=!c.busy,modifier=Modifier.testTag("new-lecture")){c.editLecture()}
+            Action("New lecture","book",variant=ActionVariant.PRIMARY,enabled=!c.busy,modifier=Modifier.testTag("new-lecture")){c.editLecture()}
             Action("Edit",enabled=row!=null&&!c.busy){row?.let {c.editLecture(it)}}
             Action("Details",enabled=row!=null){row?.let {c.detail=Detail("${it.lectureNumber()}. ${it.title()}","${it.plannedDate()} · ${it.durationMinutes()} minutes · ${it.status()}\n\nTopics\n${it.topics()}\n\nDescription\n${it.description()}\n\nProfessor notes\n${it.professorNotes()}\n\nUpdated: ${it.updatedAt()}")}}
-            Action("Delete",enabled=row!=null&&!c.busy){row?.let {c.confirm("Delete lecture ${it.lectureNumber()}?",it.title()+"\nThis cannot be undone. Existing attendance history is protected."){c.mutate {c.services.academic.lectures().delete(scope,it.id())}}}}
+            Action("Delete",variant=ActionVariant.DESTRUCTIVE,enabled=row!=null&&!c.busy){row?.let {c.confirm("Delete lecture ${it.lectureNumber()}?",it.title()+"\nThis cannot be undone. Existing attendance history is protected."){c.mutate {c.services.academic.lectures().delete(scope,it.id())}}}}
         }
         RecordTable(overview?.lectures().orEmpty().filter {it.matches(query)&&(status.isEmpty()||it.status().name==status)},listOf(
             TableColumn("No.",.5f){it:Lecture->it.lectureNumber().toString()},TableColumn("Lecture",2f,Lecture::title),

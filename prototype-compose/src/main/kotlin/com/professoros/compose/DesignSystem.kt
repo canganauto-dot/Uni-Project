@@ -23,8 +23,8 @@ import androidx.compose.ui.window.Popup
 
 /** Shared presentation tokens. No Material components or platform-specific rendering dependencies. */
 data class Palette(val background: Color, val sidebar: Color, val panel: Color, val raised: Color, val selected: Color, val border: Color, val text: Color, val muted: Color, val violet: Color, val positive: Color, val accentSurface: Color)
-val DarkPalette = Palette(Color(0xFF111214),Color(0xFF17181B),Color(0xFF1B1C20),Color(0xFF24252B),Color(0xFF303039),Color(0xFF34353C),Color(0xFFF0F0F3),Color(0xFFADAEB9),Color(0xFFB9ADD9),Color(0xFFABC2B5),Color(0xFF25232C))
-val LightPalette = Palette(Color(0xFFF5F4F7),Color(0xFFEFEDF2),Color(0xFFFFFFFF),Color(0xFFF0EEF4),Color(0xFFE4DFED),Color(0xFFC9C3D2),Color(0xFF202027),Color(0xFF57515F),Color(0xFF644A83),Color(0xFF35634D),Color(0xFFEDE7F4))
+val DarkPalette = Palette(Color(0xFF101522),Color(0xFF151C2C),Color(0xFF1C2638),Color(0xFF253248),Color(0xFF343B57),Color(0xFF73809A),Color(0xFFF4F6FC),Color(0xFFC0CADC),Color(0xFFD0BBFF),Color(0xFF88E2BB),Color(0xFF302B49))
+val LightPalette = Palette(Color(0xFFF5F4F7),Color(0xFFEFEDF2),Color(0xFFFFFFFF),Color(0xFFF0EEF4),Color(0xFFE4DFED),Color(0xFF737D90),Color(0xFF202027),Color(0xFF57515F),Color(0xFF644A83),Color(0xFF35634D),Color(0xFFEDE7F4))
 internal val LocalPalette = staticCompositionLocalOf { DarkPalette }
 object Ink {
     val background: Color @Composable get() = LocalPalette.current.background
@@ -56,28 +56,42 @@ internal fun fontFor(text: String) = if (ArabicText.containsMatchIn(text)) arabi
 }
 internal fun <T> motion(): FiniteAnimationSpec<T> = spring(dampingRatio = 1f, stiffness = 420f)
 
-@Composable internal fun Rule() = Box(Modifier.fillMaxWidth().height(1.dp).background(Ink.border.copy(alpha = .65f)))
+@Composable internal fun Rule() = Box(Modifier.fillMaxWidth().height(1.dp).background(Ink.border))
+
+/** Intent is explicit at call sites; labels never determine action semantics. */
+internal enum class ActionVariant { PRIMARY, SUCCESS, DESTRUCTIVE, SECONDARY, WARNING }
+internal fun actionSurface(variant:ActionVariant):Color = when(variant) {
+    ActionVariant.PRIMARY -> Color(0xFF6746B5)
+    ActionVariant.SUCCESS -> Color(0xFF176344)
+    ActionVariant.DESTRUCTIVE -> Color(0xFFA32F45)
+    ActionVariant.SECONDARY -> Color(0xFF303E56)
+    ActionVariant.WARNING -> Color(0xFF80500D)
+}
+internal val ActionForeground=Color(0xFFFFFFFF)
 
 @Composable internal fun Action(label: String, icon: String = "arrow", active: Boolean = false,
     modifier: Modifier = Modifier, quiet: Boolean = false,
-    enabled: Boolean = true, hint: String? = null, onClick: () -> Unit) {
+    enabled: Boolean = true, hint: String? = null, variant: ActionVariant = ActionVariant.SECONDARY, onClick: () -> Unit) {
     val enabled = enabled && LocalControlsEnabled.current
     val interaction = remember { MutableInteractionSource() }
     val hovered by interaction.collectIsHoveredAsState()
     val focused by interaction.collectIsFocusedAsState()
     val pressed by interaction.collectIsPressedAsState()
+    val surface=if(active) actionSurface(ActionVariant.PRIMARY) else actionSurface(variant)
+    val foreground=if(!enabled)Ink.muted else if(quiet&&!active&&!hovered&&!pressed)Ink.text else ActionForeground
     val fill by animateColorAsState(
-        if (pressed) Ink.selected else if (hovered) Ink.raised else if (active && !quiet) Ink.accentSurface else Color.Transparent,
+        if(!enabled) Ink.raised else if(pressed) lerp(surface,Color.Black,.18f)
+        else if(hovered) lerp(surface,Color.White,.08f) else if(quiet&&!active) Color.Transparent else surface,
         motion(), label = "button-surface")
     Box {
     Row(modifier.heightIn(min = 36.dp).clip(RoundedCornerShape(8.dp)).background(fill)
-        .border(1.dp, if (focused) Ink.violet else if (quiet) Color.Transparent else Ink.border, RoundedCornerShape(8.dp))
+        .border(if(focused)2.dp else 1.dp, if (focused) Ink.violet else if (quiet&&!active) Color.Transparent else if(active)Ink.violet else Ink.border, RoundedCornerShape(8.dp))
         .hoverable(interaction).clickable(interactionSource = interaction, indication = null, enabled = enabled,
             role = Role.Button, onClick = onClick)
         .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-        Mark(icon, if (active) Ink.violet else Ink.muted, 16)
-        if (label.isNotEmpty()) Copy(label, 12, if (enabled) Ink.text else Ink.muted, FontWeight.Medium, lines = 1)
+        Mark(icon, foreground, 16)
+        if (label.isNotEmpty()) Copy(label, 12, foreground, FontWeight.Medium, lines = 1)
     }
     if(hint!=null && (hovered||focused)) Popup(alignment=Alignment.TopStart,offset=IntOffset(52,0)) {
         Box(Modifier.background(Ink.raised,RoundedCornerShape(6.dp)).border(1.dp,Ink.border,RoundedCornerShape(6.dp)).padding(8.dp)){Copy(hint,12)}
@@ -89,7 +103,7 @@ internal fun <T> motion(): FiniteAnimationSpec<T> = spring(dampingRatio = 1f, st
     content: @Composable ColumnScope.() -> Unit) {
     Column(modifier.clip(RoundedCornerShape(Ink.radius))
         .background(if (tinted) Ink.accentSurface else Ink.panel)
-        .border(1.dp, Ink.border.copy(alpha = .7f), RoundedCornerShape(Ink.radius))
+        .border(1.dp, Ink.border, RoundedCornerShape(Ink.radius))
         .padding(22.dp), verticalArrangement = Arrangement.spacedBy(16.dp), content = content)
 }
 

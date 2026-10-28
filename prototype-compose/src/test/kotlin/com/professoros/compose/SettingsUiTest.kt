@@ -83,6 +83,14 @@ class SettingsUiTest {
         assertTrue(ThemeMode.SYSTEM.dark(true));assertFalse(ThemeMode.SYSTEM.dark(false))
         assertTrue(ThemeMode.DARK.dark(false));assertFalse(ThemeMode.LIGHT.dark(true))
     }
+    @Test fun semanticButtonsKeepAaTextContrastInInteractiveStates() {
+        for(variant in ActionVariant.entries) {
+            val base=actionSurface(variant)
+            for(surface in listOf(base,androidx.compose.ui.graphics.lerp(base,androidx.compose.ui.graphics.Color.White,.08f),androidx.compose.ui.graphics.lerp(base,androidx.compose.ui.graphics.Color.Black,.18f))) {
+                assertTrue((ActionForeground.luminance()+.05f)/(surface.luminance()+.05f)>=4.5f,"Button contrast: $variant")
+            }
+        }
+    }
     private fun ComposeUiTest.snapshot(name:String) {
         waitForIdle()
         val file=File(System.getProperty("compose.test.output"),"$name.png")

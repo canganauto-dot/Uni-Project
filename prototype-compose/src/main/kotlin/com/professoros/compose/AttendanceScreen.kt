@@ -61,14 +61,14 @@ import kotlinx.coroutines.launch
                         Select("Bulk · entire roster",bulk,attendanceChoices.map {Choice(it?.name?:"UNMARKED",attendanceLabel(it))},{bulk=it},"attendance-bulk-status")
                     }
                 }
-                Action("Mark roster","people",enabled=!editor.readOnly&&!c.busy&&book.students().isNotEmpty(),modifier=Modifier.testTag("bulk-attendance")) {
+                Action("Mark roster","people",variant=ActionVariant.PRIMARY,enabled=!editor.readOnly&&!c.busy&&book.students().isNotEmpty(),modifier=Modifier.testTag("bulk-attendance")) {
                     c.markAttendanceRoster(if(bulk=="UNMARKED")null else AttendanceStatus.valueOf(bulk))
                 }
             }
             Toolbar {
-                Action("Save attendance","check",enabled=editor.dirty&&!editor.readOnly&&!c.busy,modifier=Modifier.testTag("save-attendance"),onClick=c::saveAttendance)
+                Action("Save attendance","check",variant=ActionVariant.SUCCESS,enabled=editor.dirty&&!editor.readOnly&&!c.busy,modifier=Modifier.testTag("save-attendance"),onClick=c::saveAttendance)
                 Action("Export to Excel",enabled=!c.busy,modifier=Modifier.testTag("export-attendance")){c.exportGradeWorkbook()}
-                Action("Discard / reload",enabled=!c.busy,modifier=Modifier.testTag("reload-attendance")){c.guard {c.refresh()}}
+                Action("Discard / reload",variant=ActionVariant.WARNING,enabled=!c.busy,modifier=Modifier.testTag("reload-attendance")){c.guard {c.refresh()}}
                 Action("Policy", "question") { c.detail=Detail("Attendance policy",AttendanceCalculator.POLICY+"\nWithdrawn enrollments excluded. Save changes to update percentages and history.") }
                 Action("Student history","calendar",enabled=row!=null&&!c.busy,modifier=Modifier.testTag("attendance-history")){row?.let {c.detail=Detail("Attendance history · ${it.student().fullName()}",editor.history(it))}}
             }

@@ -27,7 +27,7 @@ import androidx.compose.ui.window.*
             cursorBrush=SolidColor(Ink.violet),singleLine=!multiline,readOnly=!LocalControlsEnabled.current,
             modifier=Modifier.fillMaxWidth().heightIn(min=if(multiline)100.dp else 38.dp,max=if(multiline)180.dp else 60.dp)
                 .onFocusChanged {focused=it.isFocused}.background(Ink.background,RoundedCornerShape(8.dp))
-                .border(1.dp,if(focused)Ink.violet else Ink.border,RoundedCornerShape(8.dp)).padding(10.dp)
+                .border(if(focused)2.dp else 1.dp,if(focused)Ink.violet else Ink.border,RoundedCornerShape(8.dp)).padding(10.dp)
                 .testTag(tag).semantics {contentDescription=label})
     }
 }
@@ -38,7 +38,7 @@ import androidx.compose.ui.window.*
     Column(verticalArrangement=Arrangement.spacedBy(6.dp)) {
         Copy(label,12,Ink.muted)
         Box {
-            Action(choices.firstOrNull {it.value==value}?.label?:"Select…","chevrons",modifier=Modifier.fillMaxWidth().testTag(tag)) {expanded=true;query=""}
+            Action(choices.firstOrNull {it.value==value}?.label?:"Selectâ€¦","chevrons",modifier=Modifier.fillMaxWidth().testTag(tag)) {expanded=true;query=""}
             if(expanded) Popup(alignment=Alignment.TopStart,onDismissRequest={expanded=false},properties=PopupProperties(focusable=true)) {
                 val rows=remember(choices,query) {choices.filter {it.label.contains(query,true)}}
                 var cursor by remember(query) {mutableStateOf(0)}
@@ -83,9 +83,9 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
             columns.forEachIndexed {index,column->
                 val interactions=remember {MutableInteractionSource()}
                 val focused by interactions.collectIsFocusedAsState()
-                Box(Modifier.weight(column.weight).border(1.dp,if(focused)Ink.violet else Ink.raised)
+                Box(Modifier.weight(column.weight).border(if(focused)2.dp else 1.dp,if(focused)Ink.violet else Ink.raised)
                     .clickable(interactionSource=interactions,indication=null,enabled=enabled) {if(sort==index)descending=!descending else {sort=index;descending=false}}.padding(6.dp)) {
-                    Copy(column.title+if(sort==index)if(descending)" ↓" else " ↑" else "",11,Ink.muted,FontWeight.Medium)
+                    Copy(column.title+if(sort==index)if(descending)" â†“" else " â†‘" else "",11,Ink.muted,FontWeight.Medium)
                 }
             }
         }
@@ -96,7 +96,7 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
                 val interactions=remember {MutableInteractionSource()}
                 val hovered by interactions.collectIsHoveredAsState();val focused by interactions.collectIsFocusedAsState()
                 Row(Modifier.fillMaxWidth().background(if(isSelected)Ink.selected else if(hovered)Ink.raised else Ink.panel)
-                    .border(1.dp,if(focused)Ink.violet else Ink.panel)
+                    .border(if(focused)2.dp else 1.dp,if(focused)Ink.violet else Ink.panel)
                     .hoverable(interactions).onPreviewKeyEvent {if(enabled && it.type==KeyEventType.KeyDown && it.key==Key.Enter){select(row);open(row);true}else false}
                     .clickable(interactionSource=interactions,indication=null,enabled=LocalControlsEnabled.current){select(row)}.testTag(tag+"-"+id(row))
                     .semantics {this.selected=isSelected}.padding(horizontal=8.dp,vertical=13.dp)) {
@@ -142,7 +142,7 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
         Column(verticalArrangement=Arrangement.spacedBy(10.dp)) {
             c.error?.let {Copy(it,13,Ink.violet,modifier=Modifier.testTag("form-error"))}
             Toolbar {
-                Action(if(c.busy)"Saving…" else "Save","check",enabled=!c.busy,modifier=Modifier.testTag("save-form"),onClick=c::saveForm)
+                Action(if(c.busy)"Savingâ€¦" else "Save","check",variant=ActionVariant.SUCCESS,enabled=!c.busy,modifier=Modifier.testTag("save-form"),onClick=c::saveForm)
                 Action("Cancel",enabled=!c.busy,onClick=c::closeEditor)
             }
         }
@@ -157,6 +157,6 @@ data class TableColumn<T>(val title:String,val weight:Float=1f,val text:(T)->Str
     c.detail?.let { detail-> Modal(detail.title,{c.detail=null},footer={Action("Done"){c.detail=null}}) {Copy(detail.text,14)} }
     c.confirmation?.let { confirmation-> Modal(confirmation.title,{c.confirmation=null},footer={Toolbar {
         Action("Keep / cancel",modifier=Modifier.testTag("cancel-confirm")){c.confirmation=null}
-        Action("Confirm","check",modifier=Modifier.testTag("confirm")){c.confirmation=null;confirmation.proceed()}
+        Action("Confirm","check",variant=ActionVariant.WARNING,modifier=Modifier.testTag("confirm")){c.confirmation=null;confirmation.proceed()}
     }}) {Copy(confirmation.message,14)} }
 }

@@ -32,17 +32,17 @@ internal fun WorkspaceController.saveExam() {
         Copy(c.active?.label().orEmpty(),14,Ink.violet)
         Input("Search exams",query,{query=it},tag="exam-search")
         Toolbar {
-            Action("New exam","book",enabled=!c.busy,modifier=Modifier.testTag("new-exam")){c.openExam()}
-            Action("Build / edit",enabled=draft&&!c.busy){row?.let {c.openExam(it.id())}}
+            Action("New exam","book",variant=ActionVariant.PRIMARY,enabled=!c.busy,modifier=Modifier.testTag("new-exam")){c.openExam()}
+            Action("Build / edit",variant=ActionVariant.PRIMARY,enabled=draft&&!c.busy){row?.let {c.openExam(it.id())}}
             Action("Preview / export PDF",enabled=row!=null&&!c.busy,modifier=Modifier.testTag("open-pdf")){row?.let {c.openPdf(it.id())}}
             Action("Details",enabled=row!=null&&!c.busy){row?.let {exam->c.inspect("Exam details · saved snapshots") {
                 val saved=c.services.academic.exams().findById(scope,exam.id())
                 "${saved.title()} · ${saved.status()}\n${saved.date()} · ${saved.durationMinutes()} minutes\nCalculated ${saved.calculatedMarks()} / intended ${saved.intendedMarks()} marks${if(saved.marksDiffer())" · Warning: totals differ" else ""}\n\n${saved.instructions()}\n\n"+
                     saved.questions().joinToString("\n\n──────────\n\n"){"${it.position()}. "+questionDetails(it)}
             }}}
-            Action("Finalize",enabled=draft&&!c.busy){row?.let {c.confirm("Finalize exam?","${it.title()}\nCalculated ${it.calculatedMarks()} / intended ${it.intendedMarks()} marks${if(it.marksDiffer())" — Warning: totals differ." else "."}\nThis locks content and records usage once."){c.mutate {c.services.academic.exams().finalizeExam(scope,it.id())}}}}
-            Action("Archive",enabled=row?.status()==ExamStatus.FINALIZED&&!c.busy){row?.let {c.confirm("Archive exam?",it.title()+"\nIts questions and history will be preserved."){c.mutate {c.services.academic.exams().archive(scope,it.id())}}}}
-            Action("Delete draft",enabled=draft&&!c.busy){row?.let {c.confirm("Delete draft exam?",it.title()+"\nThis permanently deletes the draft and its saved selection."){c.mutate {c.services.academic.exams().delete(scope,it.id())}}}}
+            Action("Finalize",variant=ActionVariant.WARNING,enabled=draft&&!c.busy){row?.let {c.confirm("Finalize exam?","${it.title()}\nCalculated ${it.calculatedMarks()} / intended ${it.intendedMarks()} marks${if(it.marksDiffer())" — Warning: totals differ." else "."}\nThis locks content and records usage once."){c.mutate {c.services.academic.exams().finalizeExam(scope,it.id())}}}}
+            Action("Archive",variant=ActionVariant.WARNING,enabled=row?.status()==ExamStatus.FINALIZED&&!c.busy){row?.let {c.confirm("Archive exam?",it.title()+"\nIts questions and history will be preserved."){c.mutate {c.services.academic.exams().archive(scope,it.id())}}}}
+            Action("Delete draft",variant=ActionVariant.DESTRUCTIVE,enabled=draft&&!c.busy){row?.let {c.confirm("Delete draft exam?",it.title()+"\nThis permanently deletes the draft and its saved selection."){c.mutate {c.services.academic.exams().delete(scope,it.id())}}}}
         }
         RecordTable(c.exams.filter {it.title().contains(query,true)},listOf(TableColumn("Exam",2f,Exam::title),TableColumn("Date"){it.date().toString()},TableColumn("Status"){it.status().name},TableColumn("Marks",1.5f){"${it.calculatedMarks()} / ${it.intendedMarks()}${if(it.marksDiffer())" !" else ""}"},TableColumn("Questions",.7f){it.questions().size.toString()}),Exam::id,selected,{selected=it.id()},{if(it.status()==ExamStatus.DRAFT)c.openExam(it.id())},"exams-table","No exams yet. Create a draft and choose questions from this course's bank.")
         Copy("PDFs use saved exam snapshots. Student papers and answer keys are separate documents.",12,Ink.muted)
@@ -61,7 +61,7 @@ internal fun WorkspaceController.saveExam() {
             Copy("${d.selected.size} questions · Calculated ${d.total} / intended ${d.intended} marks${if(d.mismatch)" · Warning: totals differ" else ""}",14,if(d.mismatch)Ink.violet else Ink.text,modifier=Modifier.testTag("exam-totals"))
             c.error?.let {Copy(it,13,Ink.violet,modifier=Modifier.testTag("form-error"))}
             Toolbar {
-                Action("Save exam","check",enabled=!c.busy,modifier=Modifier.testTag("save-exam")) {
+                Action("Save exam","check",variant=ActionVariant.SUCCESS,enabled=!c.busy,modifier=Modifier.testTag("save-exam")) {
                     c.saveExam()
                 }
                 Action("Cancel",enabled=!c.busy,onClick=c::closeEditor)
@@ -92,7 +92,7 @@ internal fun WorkspaceController.saveExam() {
                         bankSelection=it.id();if(!bankSelections.remove(it.id()))bankSelections.add(it.id())
                     },{d.add(it)},"exam-bank-table","No matching questions for this course. Add questions in Question Bank, or clear filters.",selection=bankSelections.toSet())
                     Toolbar {
-                        Action("Add selected (${bankSelections.size})","check",enabled=bankSelections.isNotEmpty(),modifier=Modifier.testTag("add-exam-question")){bankSelections.forEach {id->d.bank.firstOrNull {it.id()==id}?.let {d.add(it)}};bankSelections.clear()}
+                        Action("Add selected (${bankSelections.size})","check",variant=ActionVariant.PRIMARY,enabled=bankSelections.isNotEmpty(),modifier=Modifier.testTag("add-exam-question")){bankSelections.forEach {id->d.bank.firstOrNull {it.id()==id}?.let {d.add(it)}};bankSelections.clear()}
                         Action("Inspect question",enabled=bankSelection!=null){d.bank.firstOrNull {it.id()==bankSelection}?.let {c.detail=Detail("Question",questionDetails(ExamQuestion.snapshot(it,1)))}}
                         Action("Clear filters"){query="";type="";difficulty="";topic=""}
                     }
@@ -111,7 +111,7 @@ internal fun WorkspaceController.saveExam() {
                             Toolbar {
                                 Action("Up",enabled=index>0,modifier=Modifier.testTag("move-up-$index")){d.move(index,-1)}
                                 Action("Down",enabled=index<d.selected.lastIndex){d.move(index,1)}
-                                Action("Remove",modifier=Modifier.testTag("remove-question-$index")){d.selected.removeAt(index)}
+                                Action("Remove",variant=ActionVariant.DESTRUCTIVE,modifier=Modifier.testTag("remove-question-$index")){d.selected.removeAt(index)}
                                 Action("Details"){c.detail=Detail("Saved question content",questionDetails(q))}
                             }
                         }
@@ -135,7 +135,7 @@ internal fun WorkspaceController.saveExam() {
     val keys=when(group){"Difficulty"->Difficulty.entries.map {it.name};"Type"->QuestionType.entries.map {it.name};else->d.bank.map {ExamGenerator.topicKey(it.topic())}.distinct().sorted()}
     val values=when(group){"Difficulty"->difficulties;"Type"->types;else->topics}
     keys.forEach {key->Input(key.ifEmpty {"(Untagged)"},values[key].orEmpty(),{values[key]=it},tag="quota-$key")}
-    Action("Generate selection","check",enabled=!c.busy,modifier=Modifier.testTag("generate-selection")) {
+    Action("Generate selection","check",variant=ActionVariant.PRIMARY,enabled=!c.busy,modifier=Modifier.testTag("generate-selection")) {
         val request=GenerationRequest(count.toIntOrNull(),difficulties.filterValues {it.isNotBlank()}.mapKeys {Difficulty.valueOf(it.key)}.mapValues {it.value.toIntOrNull()},
             types.filterValues {it.isNotBlank()}.mapKeys {QuestionType.valueOf(it.key)}.mapValues {it.value.toIntOrNull()},topics.filterValues {it.isNotBlank()}.mapValues {it.value.toIntOrNull()})
         val generate={c.task({c.services.academic.exams().generate(d.offeringId,d.existing?.id(),request)}) {questions->d.replace(questions);done()}}
