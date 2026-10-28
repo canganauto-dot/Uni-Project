@@ -103,6 +103,33 @@ class GradebookUiTest {
         runOnIdle {c.gradebook!!.set(key,"");c.saveGrades()};settled(c)
         assertTrue(reopened.academic.grades().load(id).grades().none {it.key()==key},"Saving blank must remove the score, not store zero")
     }
+    @Test fun selectedScoresOverwriteAndVisibleNavigationDoesNotScroll()=runSkikoComposeUiTest(size=Size(1360f,860f)) {
+        val (services,id)=fixture();lateinit var c:WorkspaceController
+        setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.select(id)}
+            Box(Modifier.fillMaxSize()){GradebookScreen(c);WorkspaceOverlays(c)}}
+        settled(c)
+        val book=c.gradebook!!.book;val students=book.students().sortedBy {it.student().studentNumber()};val assessments=book.assessments()
+        fun cell(row:Int,col:Int)=onNodeWithTag("grade-cell-${students[row].enrollment().id()}-${assessments[col].id()}")
+        fun value(row:Int,col:Int)=c.gradebook!!.value(GradeKey(students[row].enrollment().id(),assessments[col].id()))
+        runOnIdle {students.forEach {s->assessments.forEach {a->c.gradebook!!.set(GradeKey(s.enrollment().id(),a.id()),"12")}}}
+        cell(0,0).performClick()
+        cell(0,0).assert(SemanticsMatcher.expectValue(androidx.compose.ui.semantics.SemanticsProperties.TextSelectionRange,androidx.compose.ui.text.TextRange(0,2)))
+        cell(0,0).performTextInput("7");assertEquals("7",value(0,0))
+        val before=cell(0,0).fetchSemanticsNode().boundsInRoot
+        cell(0,0).performKeyInput {pressKey(Key.DirectionDown)}
+        cell(1,0).assertIsFocused().performTextInput("8");assertEquals("8",value(1,0))
+        assertEquals(before,cell(0,0).fetchSemanticsNode().boundsInRoot,"Visible row navigation must not jump the sheet")
+        cell(1,0).performKeyInput {pressKey(Key.DirectionRight)}
+        cell(1,1).assertIsFocused().performTextInput("60");assertEquals("60",value(1,1))
+        cell(1,1).performKeyInput {pressKey(Key.F2);pressKey(Key.DirectionLeft)}
+        cell(1,1).assertIsFocused().performTextInput("1");assertEquals("610",value(1,1))
+        cell(1,1).performKeyInput {pressKey(Key.DirectionUp)}
+        cell(0,1).assertIsFocused().performTextInput("70");assertEquals("70",value(0,1))
+        cell(0,1).performKeyInput {pressKey(Key.DirectionLeft)}
+        cell(0,0).assertIsFocused().performTextInput("9");assertEquals("9",value(0,0))
+        assertTrue(c.gradebook!!.dirty)
+        assertTrue(services.academic.grades().load(id).grades().isEmpty(),"Navigation must never autosave")
+    }
     @Test fun configurationCrudWeightRulesAndScopeGuards()=runSkikoComposeUiTest(size=Size(1200f,900f)) {
         val (services,id)=fixture();lateinit var c:WorkspaceController
         setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.select(id)}

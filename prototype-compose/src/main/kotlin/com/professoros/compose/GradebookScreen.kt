@@ -14,6 +14,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.*
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.*
@@ -67,7 +69,7 @@ import java.nio.file.Path
                     Action("Clear selection"){editor.selected.clear()}
                 }
                 Input("Search student number or name",query,{query=it},tag="grade-search")
-                Copy("Blank = ungraded · 0 = actual zero · Enter / ↑ ↓ move rows · Tab / Alt+← → move columns · Ctrl+S saves",12,Ink.muted)
+                Copy("Blank = ungraded · 0 = actual zero · Enter / ↑ ↓ move rows · Tab / ← → move columns · F2 edits text · Ctrl+S saves",12,Ink.muted)
                 if(book.assessments().isEmpty()) Panel(Modifier.fillMaxWidth()) {
                     Copy("Set up your first assessment",18,weight=FontWeight.SemiBold)
                     Copy("Create weighted categories, then add assessments to begin recording scores.",14,Ink.muted)
@@ -127,10 +129,21 @@ import java.nio.file.Path
     fun navigate(row:Int,col:Int):Boolean {
         if(row !in rows.indices || col !in assessments.indices)return false
         scope.launch {
-            vertical.scrollToItem(row)
+            val layout=vertical.layoutInfo
+            val visible=layout.visibleItemsInfo.find {it.index==row}
+            if(visible==null) vertical.scrollToItem(row)
+            else if(visible.offset<layout.viewportStartOffset || visible.offset+visible.size>layout.viewportEndOffset) {
+                val delta=if(visible.offset<layout.viewportStartOffset) visible.offset-layout.viewportStartOffset
+                    else visible.offset+visible.size-layout.viewportEndOffset
+                vertical.scroll { scrollBy(delta.toFloat()) }
+            }
             val x=with(density){(cellWidth*col).roundToPx()}
-            horizontal.animateScrollTo(x)
-            // scrollToItem composes the requested lazy row before the focus request.
+            val right=with(density){(cellWidth*(col+1)).roundToPx()}
+            val viewport=with(density){(maxWidth-studentWidth-12.dp).roundToPx()}
+            // Keyboard movement is immediate; only reveal a cell when it leaves the viewport.
+            val target=when {x<horizontal.value->x;right>horizontal.value+viewport->right-viewport;else->horizontal.value}
+            if(target!=horizontal.value)horizontal.scrollTo(target)
+            // scrollToItem composes an offscreen lazy row before requesting focus.
             focus[rows[row].enrollment().id()]?.get(assessments[col].id())?.requestFocus()
         };return true
     }
@@ -168,19 +181,34 @@ import java.nio.file.Path
                         Row(Modifier.weight(1f).horizontalScroll(horizontal),verticalAlignment=androidx.compose.ui.Alignment.CenterVertically) {
                         assessments.forEachIndexed {column,a->
                             val key=GradeKey(row.enrollment().id(),a.id());val value=editor.value(key)
+                            // A reloaded book owns fresh input state; never reuse a saved cell's stale text layout.
+                            key(editor,key) {
                             var focused by remember {mutableStateOf(false)}
+                            var editingText by remember {mutableStateOf(false)}
+                            var replaceSelection by remember {mutableStateOf(false)}
+                            var field by remember {mutableStateOf(TextFieldValue(value))}
+                            // External draft changes (bulk entry/discard) must update the cell too.
+                            if(field.text!=value)field=TextFieldValue(value,if(focused)TextRange(0,value.length) else TextRange.Zero)
                             val invalid=try {GradebookService.validateScore(value,a);false}catch(_:DomainValidationException){true}
                             Box(Modifier.width(cellWidth).padding(6.dp)) {
-                                BasicTextField(value,{editor.set(key,it)},singleLine=true,readOnly=!enabled,
+                                BasicTextField(field,{next->
+                                    if(next.text!=value){replaceSelection=false;field=next;editor.set(key,next.text)}
+                                    else field=if(replaceSelection)next.copy(selection=TextRange(0,next.text.length)) else next
+                                },singleLine=true,readOnly=!enabled,
                                     textStyle=TextStyle(color=Ink.text,fontFamily=fontFor(value),fontSize=14.sp),cursorBrush=SolidColor(Ink.violet),
                                     modifier=Modifier.fillMaxWidth().focusRequester(focus.getValue(row.enrollment().id()).getValue(a.id()))
-                                        .onFocusChanged {focused=it.isFocused}.onPreviewKeyEvent {event->
+                                        .onFocusChanged {
+                                            if(it.isFocused&&!focused){replaceSelection=true;field=field.copy(selection=TextRange(0,field.text.length))}
+                                            focused=it.isFocused
+                                            if(!focused){editingText=false;replaceSelection=false;field=field.copy(selection=TextRange.Zero)}
+                                        }.onPreviewKeyEvent {event->
                                             if(!enabled||event.type!=KeyEventType.KeyDown)false else when(event.key) {
                                                 Key.Enter -> navigate(index+if(event.isShiftPressed)-1 else 1,column)
                                                 Key.DirectionDown -> navigate(index+1,column)
                                                 Key.DirectionUp -> navigate(index-1,column)
-                                                Key.DirectionLeft -> if(event.isAltPressed)navigate(index,column-1) else false
-                                                Key.DirectionRight -> if(event.isAltPressed)navigate(index,column+1) else false
+                                                Key.DirectionLeft -> if(!editingText||event.isAltPressed){navigate(index,column-1);true}else false
+                                                Key.DirectionRight -> if(!editingText||event.isAltPressed){navigate(index,column+1);true}else false
+                                                Key.F2 -> {editingText=true;replaceSelection=false;field=field.copy(selection=TextRange(field.text.length));true}
                                                 Key.Tab -> {val next=index*assessments.size+column+if(event.isShiftPressed)-1 else 1; if(next<0)false else navigate(next/assessments.size,next%assessments.size)}
                                                 else -> false
                                             }
@@ -190,6 +218,7 @@ import java.nio.file.Path
                                         .semantics {contentDescription="${row.student().fullName()} · ${a.title()} · out of ${a.maximumMarks()}. Blank means ungraded.";if(invalid)error("Score must be between zero and ${a.maximumMarks()}, with at most two decimal places.")},
                                     decorationBox={inner->Box {if(value.isEmpty())Copy("Ungraded",12,Ink.muted);inner()}})
                             }
+                        }
                         }
                         val result=summary.results[row.enrollment().id()]
                         Column(Modifier.width(resultWidth).padding(12.dp).testTag("grade-result-${row.enrollment().id()}")) {
