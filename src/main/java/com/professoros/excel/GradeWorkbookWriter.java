@@ -66,10 +66,10 @@ public final class GradeWorkbookWriter {
             metric(statistics,index++,"Pass rate",stats.complete()==0?null:BigDecimal.valueOf(stats.passed()).divide(BigDecimal.valueOf(stats.complete()),8,RoundingMode.HALF_UP),"Passed / complete results",percent);
             metric(statistics,index++,"Category weights",GradeCalculator.weightTotal(book).movePointLeft(2),"Must total 100% for final results",percent);
             var scale=book.scale();
-            for(var entry:List.of(Map.entry("A minimum",scale.a()),Map.entry("B minimum",scale.b()),Map.entry("C minimum",scale.c()),Map.entry("D minimum",scale.d()),Map.entry("Pass minimum",scale.pass()))) {
+            for(var entry:List.of(Map.entry("A minimum",scale.a()),Map.entry("B minimum",scale.b()),Map.entry("C minimum",scale.c()),Map.entry("D minimum",scale.d()),Map.entry("E / Pass minimum",scale.pass()))) {
                 metric(statistics,index++,entry.getKey(),entry.getValue().movePointLeft(2),"Inclusive threshold; classification precedes display rounding",percent);
             }
-            text(statistics.createRow(index++),0,"F is below D. Missing grades are not zeros. Within categories, assessments are weighted by maximum marks.");
+            text(statistics.createRow(index++),0,"E uses the inclusive Pass minimum; F is below it. Missing grades are not zeros. Within categories, assessments are weighted by maximum marks.");
             statistics.setColumnWidth(0,38*256); statistics.setColumnWidth(1,20*256); statistics.setColumnWidth(2,64*256); finish(statistics,3,index);
             if(attendance!=null) attendance(workbook,offering,attendance);
             workbook.write(output); return output.toByteArray();

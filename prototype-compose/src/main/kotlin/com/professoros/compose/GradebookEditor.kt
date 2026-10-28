@@ -62,7 +62,7 @@ internal fun WorkspaceController.editGradingScale() {
     val book=gradebook!!.book;val scale=book.scale()
     form=RecordForm("Grading scale · inclusive minimum percentages",listOf(
         Field("a","A minimum %",scale.a().stripTrailingZeros().toPlainString()),Field("b","B minimum %",scale.b().stripTrailingZeros().toPlainString()),
-        Field("c","C minimum %",scale.c().stripTrailingZeros().toPlainString()),Field("d","D minimum %",scale.d().stripTrailingZeros().toPlainString()),Field("pass","Pass minimum %",scale.pass().stripTrailingZeros().toPlainString()))) {f->
+        Field("c","C minimum %",scale.c().stripTrailingZeros().toPlainString()),Field("d","D minimum %",scale.d().stripTrailingZeros().toPlainString()),Field("pass","E / Pass minimum %",scale.pass().stripTrailingZeros().toPlainString()))) {f->
         fun n(key:String)=GradebookService.number(f[key],"Threshold")
         services.academic.grades().saveScale(book.offeringId(),GradingScale(n("a"),n("b"),n("c"),n("d"),n("pass")))
     }

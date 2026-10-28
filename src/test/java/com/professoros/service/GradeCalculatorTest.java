@@ -23,6 +23,29 @@ class GradeCalculatorTest {
         var result=GradeCalculator.calculate(book,1,Map.of(new GradeKey(1,1),n(score)));
         assertTrue(result.complete()); assertEquals(letter,result.letter()); assertEquals(outcome,result.outcome());
     }
+    @ParameterizedTest @CsvSource({"499.90,49.99,F,FAIL","500,50.00,E,PASS","599.90,59.99,E,PASS","600,60.00,D,PASS",
+            "499.99,50.00,F,FAIL","599.99,60.00,E,PASS"})
+    void eAndFailureUseExactPercentagesBeforeDisplayRounding(String score,String display,String letter,String outcome) {
+        var book=new Gradebook(1,List.of(category(1,"100")),List.of(assessment(1,1,"1000")),List.of(),List.of(),
+                new GradingScale(n("90"),n("80"),n("70"),n("60"),n("50")));
+        var result=GradeCalculator.calculate(book,1,Map.of(new GradeKey(1,1),n(score)));
+        assertTrue(result.complete());assertEquals(n(display),result.weightedPoints());
+        assertEquals(letter,result.letter());assertEquals(outcome,result.outcome());
+    }
+    @ParameterizedTest @CsvSource({"0,0,E,PASS","55,54.99,F,FAIL","55,55,E,PASS","60,60,D,PASS","95,90,F,FAIL","95,95,A,PASS"})
+    void configuredPassControlsEAndFailureIncludingLegacyScales(String pass,String score,String letter,String outcome) {
+        var book=new Gradebook(1,List.of(category(1,"100")),List.of(assessment(1,1,"100")),List.of(),List.of(),
+                new GradingScale(n("90"),n("80"),n("70"),n("60"),n(pass)));
+        var result=GradeCalculator.calculate(book,1,Map.of(new GradeKey(1,1),n(score)));
+        assertEquals(letter,result.letter());assertEquals(outcome,result.outcome());
+    }
+    @Test void partialPassingPointsRemainIncompleteWithoutAFinalLetter() {
+        var book=new Gradebook(1,List.of(category(1,"100")),List.of(assessment(1,1,"50"),assessment(2,1,"50")),List.of(),List.of(),
+                new GradingScale(n("90"),n("80"),n("70"),n("60"),n("50")));
+        var result=GradeCalculator.calculate(book,1,Map.of(new GradeKey(1,1),n("50")));
+        assertEquals(n("50.00"),result.weightedPoints());assertFalse(result.complete());
+        assertEquals("—",result.letter());assertEquals("INCOMPLETE",result.outcome());
+    }
     @Test void repeatingRatiosDoNotMisclassifyAnExactBoundary() {
         var book=book(List.of(category(1,"20"),category(2,"20"),category(3,"20"),category(4,"40")),
                 List.of(assessment(1,1,"3"),assessment(2,2,"3"),assessment(3,3,"3"),assessment(4,4,"1")));

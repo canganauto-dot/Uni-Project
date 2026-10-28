@@ -35,9 +35,11 @@ public final class GradeCalculator {
         boolean complete=configured && required>0 && graded==required;
         // Classify before display rounding: 89.999% must not become an A at a 90% boundary.
         var scale=book.scale();
-        String letter=points.atLeast(scale.a())?"A":points.atLeast(scale.b())?"B":points.atLeast(scale.c())?"C":points.atLeast(scale.d())?"D":"F";
+        // The existing Pass threshold is also E's floor, including for legacy scales above D.
+        boolean passed=points.atLeast(scale.pass());
+        String letter=!passed?"F":points.atLeast(scale.a())?"A":points.atLeast(scale.b())?"B":points.atLeast(scale.c())?"C":points.atLeast(scale.d())?"D":"E";
         return new GradeResult(new BigDecimal(points.numerator()).divide(new BigDecimal(points.denominator()),2,RoundingMode.HALF_UP),graded,required,complete,
-                complete?letter:"—",complete?(points.atLeast(scale.pass())?"PASS":"FAIL"):"INCOMPLETE");
+                complete?letter:"—",complete?(passed?"PASS":"FAIL"):"INCOMPLETE");
     }
     /** Reduced rational sums keep exact threshold comparisons even for repeating category ratios. */
     private record Fraction(BigInteger numerator,BigInteger denominator) {

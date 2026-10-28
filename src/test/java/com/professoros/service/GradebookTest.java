@@ -63,7 +63,7 @@ class GradebookTest {
         service.saveGrades(offering,Map.of(key(),"899.99"));
         assertEquals(n("90.00"),result().weightedPoints()); assertEquals("B",result().letter());
         service.saveScale(offering,new GradingScale(n("85"),n("75"),n("65"),n("50"),n("95")));
-        assertEquals("A",result().letter()); assertEquals("FAIL",result().outcome());
+        assertEquals("F",result().letter()); assertEquals("FAIL",result().outcome());
         assertEquals(n("85.00"),service.load(offering).scale().a());
     }
     @Test void validatesRangesDatesAndRequiredFields() {

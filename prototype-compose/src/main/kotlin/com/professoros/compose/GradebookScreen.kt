@@ -88,7 +88,7 @@ import java.nio.file.Path
                 }
                 RecordTable(book.categories(),listOf(TableColumn("Category",2f){v:AssessmentCategory->v.name()},TableColumn("Weight %"){PercentageFormatter.number(it.weight())}),AssessmentCategory::id,categoryId,{categoryId=it.id()},{c.editGradeCategory(it)},"grade-categories","No categories yet. Create categories with weights totaling 100%.")
                 val s=book.scale()
-                Copy("Inclusive thresholds · A ${PercentageFormatter.format(s.a())} · B ${PercentageFormatter.format(s.b())} · C ${PercentageFormatter.format(s.c())} · D ${PercentageFormatter.format(s.d())} · Pass ${PercentageFormatter.format(s.pass())}",13)
+                Copy("Inclusive thresholds · A ${PercentageFormatter.format(s.a())} · B ${PercentageFormatter.format(s.b())} · C ${PercentageFormatter.format(s.c())} · D ${PercentageFormatter.format(s.d())} · E / Pass ${PercentageFormatter.format(s.pass())}",13)
                 Copy("Within each category, earned marks are divided by total maximum marks. Zero-weight categories do not affect totals. Final letters and pass/fail require all weighted entries and weights totaling 100%.",13,Ink.muted)
             }
         }

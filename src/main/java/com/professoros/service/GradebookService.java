@@ -56,7 +56,7 @@ public final class GradebookService {
         if(scale==null) { throw new DomainValidationException("Grading scale is required."); }
         for(var value:Arrays.asList(scale.a(),scale.b(),scale.c(),scale.d(),scale.pass())) { range(value,"Scale threshold",BigDecimal.ZERO,new BigDecimal("100")); }
         if(scale.a().compareTo(scale.b())<=0 || scale.b().compareTo(scale.c())<=0 || scale.c().compareTo(scale.d())<=0) {
-            throw new DomainValidationException("Letter thresholds must satisfy A > B > C > D; F is below D.");
+            throw new DomainValidationException("Letter thresholds must satisfy A > B > C > D. E uses the Pass minimum; F is below it.");
         }
         repository.saveScale(offering,scale);
     }

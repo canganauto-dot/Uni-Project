@@ -154,6 +154,34 @@ class ExcelIntegrationTest {
             assertEquals(CellType.BLANK,w.getSheet("Statistics").getRow(13).getCell(1).getCellType());
         }
     }
+    @Test void exportedEBoundariesAndIncompleteResultsMatchTheCalculator() throws Exception {
+        long offering=f.first().id();var grades=f.academic().grades();
+        var category=grades.saveCategory(offering,null,"Exam",new BigDecimal("100"));
+        var assessment=grades.saveAssessment(offering,null,category.id(),"Final",new BigDecimal("1000"),LocalDate.of(2026,11,1));
+        grades.saveScale(offering,new GradingScale(new BigDecimal("90"),new BigDecimal("80"),new BigDecimal("70"),new BigDecimal("60"),new BigDecimal("50")));
+        String[] scores={"499.90","500","599.90","600","499.99","599.99",""};
+        String[] letters={"F","E","E","D","F","E",""};
+        String[] outcomes={"FAIL","PASS","PASS","PASS","FAIL","PASS","INCOMPLETE"};
+        for(int i=0;i<scores.length;i++) {
+            var student=f.academic().students().create(new StudentInput("000"+i,"Student","Boundary "+i,"",""));
+            var enrollment=f.academic().enrollments().enroll(student.id(),offering);
+            grades.saveGrades(offering,Map.of(new GradeKey(enrollment.id(),assessment.id()),scores[i]));
+        }
+        var book=grades.load(offering);
+        try(var w=new XSSFWorkbook(new ByteArrayInputStream(new ExcelExportService(grades,f.academic().offerings()).render(offering)))) {
+            for(int i=0;i<scores.length;i++) {
+                var row=w.getSheet("Grades").getRow(6+i);assertEquals("000"+i,row.getCell(0).getStringCellValue());
+                assertEquals(letters[i],row.getCell(6).getStringCellValue());assertEquals(outcomes[i],row.getCell(7).getStringCellValue());
+                var enrollment=book.students().stream().filter(s->s.student().studentNumber().equals(row.getCell(0).getStringCellValue())).findFirst().orElseThrow();
+                var result=GradeCalculator.calculate(book,enrollment.enrollment().id(),GradeCalculator.scores(book));
+                assertEquals(result.complete()?result.letter():"",row.getCell(6).getStringCellValue());
+                assertEquals(result.outcome(),row.getCell(7).getStringCellValue());
+            }
+            var statistics=w.getSheet("Statistics");
+            assertEquals("E / Pass minimum",statistics.getRow(19).getCell(0).getStringCellValue());
+            assertEquals(.5,statistics.getRow(19).getCell(1).getNumericCellValue());
+        }
+    }
     @Test void nonzeroWeightedResultsAndClassStatisticsMatchGradebookExactly() throws Exception {
         var student=f.academic().students().create(new StudentInput("0001","Sara","Hassan","",""));
         long enrollment=f.academic().enrollments().enroll(student.id(),f.first().id()).id(); var grades=f.academic().grades(); long offering=f.first().id();

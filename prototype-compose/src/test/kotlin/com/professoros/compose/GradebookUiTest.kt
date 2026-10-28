@@ -161,6 +161,35 @@ class GradebookUiTest {
         runOnIdle {c.select(null)};assertNotNull(c.confirmation)
         onNodeWithTag("cancel-confirm").performClick();assertEquals(id,c.offeringId)
     }
+    @Test fun eUsesConfiguredPassMinimumInTheEditorAndScaleForm()=runSkikoComposeUiTest(size=Size(1200f,900f)) {
+        val (services,id)=fixture()
+        services.academic.grades().saveScale(id,GradingScale(BigDecimal("90"),BigDecimal("80"),BigDecimal("70"),BigDecimal("60"),BigDecimal("50")))
+        lateinit var c:WorkspaceController
+        setContent {val scope=rememberCoroutineScope();c=remember {WorkspaceController(services,scope)};LaunchedEffect(Unit){c.select(id)}
+            Box(Modifier.fillMaxSize()){GradebookScreen(c);WorkspaceOverlays(c)}}
+        settled(c)
+        val book=c.gradebook!!.book;val student=book.students().first().enrollment().id()
+        val first=book.assessments().first().id();val second=book.assessments().last().id()
+        onNodeWithTag("grade-cell-$student-$first").performClick().performTextInput("0")
+        onNode(hasText("0% · — · INCOMPLETE") and hasAnyAncestor(hasTestTag("grade-result-$student")),useUnmergedTree=true).assertExists()
+        for((score,letter) in listOf("49.99" to "F · FAIL","50" to "E · PASS","59.99" to "E · PASS","60" to "D · PASS")) {
+            onNodeWithTag("grade-cell-$student-$second").performTextReplacement(score)
+            onNodeWithText("$score% · $letter").assertExists()
+        }
+        onNodeWithTag("save-grades").performClick();settled(c)
+        onNodeWithTag("grade-tab-Categories & scale").performClick()
+        onNodeWithText("E / Pass 50%",substring=true).assertExists()
+        onNodeWithTag("grading-scale").performClick()
+        onNodeWithText("E / Pass minimum %").assertExists()
+        onNodeWithTag("field-pass").performTextReplacement("55")
+        onNodeWithTag("save-form").performClick();settled(c)
+        assertEquals(BigDecimal("55.00"),c.gradebook!!.book.scale().pass())
+        onNodeWithTag("grade-tab-Grades").performClick()
+        onNodeWithTag("grade-cell-$student-$second").performTextReplacement("54.99")
+        onNodeWithText("54.99% · F · FAIL").assertExists()
+        onNodeWithTag("grade-cell-$student-$second").performTextReplacement("55")
+        onNodeWithText("55% · E · PASS").assertExists()
+    }
     private fun ComposeUiTest.settled(c:WorkspaceController){waitForIdle();waitUntil(timeoutMillis=10000){!c.busy};waitForIdle()}
     private fun ComposeUiTest.capture(name:String){waitForIdle();val file=File(System.getProperty("compose.test.output"),"$name.png");file.parentFile.mkdirs();ImageIO.write(onNodeWithTag("dashboard-root").captureToImage().toAwtImage(),"png",file)}
 }
