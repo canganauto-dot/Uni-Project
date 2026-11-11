@@ -882,3 +882,52 @@ Only native launchers set professoros.packaged=true. AppPaths then defaults to L
 Verification includes 226 Maven tests, 43 Compose tests, installed EXE startup with JAVA_HOME removed, a system-only PATH and unrelated working directory, successful per-user installation and upgrade from candidate 1.0.0 to 1.0.1, generated shortcut targets, and independently reopened profile storage. A developer-only native QA launcher used a byte-identical copy of the installed runtime plus installed dependency JARs, with no Gradle/development classpath, to save a score, generate/reopen both PDF kinds and a four-sheet workbook, render PDF previews and verify the score from a second process. SQLite integrity/FK checks passed. Source database, verified backup and the upgrade-test copy retained protected hashes. Installer signing and clean-machine/ARM64 certification remain release limitations; see docs/WINDOWS_PACKAGING.md.
 
 Final artifact: Professor OS-1.0.1.exe, 141,851,136 bytes (135.28 MiB), SHA-256 bfd27ab12db16e74e95515b6b2347446f5b15d0b05a61fd69e4f2fbac48354a2. Native default-profile storage and populated QA restart were verified after resuming the interrupted computer-use check. The populated QA database remained byte-identical across restart. Final launcher and installer PE resources each contain all seven official icon resolutions.
+
+### 2026-11-10 — Student Portal Phase 1 visual prototype
+
+Added an isolated `student-portal/` React/TypeScript/Vite application with Tailwind CSS and Lucide icons. It uses a navy/violet design direction related to the Compose palette and a copy of the existing Manrope font. The desktop application remains the sole professor workspace and retains its offline SQLite behavior. The web prototype is student-facing only and has no integration with Java services, SQLite, Supabase, or any API.
+
+Hash-based client navigation covers login and MFA previews, dashboard, course list/detail, grades, attendance, and profile/security. The login and MFA screens explicitly do not authenticate or verify codes; the fictional workspace is directly accessible. All fictional records are isolated in `src/demo.ts`. Course loading, empty, and error views are inspectable visual states. Responsive navigation, keyboard focus, and reduced-motion styling are included. No production security claim, credentials, migrations, or desktop changes were introduced.
+
+Verification: `npm ci`, `npm run typecheck`, and `npm run build` passed with pinned package versions. Browser preview checks covered desktop and mobile navigation, course detail, grades, attendance, profile, login/MFA previews, and the course error state; no console warnings/errors were observed. Dashboard widths of 320, 768, 1024, and 1440 pixels showed no document-level horizontal overflow. The existing Maven clean verify passed 226 tests after clearing the read-only flag on an ignored generated smoke-test executable; the Compose Gradle test task completed successfully after Maven. The browser preview is local only.
+
+### 2026-11-10 — Student Portal premium redesign
+
+Created an editable Figma concept with desktop and mobile layouts for the seven portal experiences, shared color styles/components, and a motion specification. The design draws on the supplied VR education dashboard's compact rail and asymmetrical content hierarchy while using original academic artwork and the portal's existing fictional data. The Figma file is linked from `student-portal/README.md`.
+
+The existing React routes, demo module, and visual-only authentication boundary remain intact. `student-portal/src/redesign.css` supplies the portal's near-black/violet tokens, narrow expandable rail, editorial dashboard, differentiated course layouts, mobile result cards, and refined account screens. Motion for React is the sole new dependency, pinned to 14.10.0; it supplies route and progress entrance effects. CSS supplies short interactions and chart reveals. Reduced-motion settings disable optional movement. No Java, Compose, SQLite, migrations, API, cloud credentials, or Supabase code changed.
+
+Verification: fresh `npm ci`, `npm run typecheck`, and `npm run build` passed. Browser checks covered all eight routes at 320, 390, 768, 1024, 1440, and 1600 pixels without document-level horizontal overflow; course search, empty/loading/error previews, mobile navigation, Escape focus return, and console errors were checked. The testing device had reduced motion enabled, and the portal honored it. Desktop and mobile screenshots were compared with the Figma concepts. Sequential Windows Maven clean verify passed all 226 tests, and the Compose Gradle test task succeeded. Graphify was refreshed with its pre-existing SQL/Kotlin extraction warnings.
+
+### 2026-11-10 — Studio Window student dashboard
+
+Implemented the approved dashboard study in the React portal. The lead Human–Computer Interaction artwork sits beside a chronological calendar; four linked course covers carry visible completion percentages, and a labeled linear track shows the existing degree credit breakdown. The phone layout places the course and calendar in the same reading order as the markup. Dashboard styles are scoped to the dashboard route; course records, routes, preview authentication, desktop code, and SQLite are unchanged. The mobile drawer mounts its close button with focus when opened.
+
+Verification: TypeScript and the Vite production build passed. Browser review compared desktop and phone captures against the approved study, checked eight widths from 320 to 1600 pixels, opened the featured course and Research Methods, and verified mobile keyboard focus and Escape return. The other portal routes rendered without dashboard styling, and no console errors were reported. The dashboard passed the Impeccable detector. Maven passed 226 tests; the Compose Gradle test task succeeded.
+
+### 2026-11-10 — Student Portal navigation rail and drawer
+
+The desktop rail now has one explicit expansion state. Its visible area opens without changing the page geometry, and it collapses on Escape or when focus leaves the rail. The mobile menu uses a native modal drawer so the browser keeps keyboard focus inside and returns it to the trigger on close. Both navigation presentations share the 800px breakpoint and match course details to the Courses section. Mobile navigation closes on route changes and when switching to desktop. Reduced motion removes the rail reveal and drawer slide.
+
+Verification: isolated Edge browser checks passed with reduced motion enabled and disabled. They covered pointer and keyboard toggles, rapid reversal, stable page geometry, Escape and backdrop dismissal, modal focus, course detail selection, navigation, and resizing across the breakpoint to 320px. TypeScript, Vite production build, 226 Maven tests, and the Compose test task passed.
+
+### 2026-11-10 — Studio Window dashboard motion
+
+Portal route content uses a short fade and offset while the navigation stays fixed. The course shelf staggers its entrances and fills the course and degree tracks as they come into view. Reduced motion skips those effects and the control transforms while retaining focus and color feedback.
+
+Verification: Edge desktop and mobile checks passed with both motion preferences. They covered route transitions, course entrances, artwork hover, button press, progress fills, keyboard navigation and stable rail geometry. TypeScript, the Vite production build, Maven clean verify and the Compose test task passed.
+
+### 2026-11-11 — Studio Window motion refinement
+
+The featured artwork now settles into its window over 800ms while its course copy arrives in 440ms. Course entrances use a capped 195ms stagger, progress fills last 800ms, and course links lift four pixels with clipped artwork zoom and press feedback. Route entrances last 320ms. Existing Motion and CSS supply the effects without dependencies or layout changes.
+
+TypeScript and the production build passed. Edge frame sampling verified route, artwork, course, progress, hover and press effects with fixed rail geometry and course navigation. Maven verification and Compose tests passed.
+The route presence wrapper now permits first-load entrances. Its previous initial=false setting also suppressed nested course and progress animations on a direct dashboard visit.
+
+### 2026-11-11 — Studio Window academic pages
+
+Courses, course details, Grades, Attendance and Profile now use scoped Studio Window typography, near-black surfaces and fine dividers in student-portal/src/studio-pages.css. The course artwork renderer was extracted without changing the dashboard rendering and reused for course browsing, details and grade thumbnails. Existing controls, fictional records and hash routes are preserved. No dependencies were added.
+
+Course entrances, score and attendance fills, weekly chart reveals and account preview controls follow the existing motion language. Visibility is observed on the full-size progress track so a zero-size animated fill cannot prevent its own entrance. Attendance meters now identify their value as attendance for assistive technology. A missing favicon discovered during browser checks was added.
+
+Verification used isolated Edge sessions. Desktop and mobile captures covered all four pages and course details, nine widths from 320 through 1600 pixels had no horizontal document overflow, and the dashboard capture remained pixel-identical. Search, subject filters, loading/empty/error previews, keyboard focus, course and grade links, and profile preview routes passed. TypeScript, the Vite production build, Maven verification and the Compose test task passed. Graphify was refreshed with its existing extractor warnings.

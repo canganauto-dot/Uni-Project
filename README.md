@@ -2,7 +2,7 @@
 
 An offline-first desktop workspace for university professors, built as an academic software engineering project with an emphasis on clarity, maintainability and explainable design.
 
-**Status: Compose Desktop is the only application UI.** Courses, students, terms, offerings/enrollment, lectures, Question Bank, Exam Builder, Gradebook, Attendance and Settings now have Compose screens, including student Excel import, grade/attendance Excel export and exam PDF preview/export. Academic records are persisted locally; dashboard metrics use saved records.
+**Status: Compose Desktop remains the complete professor workspace.** Courses, students, terms, offerings/enrollment, lectures, Question Bank, Exam Builder, Gradebook, Attendance and Settings have Compose screens, including student Excel import, grade/attendance Excel export and exam PDF preview/export. Academic records are persisted locally; dashboard metrics use saved records. A separate [Student Portal Phase 1 visual prototype](student-portal/README.md) now lives in `student-portal/`; its data and login/MFA screens are fictional previews, with no desktop or database connection.
 
 ## Implemented
 
@@ -156,6 +156,7 @@ prototype-compose/
   src/main/kotlin/           Compose screens, controllers and Java bridge
   src/main/resources/        Desktop fonts and icons
   src/test/kotlin/           Workflow, rendering and runtime-isolation tests
+student-portal/               Isolated web-only student visual prototype
 data/                        Local database (ignored)
 exports/                     Generated PDF/Excel exports (ignored)
 target/                      Maven output and test reports (ignored)
